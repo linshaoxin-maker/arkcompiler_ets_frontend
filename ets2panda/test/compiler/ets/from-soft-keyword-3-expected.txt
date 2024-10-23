@@ -8,11 +8,11 @@
         "value": "std/math",
         "loc": {
           "start": {
-            "line": 16,
+            "line": 20,
             "column": 22
           },
           "end": {
-            "line": 16,
+            "line": 20,
             "column": 32
           }
         }
@@ -26,22 +26,22 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 16,
+                "line": 20,
                 "column": 13
               },
               "end": {
-                "line": 16,
+                "line": 20,
                 "column": 16
               }
             }
           },
           "loc": {
             "start": {
-              "line": 16,
+              "line": 20,
               "column": 8
             },
             "end": {
-              "line": 16,
+              "line": 20,
               "column": 16
             }
           }
@@ -49,11 +49,11 @@
       ],
       "loc": {
         "start": {
-          "line": 16,
+          "line": 20,
           "column": 1
         },
         "end": {
-          "line": 16,
+          "line": 20,
           "column": 33
         }
       }
@@ -66,11 +66,11 @@
         "decorators": [],
         "loc": {
           "start": {
-            "line": 18,
+            "line": 22,
             "column": 6
           },
           "end": {
-            "line": 18,
+            "line": 22,
             "column": 10
           }
         }
@@ -84,11 +84,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 18,
+                "line": 22,
                 "column": 13
               },
               "end": {
-                "line": 18,
+                "line": 22,
                 "column": 17
               }
             }
@@ -109,11 +109,11 @@
           },
           "loc": {
             "start": {
-              "line": 18,
+              "line": 22,
               "column": 13
             },
             "end": {
-              "line": 18,
+              "line": 22,
               "column": 17
             }
           }
@@ -126,11 +126,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 18,
+                "line": 22,
                 "column": 19
               },
               "end": {
-                "line": 18,
+                "line": 22,
                 "column": 24
               }
             }
@@ -151,11 +151,11 @@
           },
           "loc": {
             "start": {
-              "line": 18,
+              "line": 22,
               "column": 19
             },
             "end": {
-              "line": 18,
+              "line": 22,
               "column": 24
             }
           }
@@ -168,11 +168,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 18,
+                "line": 22,
                 "column": 26
               },
               "end": {
-                "line": 18,
+                "line": 22,
                 "column": 31
               }
             }
@@ -193,11 +193,11 @@
           },
           "loc": {
             "start": {
-              "line": 18,
+              "line": 22,
               "column": 26
             },
             "end": {
-              "line": 18,
+              "line": 22,
               "column": 31
             }
           }
@@ -206,11 +206,11 @@
       "const": false,
       "loc": {
         "start": {
-          "line": 18,
+          "line": 22,
           "column": 1
         },
         "end": {
-          "line": 18,
+          "line": 22,
           "column": 33
         }
       }
@@ -338,11 +338,11 @@
               "decorators": [],
               "loc": {
                 "start": {
-                  "line": 20,
+                  "line": 24,
                   "column": 10
                 },
                 "end": {
-                  "line": 20,
+                  "line": 24,
                   "column": 14
                 }
               }
@@ -362,11 +362,11 @@
                   "decorators": [],
                   "loc": {
                     "start": {
-                      "line": 20,
+                      "line": 24,
                       "column": 10
                     },
                     "end": {
-                      "line": 20,
+                      "line": 24,
                       "column": 14
                     }
                   }
@@ -379,11 +379,11 @@
                   "type": "ETSPrimitiveType",
                   "loc": {
                     "start": {
-                      "line": 20,
+                      "line": 24,
                       "column": 18
                     },
                     "end": {
-                      "line": 20,
+                      "line": 24,
                       "column": 22
                     }
                   }
@@ -403,11 +403,11 @@
                               "type": "ETSPrimitiveType",
                               "loc": {
                                 "start": {
-                                  "line": 21,
+                                  "line": 25,
                                   "column": 15
                                 },
                                 "end": {
-                                  "line": 21,
+                                  "line": 25,
                                   "column": 18
                                 }
                               }
@@ -415,11 +415,11 @@
                             "decorators": [],
                             "loc": {
                               "start": {
-                                "line": 21,
+                                "line": 25,
                                 "column": 9
                               },
                               "end": {
-                                "line": 21,
+                                "line": 25,
                                 "column": 13
                               }
                             }
@@ -429,22 +429,22 @@
                             "value": 84,
                             "loc": {
                               "start": {
-                                "line": 21,
+                                "line": 25,
                                 "column": 21
                               },
                               "end": {
-                                "line": 21,
+                                "line": 25,
                                 "column": 23
                               }
                             }
                           },
                           "loc": {
                             "start": {
-                              "line": 21,
+                              "line": 25,
                               "column": 9
                             },
                             "end": {
-                              "line": 21,
+                              "line": 25,
                               "column": 23
                             }
                           }
@@ -453,11 +453,11 @@
                       "kind": "let",
                       "loc": {
                         "start": {
-                          "line": 21,
+                          "line": 25,
                           "column": 5
                         },
                         "end": {
-                          "line": 21,
+                          "line": 25,
                           "column": 24
                         }
                       }
@@ -465,33 +465,33 @@
                   ],
                   "loc": {
                     "start": {
-                      "line": 20,
+                      "line": 24,
                       "column": 23
                     },
                     "end": {
-                      "line": 22,
+                      "line": 26,
                       "column": 2
                     }
                   }
                 },
                 "loc": {
                   "start": {
-                    "line": 20,
+                    "line": 24,
                     "column": 14
                   },
                   "end": {
-                    "line": 22,
+                    "line": 26,
                     "column": 2
                   }
                 }
               },
               "loc": {
                 "start": {
-                  "line": 20,
+                  "line": 24,
                   "column": 14
                 },
                 "end": {
-                  "line": 22,
+                  "line": 26,
                   "column": 2
                 }
               }
@@ -500,11 +500,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 20,
+                "line": 24,
                 "column": 1
               },
               "end": {
-                "line": 22,
+                "line": 26,
                 "column": 2
               }
             }
@@ -2315,9 +2315,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "NamesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#from",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "NamesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -2681,9 +2711,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "NamesArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#from",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "NamesArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -2787,9 +2847,39 @@
                           "right": {
                             "type": "MemberExpression",
                             "object": {
-                              "type": "Identifier",
-                              "name": "NamesArray",
-                              "decorators": [],
+                              "type": "MemberExpression",
+                              "object": {
+                                "type": "Identifier",
+                                "name": "#from",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 1
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 1
+                                  }
+                                }
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "name": "NamesArray",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 1
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 1
+                                  }
+                                }
+                              },
+                              "computed": false,
+                              "optional": false,
                               "loc": {
                                 "start": {
                                   "line": 1,
@@ -3068,7 +3158,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -3241,9 +3331,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "ValuesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#from",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "ValuesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -3531,9 +3651,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "StringValuesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#from",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "StringValuesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -3762,9 +3912,39 @@
                     {
                       "type": "ReturnStatement",
                       "argument": {
-                        "type": "Identifier",
-                        "name": "ItemsArray",
-                        "decorators": [],
+                        "type": "MemberExpression",
+                        "object": {
+                          "type": "Identifier",
+                          "name": "#from",
+                          "decorators": [],
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 1
+                            }
+                          }
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "name": "ItemsArray",
+                          "decorators": [],
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 1
+                            }
+                          }
+                        },
+                        "computed": false,
+                        "optional": false,
                         "loc": {
                           "start": {
                             "line": 1,
@@ -3988,9 +4168,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "ItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#from",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "ItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4046,9 +4256,39 @@
                         "argument": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "ItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#from",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "ItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4234,7 +4474,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -4365,9 +4605,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "ItemsArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#from",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "ItemsArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -4647,9 +4917,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "BoxedItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#from",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "BoxedItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4705,9 +5005,39 @@
                         "argument": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "BoxedItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#from",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "BoxedItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4893,7 +5223,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -4960,7 +5290,7 @@
       "column": 1
     },
     "end": {
-      "line": 23,
+      "line": 27,
       "column": 1
     }
   }

@@ -15,7 +15,11 @@
 
 
 switch (alma) {
-  function (){}
+  zdsdasdasd
+  case 10:
+    alma +=10;
 }
 
-/* @@? 18:3 Error SyntaxError: Unexpected token, expected 'case' or 'default'.  */
+/* @@? 18:3 Error SyntaxError: Unexpected token 'function', expected 'case' or 'default'. */
+/* @@? 18:3 Error SyntaxError: Unexpected token 'function', expected ':' */
+/* @@? 18:12 Error SyntaxError: Unexpected token, expected identifier after 'function' keyword */

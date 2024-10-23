@@ -689,7 +689,6 @@ ir::TypeNode *TSParser::ParseTypeReferenceOrQuery(bool parseQuery)
 
     ir::Expression *typeName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
     typeName->SetRange(Lexer()->GetToken().Loc());
-    typeName->AsIdentifier()->SetReference();
 
     if (Lexer()->Lookahead() == lexer::LEX_CHAR_LESS_THAN) {
         Lexer()->ForwardToken(lexer::TokenType::PUNCTUATOR_LESS_THAN, 1);
@@ -1465,7 +1464,6 @@ bool TSParser::IsNamedFunctionExpression()
 ir::Identifier *TSParser::ParsePrimaryExpressionIdent([[maybe_unused]] ExpressionParseFlags flags)
 {
     auto *identNode = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-    identNode->SetReference();
     identNode->SetRange(Lexer()->GetToken().Loc());
 
     Lexer()->NextToken();
@@ -2101,7 +2099,7 @@ std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> TSParser::Pa
 
 ir::AstNode *TSParser::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *specifiers)
 {
-    ir::Identifier *local = ParseNamedImport(Lexer()->GetToken());
+    ir::Identifier *local = ParseNamedImport(&Lexer()->GetToken());
     Lexer()->NextToken();  // eat local name
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
@@ -2164,9 +2162,9 @@ void TSParser::ThrowMultipleDefaultError()
     ThrowSyntaxError("A 'default' clause cannot appear more than once in a 'switch' statement");
 }
 
-void TSParser::ThrowIllegalNewLineErrorAfterThrow()
+void TSParser::LogIllegalNewLineErrorAfterThrow()
 {
-    ThrowSyntaxError("Line break not permitted here");
+    LogSyntaxError("Line break not permitted here");
 }
 
 void TSParser::ThrowIfBodyEmptyError(ir::Statement *consequent)

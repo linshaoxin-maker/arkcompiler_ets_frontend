@@ -755,7 +755,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (typeAnnotation == nullptr && initType->IsETSFunctionType()) {
         if (!init->IsArrowFunctionExpression() && (initType->AsETSFunctionType()->CallSignatures().size() != 1)) {
-            ThrowTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+            LogTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+            bindingVar->SetTsType(GlobalTypeError());
+            return bindingVar->TsTypeOrError();
         }
 
         annotationType =
@@ -801,20 +803,10 @@ void ETSChecker::CheckAnnotationTypeForVariableDeclaration(checker::Type *annota
         }
     }
 
-    if (isUnionFunction) {
-        if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {},
-                               TypeRelationFlag::NO_THROW)
-                 .IsAssignable()) {
-            LogTypeError({"Type '", sourceType, "' cannot be assigned to type '", annotationType, "'"}, init->Start());
-        }
-    } else {
-        if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {},
-                               TypeRelationFlag::NO_THROW)
-                 .IsAssignable()) {
-            LogTypeError({"Type '", sourceType, "' cannot be assigned to type '",
-                          TryGettingFunctionTypeFromInvokeFunction(annotationType), "'"},
-                         init->Start());
-        }
+    if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {}, TypeRelationFlag::NO_THROW)
+             .IsAssignable()) {
+        Type *targetType = isUnionFunction ? annotationType : TryGettingFunctionTypeFromInvokeFunction(annotationType);
+        LogTypeError({"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"}, init->Start());
     }
 }
 
@@ -860,11 +852,11 @@ checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::
     }
 
     //  In case of Union left-hand type we have to select the proper type from the Union
-    //  NOTE: it always exists at this point!
+    //  Because now we have logging of errors we have to continue analyze incorrect program, for
+    //  this case we change typeError to source type.
     if (targetType->IsETSUnionType()) {
-        sourceType = targetType->AsETSUnionType()->GetAssignableType(this, sourceType);
-        ASSERT(sourceType != nullptr);
-        return sourceType;
+        auto component = targetType->AsETSUnionType()->GetAssignableType(this, sourceType);
+        return component->IsTypeError() ? MaybePromotedBuiltinType(sourceType) : component;
     }
 
     //  If source is reference type, set it as the current and use it for identifier smart cast
@@ -1442,6 +1434,11 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
         }
         case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION: {
             tsType = GetTypeFromTypeAliasReference(refVar);
+            break;
+        }
+        case ir::AstNodeType::ANNOTATION_DECLARATION: {
+            LogTypeError("Annotations are only implemented at the parse stage.", name->Start());
+            tsType = GlobalTypeError();
             break;
         }
         default: {
@@ -2260,6 +2257,10 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         if (maybeSubstitutedFunctionSig != nullptr) {
             returnTypeAnnotation->SetTsType(maybeSubstitutedFunctionSig->ReturnType());
         }
+
+        // Return type can be ETSFunctionType
+        // Run varbinder to set scopes for cloned node
+        compiler::InitScopesPhaseETS::RunExternalNode(returnTypeAnnotation, VarBinder());
         lambda->SetReturnTypeAnnotation(returnTypeAnnotation);
     }
 }
