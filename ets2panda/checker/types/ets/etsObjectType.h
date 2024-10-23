@@ -389,7 +389,7 @@ public:
     ETSObjectType *SubstituteArguments(TypeRelation *relation, ArenaVector<Type *> const &arguments);
     void Cast(TypeRelation *relation, Type *target) override;
     bool CastNumericObject(TypeRelation *relation, Type *target);
-    bool DefaultObjectTypeChecks(const ETSChecker *etsChecker, TypeRelation *relation, Type *source);
+    bool DefaultObjectTypeChecks(ETSChecker *checker, TypeRelation *relation, Type *source);
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
     Type *AsSuper(Checker *checker, varbinder::Variable *sourceVar) override;
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override;
@@ -458,7 +458,7 @@ private:
     bool CastWideningNarrowing(TypeRelation *relation, Type *target, TypeFlag unboxFlags, TypeFlag wideningFlags,
                                TypeFlag narrowingFlags);
     void IdenticalUptoTypeArguments(TypeRelation *relation, Type *other);
-    void IsGenericSupertypeOf(TypeRelation *relation, Type *source);
+    void IsGenericSupertypeOf(ETSChecker *checker, Type *source);
     void UpdateTypeProperty(checker::ETSChecker *checker, varbinder::LocalVariable *const prop, PropertyType fieldType,
                             PropertyProcesser const &func);
 

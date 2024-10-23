@@ -446,6 +446,10 @@ public:
     DECLARE_FLAG_OPERATIONS(AstNodeFlags, astNodeFlags_);
 #undef DECLARE_FLAG_OPERATIONS
 
+    [[nodiscard]] bool HasBoxingFlag() const noexcept;
+    [[nodiscard]] bool HasUnboxingFlag() const noexcept;
+    [[nodiscard]] bool HasBoxingUnboxingFlags(bool both = false) const noexcept;
+
     ir::ClassElement *AsClassElement();
     const ir::ClassElement *AsClassElement() const;
 

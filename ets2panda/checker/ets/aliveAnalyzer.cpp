@@ -277,8 +277,9 @@ void AliveAnalyzer::AnalyzeDoLoop(const ir::DoWhileStatement *doWhile)
     AnalyzeStat(doWhile->Body());
     status_ = Or(status_, ResolveContinues(doWhile));
     AnalyzeNode(doWhile->Test());
-    ASSERT(doWhile->Test()->TsType() && doWhile->Test()->TsType()->IsConditionalExprType());
-    const auto exprRes = doWhile->Test()->TsType()->ResolveConditionExpr();
+    auto const *const testType = doWhile->Test()->DeclaredType();
+    ASSERT(testType && testType->IsConditionalExprType());
+    const auto exprRes = testType->ResolveConditionExpr();
     status_ = And(status_, static_cast<LivenessStatus>(!std::get<0>(exprRes) || !std::get<1>(exprRes)));
     status_ = Or(status_, ResolveBreaks(doWhile));
 }
@@ -287,8 +288,9 @@ void AliveAnalyzer::AnalyzeWhileLoop(const ir::WhileStatement *whileStmt)
 {
     SetOldPendingExits(PendingExits());
     AnalyzeNode(whileStmt->Test());
-    ASSERT(whileStmt->Test()->TsType() && whileStmt->Test()->TsType()->IsConditionalExprType());
-    const auto exprRes = whileStmt->Test()->TsType()->ResolveConditionExpr();
+    auto const *const testType = whileStmt->Test()->DeclaredType();
+    ASSERT(testType && testType->IsConditionalExprType());
+    const auto exprRes = testType->ResolveConditionExpr();
     status_ = And(status_, static_cast<LivenessStatus>(!std::get<0>(exprRes) || std::get<1>(exprRes)));
     AnalyzeStat(whileStmt->Body());
     status_ = Or(status_, ResolveContinues(whileStmt));
@@ -305,9 +307,9 @@ void AliveAnalyzer::AnalyzeForLoop(const ir::ForUpdateStatement *forStmt)
 
     if (forStmt->Test() != nullptr) {
         AnalyzeNode(forStmt->Test());
-        ASSERT(forStmt->Test()->TsType() && forStmt->Test()->TsType()->IsConditionalExprType());
-        condType = forStmt->Test()->TsType();
-        std::tie(resolveType, res) = forStmt->Test()->TsType()->ResolveConditionExpr();
+        condType = forStmt->Test()->DeclaredType();
+        ASSERT(condType && condType->IsConditionalExprType());
+        std::tie(resolveType, res) = condType->ResolveConditionExpr();
         status_ = From(!resolveType || res);
     } else {
         status_ = LivenessStatus::ALIVE;

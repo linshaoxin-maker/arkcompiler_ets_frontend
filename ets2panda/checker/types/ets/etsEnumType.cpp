@@ -195,7 +195,7 @@ ETSEnumType *ETSEnumType::LookupConstant(ETSChecker *const checker, const ir::Ex
     }
     // clang-format off
     auto *const enumInterface = [enumType =
-                                     member->Key()->AsIdentifier()->Variable()->TsType()]() -> checker::ETSEnumType* {
+                                     member->Key()->DeclaredType()]() -> checker::ETSEnumType* {
         if (enumType->IsETSIntEnumType()) {
             return enumType->AsETSIntEnumType();
         }

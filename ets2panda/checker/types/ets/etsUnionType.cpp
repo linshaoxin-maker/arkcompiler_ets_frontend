@@ -60,6 +60,16 @@ bool ETSUnionType::TypeRelatedToSomeType(TypeRelation *relation, Type *source, E
                        [relation, source](auto *t) { return relation->IsIdenticalTo(source, t); });
 }
 
+bool ETSUnionType::IsConstantType() const noexcept
+{
+    for (auto const &ct : ConstituentTypes()) {
+        if (ct->IsConstantType()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // This function computes effective runtime representation of union type
 Type *ETSUnionType::ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un)
 {
@@ -151,7 +161,13 @@ void ETSUnionType::RelationTarget(TypeRelation *relation, Type *source, RelFN co
             if (related) {
                 AmbiguousUnionOperation(relation);
             }
-            relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(ct));
+            if (source->IsCharType() && ct->IsETSStringType()) {
+                // special conversion: char -> Char -> String
+                relation->GetNode()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_CHAR);
+                relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::CONVERT_TO_STRING);
+            } else {
+                relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(ct));
+            }
             related = true;
         }
     }
@@ -265,27 +281,28 @@ static std::optional<Type *> TryMergeTypes(TypeRelation *relation, Type *const t
 void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
+    auto never = checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType();
+    // NOTE: we have to preserve current relation state!
+    SavedTypeRelationFlagsContext relationCtx(relation, relation->GetTypeRelationFlags(), true);
 
     // Linearize
     size_t const initialSz = types.size();
-    for (size_t i = 0; i < initialSz; ++i) {
-        auto *ct = types[i];
-        if (ct->IsETSFunctionType()) {
-            ASSERT(ct->AsETSFunctionType()->CallSignatures().size() == 1);
-            ct = checker->FunctionTypeToFunctionalInterfaceType(ct->AsETSFunctionType()->CallSignatures()[0]);
-        }
-        if (ct->IsETSUnionType()) {
+    for (size_t i = 0U; i < initialSz; ++i) {
+        if (auto *ct = types[i]; ct->IsETSFunctionType()) {
+            ASSERT(ct->AsETSFunctionType()->CallSignatures().size() == 1U);
+            types[i] = checker->FunctionTypeToFunctionalInterfaceType(ct->AsETSFunctionType()->CallSignatures()[0]);
+        } else if (ct->IsETSUnionType()) {
             auto const &otherTypes = ct->AsETSUnionType()->ConstituentTypes();
             types.insert(types.end(), otherTypes.begin(), otherTypes.end());
             types[i] = nullptr;
-        } else if (ct->IsNeverType()) {
+        } else if (ct->IsNeverType() || checker->Relation()->IsIdenticalTo(ct, never)) {
             types[i] = nullptr;
         }
     }
-    size_t insPos = 0;
-    for (size_t i = 0; i < types.size(); ++i) {
-        auto *const ct = types[i];
-        if (ct != nullptr) {
+
+    size_t insPos = 0U;
+    for (size_t i = 0U; i < types.size(); ++i) {
+        if (auto *const ct = types[i]; ct != nullptr) {
             types[insPos++] = ct;
         }
     }
@@ -322,7 +339,7 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
 
 void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &types)
 {
-    if (types.size() == 1) {
+    if (types.size() == 1U) {
         return;
     }
     auto const isNumeric = [](auto *ct) { return ct->HasTypeFlag(ETS_NORMALIZABLE_NUMERIC); };

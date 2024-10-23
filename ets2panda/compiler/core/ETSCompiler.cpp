@@ -23,7 +23,7 @@
 #include "compiler/function/functionBuilder.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/ets/etsDynamicFunctionType.h"
-#include "parser/ETSparser.h"
+#include "checker/types/globalTypesHolder.h"
 
 namespace ark::es2panda::compiler {
 
@@ -45,24 +45,28 @@ void ETSCompiler::Compile(const ir::CatchClause *st) const
 void ETSCompiler::Compile(const ir::ClassProperty *st) const
 {
     ETSGen *etsg = GetETSGen();
-    if (st->Value() == nullptr && st->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+    auto const *const propType = st->TsType();
+    auto const *const value = st->Value();
+
+    if (value == nullptr && propType->IsETSPrimitiveType()) {
         return;
     }
 
-    auto ttctx = compiler::TargetTypeContext(etsg, st->TsType());
+    auto ttctx = compiler::TargetTypeContext(etsg, propType);
     compiler::RegScope rs(etsg);
 
-    if (st->Value() == nullptr) {
-        etsg->LoadDefaultValue(st, st->TsType());
-    } else if (!etsg->TryLoadConstantExpression(st->Value())) {
-        st->Value()->Compile(etsg);
-        etsg->ApplyConversion(st->Value(), st->TsType());
+    if (value == nullptr) {
+        etsg->LoadDefaultValue(st, propType);
+    } else {
+        value->Compile(etsg);
+        etsg->ApplyConversion(value, propType);
     }
+    etsg->SetAccumulatorType(propType);
 
     if (st->IsStatic()) {
-        etsg->StoreStaticOwnProperty(st, st->TsType(), st->Key()->AsIdentifier()->Name());
+        etsg->StoreStaticOwnProperty(st, propType, st->Key()->AsIdentifier()->Name());
     } else {
-        etsg->StoreProperty(st, st->TsType(), etsg->GetThisReg(), st->Key()->AsIdentifier()->Name());
+        etsg->StoreProperty(st, propType, etsg->GetThisReg(), st->Key()->AsIdentifier()->Name());
     }
 }
 
@@ -386,16 +390,15 @@ void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
     etsg->StoreAccumulator(expr, dim);
     etsg->NewArray(expr, arr, dim, expr->TsType());
 
+    auto const *const elementType = expr->TsType()->AsETSArrayType()->ElementType();
     const auto indexReg = etsg->AllocReg();
     for (std::uint32_t i = 0; i < expr->Elements().size(); ++i) {
         const auto *const expression = expr->Elements()[i];
         etsg->LoadAccumulatorInt(expr, i);
         etsg->StoreAccumulator(expr, indexReg);
 
-        const compiler::TargetTypeContext ttctx2(etsg, expr->TsType()->AsETSArrayType()->ElementType());
-        if (!etsg->TryLoadConstantExpression(expression)) {
-            expression->Compile(etsg);
-        }
+        const compiler::TargetTypeContext ttctx2(etsg, elementType);
+        expression->Compile(etsg);
 
         etsg->ApplyConversion(expression, nullptr);
         etsg->ApplyConversion(expression);
@@ -403,7 +406,7 @@ void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
         if (expression->TsType()->IsETSArrayType()) {
             etsg->StoreArrayElement(expr, arr, indexReg, expression->TsType());
         } else {
-            etsg->StoreArrayElement(expr, arr, indexReg, expr->TsType()->AsETSArrayType()->ElementType());
+            etsg->StoreArrayElement(expr, arr, indexReg, elementType);
         }
     }
 
@@ -580,15 +583,15 @@ std::map<lexer::TokenType, std::string_view> &GetBigintSignatures()
 
 static bool CompileBigInt(compiler::ETSGen *etsg, const ir::BinaryExpression *expr)
 {
-    if ((expr->Left()->TsType() == nullptr) || (expr->Right()->TsType() == nullptr)) {
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
+    auto const *const leftType = checker->GetNonConstantType(expr->Left()->TsType());
+    auto const *const rightType = checker->GetNonConstantType(expr->Right()->TsType());
+
+    if (leftType == nullptr || rightType == nullptr) {
         return false;
     }
 
-    if (!expr->Left()->TsType()->IsETSBigIntType()) {
-        return false;
-    }
-
-    if (!expr->Right()->TsType()->IsETSBigIntType()) {
+    if (!leftType->IsETSBigIntType() || !rightType->IsETSBigIntType()) {
         return false;
     }
 
@@ -597,7 +600,7 @@ static bool CompileBigInt(compiler::ETSGen *etsg, const ir::BinaryExpression *ex
         return false;
     }
 
-    const checker::Type *operationType = expr->OperationType();
+    const checker::Type *operationType = checker->GetNonConstantType(expr->OperationType());
     auto ttctx = compiler::TargetTypeContext(etsg, operationType);
     compiler::RegScope rs(etsg);
     compiler::VReg lhs = etsg->AllocReg();
@@ -621,19 +624,16 @@ static bool CompileBigInt(compiler::ETSGen *etsg, const ir::BinaryExpression *ex
             break;
     }
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), operationType));
     return true;
 }
 
 void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
 
     if (CompileBigInt(etsg, expr)) {
-        return;
-    }
-
-    if (etsg->TryLoadConstantExpression(expr)) {
         return;
     }
 
@@ -646,18 +646,24 @@ void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
         return;
     }
 
-    auto ttctx = compiler::TargetTypeContext(etsg, expr->OperationType());
+    auto const *const operationType = expr->OperationType();
+    auto ttctx = compiler::TargetTypeContext(etsg, operationType);
     compiler::RegScope rs(etsg);
     compiler::VReg lhs = etsg->AllocReg();
 
-    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS && expr->OperationType()->IsETSStringType()) {
+    //  NOTE: we need to check possible unions of string literals!
+    auto const *const leftType = checker->GetNonConstantType(expr->Left()->TsType());
+    auto const *const rightType = checker->GetNonConstantType(expr->Right()->TsType());
+
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
+        (leftType->IsETSStringType() || rightType->IsETSStringType())) {
         etsg->BuildString(expr);
         return;
     }
 
     expr->CompileOperands(etsg, lhs);
-    if (expr->OperationType()->IsIntType()) {
-        etsg->ApplyCast(expr->Right(), expr->OperationType());
+    if (operationType->IsIntType()) {
+        etsg->ApplyCast(expr->Right(), operationType);
     }
 
     etsg->Binary(expr, expr->OperatorType(), lhs);
@@ -950,9 +956,10 @@ void ETSCompiler::Compile(const ir::ConditionalExpression *expr) const
 
 void ETSCompiler::Compile(const ir::Identifier *expr) const
 {
-    ETSGen *etsg = GetETSGen();
+    ETSGen *const etsg = GetETSGen();
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
 
-    auto const *const smartType = expr->TsType();
+    auto const *smartType = expr->TsType();
     auto ttctx = compiler::TargetTypeContext(etsg, smartType);
 
     ASSERT(expr->Variable() != nullptr);
@@ -960,10 +967,18 @@ void ETSCompiler::Compile(const ir::Identifier *expr) const
         etsg->LoadVar(expr, expr->Variable());
     }
 
+    //  In case when smart cast type of identifier differs from initial variable type perform cast if required
     if (smartType->IsETSReferenceType()) {
-        //  In case when smart cast type of identifier differs from initial variable type perform cast if required
-        if (!etsg->Checker()->AsETSChecker()->Relation()->IsSupertypeOf(smartType, etsg->GetAccumulatorType())) {
+        smartType = checker->GetNonConstantType(smartType);
+        auto const *const accType = etsg->GetAccumulatorType();
+        if (!checker->Relation()->IsSupertypeOf(smartType, accType)) {
             etsg->CastToReftype(expr, smartType, false);
+        }
+    } else if (smartType->IsETSPrimitiveType()) {
+        smartType = checker->GetNonConstantType(smartType);
+        auto const *const accType = etsg->GetAccumulatorType();
+        if (accType->IsETSPrimitiveType() && !checker->Relation()->IsIdenticalTo(smartType, accType)) {
+            etsg->ApplyConversionCast(expr, smartType);
         }
     }
 
@@ -1110,9 +1125,13 @@ bool ETSCompiler::HandleStaticProperties(const ir::MemberExpression *expr, ETSGe
         }
 
         util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), propName);
-        etsg->LoadStaticProperty(expr, expr->TsType(), fullName);
+        //  We have to preserve the declared property type (for instance, in the expressions like:
+        //  'public static readonly POSITIVE_INFINITY: float = 1.0 / 0.0;'
+        auto *const propertyType =
+            expr->Property()->DeclaredType() != nullptr ? expr->Property()->DeclaredType() : expr->TsType();
+        etsg->LoadStaticProperty(expr, propertyType, fullName);
 
-        ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+        ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), propertyType));
         return true;
     }
     return false;
@@ -1199,44 +1218,60 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::TypeofExpression *expr) con
 {
     ETSGen *etsg = GetETSGen();
     ir::Expression *arg = expr->Argument();
+    auto *exprType = expr->TsType();
+
     arg->Compile(etsg);
-    if (expr->TsType()->IsETSStringType() && expr->TsType()->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
-        etsg->LoadAccumulatorString(expr, expr->TsType()->AsETSStringType()->GetValue());
+    if (exprType->IsETSStringType() && exprType->IsConstantType()) {
+        etsg->LoadAccumulatorString(expr, exprType->AsETSStringType()->GetValue());
         return;
     }
     auto argReg = etsg->AllocReg();
     etsg->StoreAccumulator(expr, argReg);
     etsg->CallExact(expr, Signatures::BUILTIN_RUNTIME_TYPEOF, argReg);
-    etsg->SetAccumulatorType(expr->TsType());
+    etsg->SetAccumulatorType(exprType);
 }
 
 void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
-    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
 
-    if (!etsg->TryLoadConstantExpression(expr->Argument())) {
-        expr->Argument()->Compile(etsg);
+    auto const *const exprType = checker->GetNonConstantType(expr->TsType());
+    auto ttctx = compiler::TargetTypeContext(etsg, exprType);
+
+    auto const *const argument = expr->Argument();
+    argument->Compile(etsg);
+    etsg->ApplyConversion(argument, nullptr);
+
+    // NOTE: we have to preserve value in case of minimal possible type values:
+    //       (say "x: byte = -128" would have value "-127" if we performed type cast before negating!)
+    if (expr->OperatorType() != lexer::TokenType::PUNCTUATOR_MINUS) {
+        etsg->ApplyCast(argument, exprType);
     }
 
-    etsg->ApplyConversion(expr->Argument(), nullptr);
-    etsg->ApplyCast(expr->Argument(), expr->TsType());
-
     etsg->Unary(expr, expr->OperatorType());
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_MINUS) {
+        etsg->ApplyCast(argument, exprType);
+    }
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), exprType));
 }
 
-void ETSCompiler::Compile([[maybe_unused]] const ir::BigIntLiteral *expr) const
+void ETSCompiler::Compile(const ir::BigIntLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
     compiler::TargetTypeContext ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
     compiler::RegScope rs {etsg};
     etsg->LoadAccumulatorBigInt(expr, expr->Str());
+
     const compiler::VReg value = etsg->AllocReg();
     etsg->StoreAccumulator(expr, value);
+
     etsg->CreateBigIntObject(expr, value);
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+
+    //  NOTE: BigInt literal type has constness that should be removed for type checking
+    ASSERT(
+        etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), etsg->Checker()->GlobalETSBigIntType()));
 }
 
 void ETSCompiler::Compile(const ir::BooleanLiteral *expr) const
@@ -1249,8 +1284,20 @@ void ETSCompiler::Compile(const ir::BooleanLiteral *expr) const
 void ETSCompiler::Compile(const ir::CharLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
+
+    [[maybe_unused]] checker::Type const *exprType;
+
+    if (UNLIKELY(expr->HasAstNodeFlags(ir::AstNodeFlags::CONVERT_TO_STRING))) {
+        exprType = checker->GlobalBuiltinETSStringType();
+    } else if (UNLIKELY(expr->HasBoxingFlag())) {
+        exprType = checker->GetGlobalTypesHolder()->GlobalCharBuiltinType();
+    } else {
+        exprType = checker->GlobalCharType();
+    }
+
     etsg->LoadAccumulatorChar(expr, expr->Char());
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), exprType));
 }
 
 void ETSCompiler::Compile(const ir::NullLiteral *expr) const
@@ -1263,7 +1310,9 @@ void ETSCompiler::Compile(const ir::NullLiteral *expr) const
 void ETSCompiler::Compile(const ir::NumberLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
-    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+    auto *const checker = const_cast<checker::ETSChecker *>(etsg->Checker());
+    auto const *const exprType = checker->GetNonConstantType(expr->TsType());
+    auto ttctx = compiler::TargetTypeContext(etsg, exprType);
 
     if (expr->Number().IsInt()) {
         if (util::Helpers::IsTargetFitInSourceRange<checker::ByteType::UType, checker::IntType::UType>(
@@ -1283,14 +1332,15 @@ void ETSCompiler::Compile(const ir::NumberLiteral *expr) const
         etsg->LoadAccumulatorDouble(expr, expr->Number().GetDouble());
     }
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), exprType));
 }
 
 void ETSCompiler::Compile(const ir::StringLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
     etsg->LoadAccumulatorString(expr, expr->Str());
-    etsg->SetAccumulatorType(expr->TsType());
+    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(),
+                                                      etsg->Checker()->GlobalETSStringLiteralType()));
 }
 
 static void ThrowError(compiler::ETSGen *const etsg, const ir::AssertStatement *st)
@@ -1548,7 +1598,9 @@ void ETSCompiler::Compile(const ir::LabelledStatement *st) const
 void ETSCompiler::Compile(const ir::ReturnStatement *st) const
 {
     ETSGen *etsg = GetETSGen();
-    if (st->Argument() == nullptr) {
+    auto const *const argument = st->Argument();
+
+    if (argument == nullptr) {
         if (etsg->ExtendWithFinalizer(st->Parent(), st)) {
             return;
         }
@@ -1562,21 +1614,17 @@ void ETSCompiler::Compile(const ir::ReturnStatement *st) const
         return;
     }
 
-    if (st->Argument()->IsCallExpression() &&
-        st->Argument()->AsCallExpression()->Signature()->ReturnType()->IsETSVoidType()) {
-        st->Argument()->Compile(etsg);
+    if (argument->IsCallExpression() && argument->AsCallExpression()->Signature()->ReturnType()->IsETSVoidType()) {
+        argument->Compile(etsg);
         etsg->EmitReturnVoid(st);
         return;
     }
 
     auto ttctx = compiler::TargetTypeContext(etsg, etsg->ReturnType());
+    argument->Compile(etsg);
 
-    if (!etsg->TryLoadConstantExpression(st->Argument())) {
-        st->Argument()->Compile(etsg);
-    }
-
-    etsg->ApplyConversion(st->Argument(), nullptr);
-    etsg->ApplyConversion(st->Argument(), st->ReturnType());
+    etsg->ApplyConversion(argument, nullptr);
+    etsg->ApplyConversion(argument, etsg->ReturnType());
 
     if (etsg->ExtendWithFinalizer(st->Parent(), st)) {
         return;
@@ -1679,18 +1727,18 @@ void ETSCompiler::Compile(const ir::VariableDeclarator *st) const
 {
     ETSGen *etsg = GetETSGen();
     auto lref = compiler::ETSLReference::Create(etsg, st->Id(), true);
-    auto ttctx = compiler::TargetTypeContext(etsg, st->TsType());
 
-    if (st->Init() != nullptr) {
-        if (!etsg->TryLoadConstantExpression(st->Init())) {
-            st->Init()->Compile(etsg);
-            etsg->ApplyConversion(st->Init(), nullptr);
-        }
+    auto const *const variableType = st->TsType();
+    auto ttctx = compiler::TargetTypeContext(etsg, variableType);
+
+    if (auto const *const init = st->Init(); init != nullptr) {
+        init->Compile(etsg);
+        etsg->ApplyConversion(init, variableType);
     } else {
-        etsg->LoadDefaultValue(st, st->Id()->AsIdentifier()->Variable()->TsType());
+        etsg->LoadDefaultValue(st, variableType);
     }
 
-    etsg->ApplyConversion(st, st->TsType());
+    etsg->SetAccumulatorType(variableType);
     lref.SetValue();
 }
 
@@ -1866,28 +1914,31 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
 void ETSCompiler::Compile(const ir::TSAsExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+    auto *const checker = etsg->Checker();
+
+    auto const *const argument = expr->Expr();
+    auto const *const targetType = checker->GetApparentType(expr->TsType());
+
     auto ttctx = compiler::TargetTypeContext(etsg, nullptr);
-    if (!etsg->TryLoadConstantExpression(expr->Expr())) {
-        expr->Expr()->Compile(etsg);
+    argument->Compile(etsg);
+
+    if (checker->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), targetType)) {
+        return;
     }
 
-    auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
-
-    if ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
-        etsg->ApplyUnboxingConversion(expr->Expr());
+    if (argument->HasUnboxingFlag()) {
+        etsg->ApplyUnboxingConversion(argument);
     }
 
-    if (targetType->IsETSObjectType() &&
-        ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U ||
-         (expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) &&
-        checker::ETSChecker::TypeKind(etsg->GetAccumulatorType()) != checker::TypeFlag::ETS_OBJECT) {
+    if (targetType->IsETSObjectType() && argument->HasBoxingUnboxingFlags() &&
+        !etsg->GetAccumulatorType()->IsETSObjectType()) {
         if (targetType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::UNBOXABLE_TYPE)) {
             CompileCastUnboxable(expr);
         }
     }
 
-    if ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
-        etsg->ApplyBoxingConversion(expr->Expr());
+    if (argument->HasBoxingFlag()) {
+        etsg->ApplyBoxingConversion(argument);
     }
 
     CompileCast(expr);

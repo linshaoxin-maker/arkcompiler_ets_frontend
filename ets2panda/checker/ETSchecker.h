@@ -327,14 +327,16 @@ public:
                                                         Type *unboxedL, Type *unboxedR);
     std::tuple<Type *, Type *> CheckBinaryOperatorEqualDynamic(ir::Expression *left, ir::Expression *right,
                                                                lexer::SourcePosition pos);
+    std::tuple<Type *, Type *> CheckBinaryOperatorLessGreaterHelper(checker::Type *leftType, checker::Type *rightType,
+                                                                    lexer::SourcePosition const &pos);
     std::tuple<Type *, Type *> CheckBinaryOperatorLessGreater(ir::Expression *left, ir::Expression *right,
                                                               lexer::TokenType operationType, lexer::SourcePosition pos,
                                                               bool isEqualOp, checker::Type *leftType,
                                                               checker::Type *rightType, Type *unboxedL, Type *unboxedR);
     std::tuple<Type *, Type *> CheckBinaryOperatorInstanceOf(lexer::SourcePosition pos, checker::Type *leftType,
                                                              checker::Type *rightType);
-    checker::Type *CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir::Expression *right,
-                                                        lexer::SourcePosition pos);
+    [[nodiscard]] checker::Type *CheckBinaryOperatorNullishCoalescing(ir::Expression *left,
+                                                                      ir::Expression *right) noexcept;
     bool AdjustNumberLiteralType(ir::NumberLiteral *literal, Type *literalType, Type *otherType);
 
     Type *HandleArithmeticOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
@@ -505,9 +507,10 @@ public:
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
-    Type *GetNonConstantType(Type *type);
+    [[nodiscard]] Type const *GetNonConstantType(Type const *type) noexcept;
+    [[nodiscard]] Type *GetNonConstantType(Type *type) noexcept;
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
-    bool IsConstantExpression(ir::Expression *expr, Type *type);
+    [[nodiscard]] bool IsConstantExpression(ir::Expression const *expr, Type const *type) const noexcept;
     void ValidateUnaryOperatorOperand(varbinder::Variable *variable);
     void InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::ArrowFunctionExpression *init);
     bool TestUnionType(Type *type, TypeFlag test);
@@ -821,6 +824,13 @@ private:
     }
 
     ir::ClassDeclaration *GetDynamicClass(Language lang, bool isConstruct);
+
+    // Smart cast support --> begin
+    [[nodiscard]] checker::Type *ResolvePrimitiveSmartType(checker::Type *sourceType,
+                                                           checker::Type *targetType) noexcept;
+    [[nodiscard]] checker::Type *ResolveStringSmartType(checker::Type *sourceType, checker::Type *targetType) noexcept;
+    [[nodiscard]] checker::Type *ResolveBigIntSmartType(checker::Type *sourceType, checker::Type *targetType) noexcept;
+    // Smart cast support --> end
 
     using Type2TypeMap = std::unordered_map<varbinder::Variable *, varbinder::Variable *>;
     using TypeSet = std::unordered_set<varbinder::Variable *>;

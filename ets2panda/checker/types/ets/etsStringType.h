@@ -69,7 +69,7 @@ public:
         ss << compiler::Signatures::BUILTIN_STRING;
     }
 
-    util::StringView GetValue() const
+    [[nodiscard]] util::StringView GetValue() const noexcept
     {
         return value_;
     }
@@ -82,7 +82,9 @@ public:
     bool IsConvertibleTo(Type const *to) const;
 
 private:
-    util::StringView value_ {};
+    [[nodiscard]] bool IsAssignableTo(Type const *target) const noexcept;
+
+    util::StringView const value_ {};
 };
 }  // namespace ark::es2panda::checker
 

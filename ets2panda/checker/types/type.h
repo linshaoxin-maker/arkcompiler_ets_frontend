@@ -161,32 +161,37 @@ public:
         return reinterpret_cast<const ETSDynamicFunctionType *>(this);
     }
 
-    bool IsConditionalExprType() const
+    [[nodiscard]] bool IsConditionalExprType() const noexcept
     {
         return HasTypeFlag(TypeFlag::CONDITION_EXPRESSION_TYPE);
     }
 
-    bool IsConstantType() const
+    [[nodiscard]] virtual bool IsConstantType() const noexcept
     {
         return HasTypeFlag(checker::TypeFlag::CONSTANT);
     }
 
-    TypeFlag TypeFlags() const
+    [[nodiscard]] bool IsETSPrimitiveType() const noexcept
+    {
+        return HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE);
+    }
+
+    [[nodiscard]] TypeFlag TypeFlags() const noexcept
     {
         return typeFlags_;
     }
 
-    bool HasTypeFlag(TypeFlag typeFlag) const
+    [[nodiscard]] bool HasTypeFlag(TypeFlag typeFlag) const noexcept
     {
         return (typeFlags_ & typeFlag) != 0;
     }
 
-    void AddTypeFlag(TypeFlag typeFlag)
+    void AddTypeFlag(TypeFlag typeFlag) noexcept
     {
         typeFlags_ |= typeFlag;
     }
 
-    void RemoveTypeFlag(TypeFlag typeFlag)
+    void RemoveTypeFlag(TypeFlag typeFlag) noexcept
     {
         typeFlags_ &= ~typeFlag;
     }

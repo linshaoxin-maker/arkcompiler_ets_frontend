@@ -76,6 +76,8 @@ public:
         return std::all_of(constituentTypes_.cbegin(), constituentTypes_.cend(), p);
     }
 
+    [[nodiscard]] bool IsConstantType() const noexcept override;
+
     [[nodiscard]] checker::Type *GetAssignableType(ETSChecker *checker, checker::Type *sourceType) const noexcept;
     [[nodiscard]] std::pair<checker::Type *, checker::Type *> GetComplimentaryType(ETSChecker *checker,
                                                                                    checker::Type *sourceType);

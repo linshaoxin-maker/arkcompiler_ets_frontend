@@ -648,6 +648,25 @@ static bool NonNumericTypesAreAppropriateForComparison(Type *leftType, Type *rig
             leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType()));
 }
 
+//  Auxiliary method to reduce cyclomatic complexity of 'CheckBinaryOperatorLessGreater' function
+std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreaterHelper(checker::Type *leftType,
+                                                                            checker::Type *rightType,
+                                                                            lexer::SourcePosition const &pos)
+{
+    if (NonNumericTypesAreAppropriateForComparison(leftType, rightType)) {
+        return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+    }
+    if (((leftType->IsETSIntEnumType() && rightType->IsETSIntEnumType()) ||
+         (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType())) &&
+        leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
+        return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+    }
+
+    LogTypeError("Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.",
+                 pos);
+    return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(ir::Expression *left, ir::Expression *right,
                                                                       lexer::TokenType operationType,
                                                                       lexer::SourcePosition pos, bool isEqualOp,
@@ -685,39 +704,27 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(ir::Expres
     }
 
     if (promotedType == nullptr && !bothConst) {
-        if (NonNumericTypesAreAppropriateForComparison(leftType, rightType)) {
-            return {GlobalETSBooleanType(), GlobalETSBooleanType()};
-        }
-        if (((leftType->IsETSIntEnumType() && rightType->IsETSIntEnumType()) ||
-             (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType())) &&
-            leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
-            return {GlobalETSBooleanType(), GlobalETSBooleanType()};
-        }
-
-        LogTypeError("Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.",
-                     pos);
-        return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+        return CheckBinaryOperatorLessGreaterHelper(leftType, rightType, pos);
     }
 
     if (bothConst) {
         tsType = HandleRelationOperationOnTypes(leftType, rightType, operationType);
-        return {tsType, tsType};
+    } else {
+        tsType = GlobalETSBooleanType();
     }
 
-    tsType = GlobalETSBooleanType();
-    auto *opType = promotedType;
-    return {tsType, opType};
+    return {tsType, promotedType};
 }
 
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorInstanceOf(lexer::SourcePosition pos, checker::Type *leftType,
                                                                      checker::Type *rightType)
 {
+    checker::Type *const tsType = GlobalETSBooleanType();
     RepairTypeErrorsInOperands(&leftType, &rightType);
     if (leftType->IsTypeError()) {  // both are errors
-        return {GlobalETSBooleanType(), GlobalTypeError()};
+        return {tsType, GlobalTypeError()};
     }
 
-    checker::Type *tsType {};
     if (!IsReferenceType(leftType) || (!IsReferenceType(rightType) && !rightType->IsETSEnumType())) {
         LogTypeError("Bad operand type, the types of the operands must be same type.", pos);
         return {GlobalETSBooleanType(), leftType};
@@ -725,10 +732,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorInstanceOf(lexer::Sour
 
     if (rightType->IsETSDynamicType() && !rightType->AsETSDynamicType()->HasDecl()) {
         LogTypeError("Right-hand side of instanceof expression must represent a type.", pos);
-        return {GlobalETSBooleanType(), leftType};
+        return {tsType, leftType};
     }
 
-    tsType = GlobalETSBooleanType();
     checker::Type *opType = rightType->IsETSDynamicType() ? GlobalBuiltinJSValueType() : GlobalETSObjectType();
     ComputeApparentType(rightType);
     RemoveStatus(checker::CheckerStatus::IN_INSTANCEOF_CONTEXT);
@@ -751,14 +757,9 @@ bool ETSChecker::AdjustNumberLiteralType(ir::NumberLiteral *const literal, Type 
     return false;
 }
 
-Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir::Expression *right,
-                                                       lexer::SourcePosition pos)
+Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir::Expression *right) noexcept
 {
     auto *leftType = left->TsType();
-    if (!IsReferenceType(leftType) && !leftType->IsETSEnumType()) {
-        LogTypeError("Left-hand side of nullish-coalescing expression must be a reference or enum type.", pos);
-        return leftType;
-    }
 
     auto *rightType = right->TsType();
 
@@ -766,7 +767,7 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir:
         left->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_ENUM);
         leftType = leftType->AsETSEnumType()->GetDecl()->BoxedClass()->TsType();
     } else {
-        leftType = GetNonNullishType(leftType);
+        leftType = GetNonNullishType(MaybeBoxExpression(left));
     }
 
     if (rightType->IsETSEnumType()) {
@@ -850,13 +851,13 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
     lexer::SourcePosition pos = binaryParams.pos;
     checker::Type *const leftType = typeParams.leftType;
     checker::Type *const rightType = typeParams.rightType;
-    checker::Type *tsType {};
+
     switch (binaryParams.operationType) {
         case lexer::TokenType::PUNCTUATOR_LOGICAL_AND:
         case lexer::TokenType::PUNCTUATOR_LOGICAL_OR: {
-            tsType = checker->CheckBinaryOperatorLogical(left, right, binaryParams.expr, pos, leftType, rightType,
-                                                         typeParams.unboxedL, typeParams.unboxedR);
-            break;
+            checker::Type *tsType = checker->CheckBinaryOperatorLogical(
+                left, right, binaryParams.expr, pos, leftType, rightType, typeParams.unboxedL, typeParams.unboxedR);
+            return {tsType, tsType};
         }
         case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
@@ -884,16 +885,13 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
             return checker->CheckBinaryOperatorInstanceOf(pos, leftType, rightType);
         }
         case lexer::TokenType::PUNCTUATOR_NULLISH_COALESCING: {
-            tsType = checker->CheckBinaryOperatorNullishCoalescing(left, right, pos);
-            break;
+            checker::Type *tsType = checker->CheckBinaryOperatorNullishCoalescing(left, right);
+            return {tsType, tsType};
         }
         default: {
             UNREACHABLE();
-            break;
         }
     }
-
-    return {tsType, tsType};
 }
 
 namespace {
@@ -1023,14 +1021,6 @@ std::tuple<Type *, Type *> ETSChecker::CheckArithmeticOperations(
     auto [left, right, operationType, pos] = op;
     auto [leftType, rightType, unboxedL, unboxedR] = types;
 
-    if (leftType->IsETSUnionType()) {
-        leftType = GetNonConstantType(leftType);
-    }
-
-    if (rightType->IsETSUnionType()) {
-        rightType = GetNonConstantType(rightType);
-    }
-
     auto checkMap = GetCheckMap();
     if (checkMap.find(operationType) != checkMap.end()) {
         auto check = checkMap[operationType];
@@ -1073,6 +1063,26 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
 
     CheckNeedToGenerateGetValueForBinaryExpression(expr);
 
+    if (CheckBinaryOperatorForBigInt(leftType, rightType, operationType)) {
+        switch (operationType) {
+            case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+            case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
+            case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+                return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+            default:
+                return {leftType, GlobalETSBigIntType()};
+        }
+    }
+
+    if (leftType->IsETSUnionType()) {
+        leftType = GetNonConstantType(leftType);
+    }
+
+    if (rightType->IsETSUnionType()) {
+        rightType = GetNonConstantType(rightType);
+    }
+
     const bool isLogicalExtendedOperator = (operationType == lexer::TokenType::PUNCTUATOR_LOGICAL_AND) ||
                                            (operationType == lexer::TokenType::PUNCTUATOR_LOGICAL_OR);
     Type *unboxedL =
@@ -1083,18 +1093,6 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     bool isEqualOp = (operationType > lexer::TokenType::PUNCTUATOR_SUBSTITUTION &&
                       operationType < lexer::TokenType::PUNCTUATOR_ARROW) &&
                      !forcePromotion;
-
-    if (CheckBinaryOperatorForBigInt(leftType, rightType, operationType)) {
-        switch (operationType) {
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
-                return {GlobalETSBooleanType(), GlobalETSBooleanType()};
-            default:
-                return {leftType, rightType};
-        }
-    }
 
     return CheckArithmeticOperations(expr, std::make_tuple(left, right, operationType, pos), isEqualOp,
                                      std::make_tuple(leftType, rightType, unboxedL, unboxedR));

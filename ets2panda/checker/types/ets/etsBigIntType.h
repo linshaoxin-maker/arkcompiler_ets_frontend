@@ -46,10 +46,15 @@ public:
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
+    void IsSupertypeOf(TypeRelation *relation, Type *source) override;
 
     void ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const override
     {
-        ss << lexer::TokenToString(lexer::TokenType::KEYW_BIGINT);
+        if (IsConstantType()) {
+            ss << value_ << 'n';
+        } else {
+            ss << lexer::TokenToString(lexer::TokenType::KEYW_BIGINT);
+        }
     }
 
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override
@@ -57,12 +62,14 @@ public:
         ss << compiler::Signatures::BUILTIN_BIGINT;
     }
 
-    util::StringView GetValue() const
+    [[nodiscard]] util::StringView GetValue() const noexcept
     {
         return value_;
     }
 
 private:
+    [[nodiscard]] bool IsAssignableTo(Type const *target) const noexcept;
+
     util::StringView value_ {};
 };
 }  // namespace ark::es2panda::checker

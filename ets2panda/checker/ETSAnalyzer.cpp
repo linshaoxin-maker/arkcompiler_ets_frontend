@@ -568,11 +568,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSStringLiteralType *nod
 
 // compile methods for EXPRESSIONS in alphabetical order
 
-checker::Type *ETSAnalyzer::GetPreferredType(ir::ArrayExpression *expr) const
-{
-    return expr->preferredType_;
-}
-
 static bool CheckArrayElement(ETSChecker *checker, checker::Type *elementType,
                               std::vector<checker::Type *> targetElementType, ir::Expression *currentElement,
                               bool &isSecondaryChosen)
@@ -679,29 +674,31 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
         return expr->TsTypeOrError();
     }
 
-    if (expr->preferredType_ != nullptr && !expr->preferredType_->IsETSArrayType() &&
-        !checker->Relation()->IsSupertypeOf(expr->preferredType_, checker->GlobalETSObjectType())) {
-        checker->LogTypeError({"Expected type for array literal should be an array type, got ", expr->preferredType_},
+    auto *preferredType = expr->GetPreferredType();
+
+    if (preferredType != nullptr && !preferredType->IsETSArrayType() &&
+        !checker->Relation()->IsSupertypeOf(preferredType, checker->GlobalETSObjectType())) {
+        checker->LogTypeError({"Expected type for array literal should be an array type, got ", preferredType},
                               expr->Start());
         expr->SetTsType(checker->GlobalTypeError());
         return expr->TsTypeOrError();
     }
 
-    const bool isArray = (expr->preferredType_ != nullptr) && expr->preferredType_->IsETSArrayType() &&
-                         !expr->preferredType_->IsETSTupleType();
+    const bool isArray =
+        (preferredType != nullptr) && preferredType->IsETSArrayType() && !preferredType->IsETSTupleType();
 
     if (!expr->Elements().empty()) {
-        if (expr->preferredType_ == nullptr || expr->preferredType_ == checker->GlobalETSObjectType()) {
-            expr->preferredType_ = checker->CreateETSArrayType(expr->Elements()[0]->Check(checker));
+        if (preferredType == nullptr || preferredType == checker->GlobalETSObjectType()) {
+            preferredType = checker->CreateETSArrayType(expr->Elements()[0]->Check(checker));
+            expr->SetPreferredType(preferredType);
         }
 
-        const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
+        const bool isPreferredTuple = preferredType->IsETSTupleType();
         // NOTE(aakmaev): Need to rework type inference of array literal (#19096 internal issue)
-        auto *targetElementType =
-            checker->GetNonConstantType(expr->GetPreferredType()->AsETSArrayType()->ElementType());
+        auto *targetElementType = checker->GetNonConstantType(preferredType->AsETSArrayType()->ElementType());
         Type *targetElementTypeSecondary = nullptr;
         if (isPreferredTuple && !isArray) {
-            targetElementTypeSecondary = expr->GetPreferredType()->AsETSTupleType()->ElementType();
+            targetElementTypeSecondary = preferredType->AsETSTupleType()->ElementType();
         }
 
         if (!CheckElement(expr, checker, {targetElementType, targetElementTypeSecondary}, isPreferredTuple)) {
@@ -710,13 +707,13 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
         }
     }
 
-    if (expr->preferredType_ == nullptr) {
+    if (preferredType == nullptr) {
         checker->LogTypeError("Can't resolve array type", expr->Start());
         expr->SetTsType(checker->GlobalTypeError());
         return expr->TsTypeOrError();
     }
 
-    expr->SetTsType(expr->preferredType_);
+    expr->SetTsType(preferredType);
     auto *const arrayType = expr->TsType()->AsETSArrayType();
     checker->CreateBuiltinArraySignature(arrayType, arrayType->Rank());
     return expr->TsTypeOrError();
@@ -1411,11 +1408,6 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     }
     TypeErrorOnMissingProperty(expr, baseType, checker);
     return expr->TsTypeOrError();
-}
-
-checker::Type *ETSAnalyzer::PreferredType(ir::ObjectExpression *expr) const
-{
-    return expr->preferredType_;
 }
 
 static bool ValidatePreferredType(ir::ObjectExpression *expr, ETSChecker *checker)
@@ -2550,27 +2542,29 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     auto *const sourceType = expr->Expr()->Check(checker);
     if (sourceType->IsTypeError()) {
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsTypeOrError();
+        return expr->SetTsType(checker->GlobalTypeError());
     }
 
-    if (targetType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) && sourceType->IsETSReferenceType()) {
-        auto *const boxedTargetType = checker->PrimitiveTypeAsETSBuiltinType(targetType);
-        if (!checker->Relation()->IsIdenticalTo(sourceType, boxedTargetType)) {
+    if (targetType->IsETSPrimitiveType() && sourceType->IsETSReferenceType()) {
+        if (!checker->Relation()->IsIdenticalTo(sourceType, checker->PrimitiveTypeAsETSBuiltinType(targetType))) {
             expr->Expr()->AddAstNodeFlags(ir::AstNodeFlags::CHECKCAST);
         }
     }
 
     if (sourceType->DefinitelyETSNullish() && !targetType->PossiblyETSNullish()) {
         checker->LogTypeError("Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Expr()->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsTypeOrError();
+        return expr->SetTsType(checker->GlobalTypeError());
     }
 
     const checker::CastingContext ctx(
         checker->Relation(),
         std::initializer_list<TypeErrorMessageElement> {"Cannot cast type '", sourceType, "' to '", targetType, "'"},
         checker::CastingContext::ConstructorData {expr->Expr(), sourceType, targetType, expr->Expr()->Start()});
+
+    //  Note (DZ):  we need to restore original expression type because the check above can forcedly modify it! :(
+    //              Can be removed when the processing of the `TypeRelationFlag::ONLY_CHECK_WIDENING` flag will be
+    //              implemented correctly (now, in fact, it doesn't work at all!).
+    expr->Expr()->SetTsType(sourceType);
 
     if (sourceType->IsETSDynamicType() && targetType->IsLambdaObject()) {
         // NOTE: itrubachev. change targetType to created lambdaobject type.
@@ -2589,13 +2583,11 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     if (targetType == checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType()) {
         checker->LogTypeError("Cast to 'never' is prohibited", expr->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsTypeOrError();
+        return expr->SetTsType(checker->GlobalTypeError());
     }
 
     checker->ComputeApparentType(targetType);
-    expr->SetTsType(targetType);
-    return expr->TsType();
+    return expr->SetTsType(targetType);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const

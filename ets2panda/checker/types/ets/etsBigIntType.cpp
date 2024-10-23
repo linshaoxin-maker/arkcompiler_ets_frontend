@@ -16,24 +16,41 @@
 #include "etsBigIntType.h"
 
 namespace ark::es2panda::checker {
-void ETSBigIntType::Identical(TypeRelation *relation, Type *other)
+bool ETSBigIntType::IsAssignableTo(Type const *target) const noexcept
 {
-    if (other->IsETSBigIntType()) {
-        relation->Result(true);
-        return;
+    if (!target->IsETSBigIntType()) {
+        return false;
     }
 
-    relation->Result(false);
+    if (target->IsConstantType()) {
+        return value_ == target->AsETSBigIntType()->GetValue();
+    }
+
+    return true;
 }
 
-void ETSBigIntType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
+void ETSBigIntType::Identical(TypeRelation *relation, Type *other)
 {
-    if (source->IsETSBigIntType()) {
-        relation->Result(true);
-        return;
+    if (!other->IsETSBigIntType()) {
+        relation->Result(false);
+    } else if (!other->IsConstantType()) {
+        relation->Result(!IsConstantType());
+    } else {
+        relation->Result(IsConstantType() && value_ == other->AsETSBigIntType()->GetValue());
     }
+}
 
+void ETSBigIntType::AssignmentTarget(TypeRelation *relation, Type *source)
+{
+    relation->Result(source->IsETSBigIntType() && source->AsETSBigIntType()->IsAssignableTo(this));
+}
+
+void ETSBigIntType::IsSupertypeOf(TypeRelation *relation, Type *source)
+{
     relation->Result(false);
+    if (!IsConstantType()) {
+        ETSObjectType::IsSupertypeOf(relation, source);
+    }
 }
 
 Type *ETSBigIntType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,

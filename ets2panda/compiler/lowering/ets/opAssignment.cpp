@@ -44,7 +44,7 @@ struct Conversion {
 };
 
 // NOLINTNEXTLINE(readability-magic-numbers)
-static constexpr std::array<Conversion, 18> OP_TRANSLATION {{
+static constexpr std::array<Conversion, 18U> OP_TRANSLATION {{
     {lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT_EQUAL, lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT},
     {lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT_EQUAL, lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT},
     {lexer::TokenType::PUNCTUATOR_LEFT_SHIFT_EQUAL, lexer::TokenType::PUNCTUATOR_LEFT_SHIFT},
@@ -108,7 +108,7 @@ static ir::OpaqueTypeNode *CreateProxyTypeNode(checker::ETSChecker *checker, ir:
     if (auto *lcTypeAsPrimitive = checker->ETSBuiltinTypeAsPrimitiveType(lcType); lcTypeAsPrimitive != nullptr) {
         lcType = lcTypeAsPrimitive;
     }
-    return checker->AllocNode<ir::OpaqueTypeNode>(lcType);
+    return checker->AllocNode<ir::OpaqueTypeNode>(checker->GetNonConstantType(lcType));
 }
 
 static std::string GenFormatForExpression(ir::Expression *expr, size_t ix1, size_t ix2)
@@ -229,18 +229,19 @@ ir::AstNode *HandleOpAssignment(public_lib::Context *ctx, ir::AssignmentExpressi
     return loweringResult;
 }
 
-static ir::Expression *ConstructUpdateResult(public_lib::Context *ctx, ir::UpdateExpression *upd)
+using UpdateData = std::tuple<ir::Identifier *, ir::Identifier *, ir::Expression *, ir::Expression *, checker::Type *,
+                              checker::Type *>;
+
+//  Auxiliary method just to reduce the size of 'ConstructUpdateResult(...)' function
+UpdateData CreateObjectsAndTypes(public_lib::Context *ctx, ir::UpdateExpression *upd,
+                                 std::string &newAssignmentStatements)
 {
     auto *allocator = ctx->allocator;
-    auto *parser = ctx->parser->AsETSParser();
     auto *argument = upd->Argument();
     auto *checker = ctx->checker->AsETSChecker();
 
-    std::string newAssignmentStatements {};
-
-    ir::Identifier *id1;
+    ir::Identifier *id1 = nullptr;
     ir::Identifier *id2 = nullptr;
-    ir::Identifier *id3 = nullptr;
     ir::Expression *object = nullptr;
     ir::Expression *property = nullptr;
     checker::Type *objType = checker->GlobalVoidType();  // placeholder
@@ -272,29 +273,46 @@ static ir::Expression *ConstructUpdateResult(public_lib::Context *ctx, ir::Updat
         }
     }
 
+    return std::make_tuple(id1, id2, object, property, objType, propType);
+}
+
+static ir::Expression *ConstructUpdateResult(public_lib::Context *ctx, ir::UpdateExpression *upd)
+{
+    auto *allocator = ctx->allocator;
+    auto *parser = ctx->parser->AsETSParser();
+    auto *argument = upd->Argument();
+    auto *checker = ctx->checker->AsETSChecker();
+
+    std::string newAssignmentStatements {};
+
+    auto [id1, id2, object, property, objType, propType] = CreateObjectsAndTypes(ctx, upd, newAssignmentStatements);
+
     std::string opSign = lexer::TokenToString(CombinedOpToOp(upd->OperatorType()));
 
-    std::string suffix = (argument->TsType() == checker->GlobalETSBigIntType()) ? "n" : "";
+    auto *argType = checker->GetNonConstantType(argument->TsType());
+    std::string suffix = checker->Relation()->IsIdenticalTo(argType, checker->GlobalETSBigIntType()) ? "n" : "";
 
     // NOLINTBEGIN(readability-magic-numbers)
     if (upd->IsPrefix()) {
         newAssignmentStatements += GenFormatForExpression(argument, 7U, 8U) + " = (" +
-                                   GenFormatForExpression(argument, 9U, 10U) + opSign + " 1" + suffix + ") as @@T11;";
-        return parser->CreateFormattedExpression(
-            newAssignmentStatements, id1, object, objType, id2, property, propType, GetClone(allocator, id1),
-            GetClone(allocator, id2), GetClone(allocator, id1), GetClone(allocator, id2), argument->TsType());
+                                   GenFormatForExpression(argument, 9U, 10U) + " as @@T12 " + opSign + " 1" + suffix +
+                                   ") as @@T11;";
+        return parser->CreateFormattedExpression(newAssignmentStatements, id1, object, objType, id2, property, propType,
+                                                 GetClone(allocator, id1), GetClone(allocator, id2),
+                                                 GetClone(allocator, id1), GetClone(allocator, id2), argType, argType);
     }
 
     // upd is postfix
-    id3 = Gensym(allocator);
-    newAssignmentStatements += "const @@I7 = " + GenFormatForExpression(argument, 8, 9) + " as @@T10;" +
+    ir::Identifier *id3 = Gensym(allocator);
+    newAssignmentStatements += "const @@I7 = " + GenFormatForExpression(argument, 8U, 9U) + " as @@T10; " +
                                GenFormatForExpression(argument, 11U, 12U) + " = (@@I13 " + opSign + " 1" + suffix +
                                ") as @@T14; @@I15;";
-    return parser->CreateFormattedExpression(newAssignmentStatements, id1, object, objType, id2, property, propType,
-                                             id3, GetClone(allocator, id1), GetClone(allocator, id2),
-                                             argument->TsType(), GetClone(allocator, id1), GetClone(allocator, id2),
-                                             GetClone(allocator, id3), argument->TsType(), GetClone(allocator, id3));
     // NOLINTEND(readability-magic-numbers)
+
+    return parser->CreateFormattedExpression(newAssignmentStatements, id1, object, objType, id2, property, propType,
+                                             id3, GetClone(allocator, id1), GetClone(allocator, id2), argType,
+                                             GetClone(allocator, id1), GetClone(allocator, id2),
+                                             GetClone(allocator, id3), argType, GetClone(allocator, id3));
 }
 
 static ir::AstNode *HandleUpdate(public_lib::Context *ctx, ir::UpdateExpression *upd)

@@ -410,7 +410,6 @@ void ProcessExclamationMark(ETSChecker *checker, ir::UnaryExpression *expr, chec
 {
     if (checker->IsNullLikeOrVoidExpression(expr->Argument())) {
         auto tsType = checker->CreateETSBooleanType(true);
-        tsType->AddTypeFlag(checker::TypeFlag::CONSTANT);
         expr->SetTsType(tsType);
         return;
     }
@@ -425,7 +424,6 @@ void ProcessExclamationMark(ETSChecker *checker, ir::UnaryExpression *expr, chec
     auto exprRes = operandType->ResolveConditionExpr();
     if (std::get<0>(exprRes)) {
         auto tsType = checker->CreateETSBooleanType(!std::get<1>(exprRes));
-        tsType->AddTypeFlag(checker::TypeFlag::CONSTANT);
         expr->SetTsType(tsType);
         return;
     }
@@ -526,15 +524,15 @@ checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir:
 
     checker::Type *iterType = nullptr;
     if (left->IsIdentifier()) {
-        if (auto *const variable = left->AsIdentifier()->Variable(); variable != nullptr) {
-            auto *decl = variable->Declaration();
-            if (decl->IsConstDecl() || decl->IsReadonlyDecl()) {
+        auto *const ident = left->AsIdentifier();
+        if (auto const *const variable = ident->Variable(); variable != nullptr) {
+            if (auto *decl = variable->Declaration(); decl->IsConstDecl() || decl->IsReadonlyDecl()) {
                 std::string_view errorMsg =
                     decl->IsConstDecl() ? INVALID_CONST_ASSIGNMENT : INVALID_READONLY_ASSIGNMENT;
                 checker->LogTypeError({errorMsg, variable->Name()}, decl->Node()->Start());
             }
         }
-        iterType = left->AsIdentifier()->TsType();
+        iterType = ident->DeclaredType();
     } else if (left->IsVariableDeclaration()) {
         if (auto const &declarators = left->AsVariableDeclaration()->Declarators(); !declarators.empty()) {
             iterType = getIterType(declarators.front());
@@ -608,6 +606,7 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, ch
     //  First (or single) return statement in the function:
     funcReturnType =
         stArgument == nullptr ? checker->GlobalVoidType() : checker->GetNonConstantType(stArgument->Check(checker));
+
     /*
     when st_argment is ArrowFunctionExpression, need infer type for st_argment
     example code:

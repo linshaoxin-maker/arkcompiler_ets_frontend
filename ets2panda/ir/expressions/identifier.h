@@ -191,6 +191,16 @@ public:
         return true;
     }
 
+    [[nodiscard]] checker::Type *DeclaredType() noexcept override
+    {
+        return Variable() != nullptr ? Variable()->TsTypeOrError() : Typed::DeclaredType();
+    }
+
+    [[nodiscard]] checker::Type const *DeclaredType() const noexcept override
+    {
+        return Variable() != nullptr ? Variable()->TsTypeOrError() : Typed::DeclaredType();
+    }
+
     [[nodiscard]] ValidationInfo ValidateExpression();
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;

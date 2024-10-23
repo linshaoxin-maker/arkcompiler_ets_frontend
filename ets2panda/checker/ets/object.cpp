@@ -269,7 +269,7 @@ bool ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2T
 
 void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
 {
-    ETSTypeParameter *const paramType = param->Name()->Variable()->TsType()->AsETSTypeParameter();
+    ETSTypeParameter *const paramType = param->Name()->DeclaredType()->AsETSTypeParameter();
     auto const traverseReferenced =
         [this, scope = param->Parent()->AsTSTypeParameterDeclaration()->Scope()](ir::TypeNode *typeNode) {
             if (!typeNode->IsETSTypeReference()) {
@@ -303,9 +303,9 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
 
 ETSTypeParameter *ETSChecker::SetUpParameterType(ir::TSTypeParameter *const param)
 {
-    if (param->Name()->Variable() != nullptr && param->Name()->Variable()->TsType() != nullptr) {
-        ASSERT(param->Name()->Variable()->TsType()->IsETSTypeParameter());
-        return param->Name()->Variable()->TsType()->AsETSTypeParameter();
+    if (param->Name()->Variable() != nullptr && param->Name()->DeclaredType() != nullptr) {
+        ASSERT(param->Name()->DeclaredType()->IsETSTypeParameter());
+        return param->Name()->DeclaredType()->AsETSTypeParameter();
     }
 
     auto *const paramType = CreateTypeParameter();
@@ -1355,7 +1355,7 @@ void ETSChecker::CheckInnerClassMembers(const ETSObjectType *classType)
 
 bool ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
 {
-    auto *const expressionType = expr->Check(this);
+    auto *const expressionType = GetNonConstantType(expr->Check(this));
     auto const *const unboxedExpressionType = ETSBuiltinTypeAsPrimitiveType(expressionType);
 
     Type const *const indexType = ApplyUnaryOperatorPromotion(expressionType);
@@ -1439,7 +1439,7 @@ bool ETSChecker::ValidateTupleIndex(const ETSTupleType *const tuple, ir::MemberE
     const auto *const exprType = expr->Property()->TsType();
     ASSERT(exprType != nullptr);
 
-    if (!exprType->HasTypeFlag(TypeFlag::CONSTANT) && !tuple->HasSpreadType()) {
+    if (!exprType->IsConstantType() && !tuple->HasSpreadType()) {
         LogTypeError("Only constant expression allowed for element access on tuples.", expr->Property()->Start());
         return false;
     }

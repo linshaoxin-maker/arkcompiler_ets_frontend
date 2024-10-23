@@ -192,11 +192,11 @@ private:
     template <typename TargetType, typename SourceType>
     void ApplyWidening()
     {
-        using SType = typename SourceType::UType;
-        using TType = typename TargetType::UType;
-        SType value = reinterpret_cast<SourceType *>(Source())->GetValue();
-
         if (!Relation()->OnlyCheckWidening()) {
+            using SType = typename SourceType::UType;
+            using TType = typename TargetType::UType;
+            SType value = reinterpret_cast<SourceType *>(Source())->GetValue();
+
             ASSERT(Relation()->GetNode());
             Relation()->GetNode()->SetTsType(Checker()->Allocator()->New<TargetType>(static_cast<TType>(value)));
         }

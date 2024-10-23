@@ -311,61 +311,72 @@ bool Type::IsETSUnboxableObject() const
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE);
 }
 
-bool ETSChecker::IsConstantExpression(ir::Expression *expr, Type *type)
+bool ETSChecker::IsConstantExpression(ir::Expression const *const expr, Type const *const type) const noexcept
 {
-    return (type->HasTypeFlag(TypeFlag::CONSTANT) && (expr->IsIdentifier() || expr->IsMemberExpression()));
+    return (type->IsConstantType() && (expr->IsIdentifier() || expr->IsMemberExpression()));
 }
 
-Type *ETSChecker::GetNonConstantType(Type *type)
+Type *ETSChecker::GetNonConstantType(Type *const type) noexcept
 {
-    if (type->IsETSStringType()) {
+    if (type->IsETSStringType() || type->IsStringLiteralType()) {
         return GlobalBuiltinETSStringType();
     }
 
-    if (type->IsETSBigIntType()) {
+    if (type->IsETSBigIntType() || type->IsBigintLiteralType()) {
         return GlobalETSBigIntType();
     }
 
-    if (type->IsETSUnionType()) {
-        return CreateETSUnionType(ETSUnionType::GetNonConstantTypes(this, type->AsETSUnionType()->ConstituentTypes()));
+    if (type->IsConstantType()) {
+        if (type->IsIntType()) {
+            return GlobalIntType();
+        }
+
+        if (type->IsDoubleType()) {
+            return GlobalDoubleType();
+        }
+
+        if (type->IsETSBooleanType()) {
+            return GlobalETSBooleanType();
+        }
+
+        if (type->IsCharType()) {
+            return GlobalCharType();
+        }
+
+        if (type->IsLongType()) {
+            return GlobalLongType();
+        }
+
+        if (type->IsByteType()) {
+            return GlobalByteType();
+        }
+
+        if (type->IsShortType()) {
+            return GlobalShortType();
+        }
+
+        if (type->IsFloatType()) {
+            return GlobalFloatType();
+        }
+
+        if (type->IsETSObjectType()) {
+            auto *nonConstType = type->Clone(this);
+            nonConstType->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
+            return nonConstType;
+        }
+
+        if (type->IsETSUnionType()) {
+            return CreateETSUnionType(
+                ETSUnionType::GetNonConstantTypes(this, type->AsETSUnionType()->ConstituentTypes()));
+        }
     }
 
-    if (!type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        return type;
-    }
-
-    if (type->HasTypeFlag(TypeFlag::LONG)) {
-        return GlobalLongType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::BYTE)) {
-        return GlobalByteType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::SHORT)) {
-        return GlobalShortType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::CHAR)) {
-        return GlobalCharType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::INT)) {
-        return GlobalIntType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::FLOAT)) {
-        return GlobalFloatType();
-    }
-
-    if (type->HasTypeFlag(TypeFlag::DOUBLE)) {
-        return GlobalDoubleType();
-    }
-
-    if (type->IsETSBooleanType()) {
-        return GlobalETSBooleanType();
-    }
     return type;
+}
+
+Type const *ETSChecker::GetNonConstantType(Type const *const type) noexcept
+{
+    return const_cast<Type const *>(GetNonConstantType(const_cast<Type *>(type)));
 }
 
 Type *ETSChecker::GetTypeOfSetterGetter(varbinder::Variable *const var)
@@ -645,7 +656,7 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
         return nullptr;
     }
 
-    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->IsETSEnumType()) {
+    if (objectType->IsETSPrimitiveType() || objectType->IsETSEnumType()) {
         return objectType;
     }
 
@@ -704,14 +715,12 @@ Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *objectType)
 
 Type *ETSChecker::MaybePromotedBuiltinType(Type *type) const
 {
-    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !type->IsETSVoidType()
-               ? checker::BoxingConverter::ETSTypeFromSource(this, type)
-               : type;
+    return type->IsETSPrimitiveType() ? checker::BoxingConverter::ETSTypeFromSource(this, type) : type;
 }
 
 Type const *ETSChecker::MaybePromotedBuiltinType(Type const *type) const
 {
-    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? checker::BoxingConverter::ETSTypeFromSource(this, type) : type;
+    return const_cast<Type const *>(MaybePromotedBuiltinType(const_cast<Type *>(type)));
 }
 
 Type *ETSChecker::MaybePrimitiveBuiltinType(Type *type) const
@@ -804,14 +813,16 @@ void ETSChecker::AddUnboxingFlagToPrimitiveType(TypeRelation *relation, Type *so
 
 void ETSChecker::CheckUnboxedTypeWidenable(TypeRelation *relation, Type *target, Type *self)
 {
-    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
-        relation, TypeRelationFlag::ONLY_CHECK_WIDENING |
-                      (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
     // NOTE: vpukhov. handle union type
     auto unboxedType = ETSBuiltinTypeAsPrimitiveType(target);
     if (unboxedType == nullptr) {
         return;
     }
+
+    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
+        relation, TypeRelationFlag::ONLY_CHECK_WIDENING |
+                      (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
+
     NarrowingWideningConverter(this, relation, unboxedType, self);
     if (!relation->IsTrue()) {
         relation->Result(relation->IsAssignableTo(self, unboxedType));
@@ -835,11 +846,6 @@ void ETSChecker::CheckUnboxedTypesAssignable(TypeRelation *relation, Type *sourc
 void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *source, Type *target)
 {
     ASSERT(relation != nullptr);
-    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
-        relation, (relation->ApplyWidening() ? TypeRelationFlag::WIDENING : TypeRelationFlag::NONE) |
-                      (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE) |
-                      (relation->OnlyCheckBoxingUnboxing() ? TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING
-                                                           : TypeRelationFlag::NONE));
 
     if (source->IsETSEnumType()) {
         if (target->IsETSObjectType() && target->AsETSObjectType()->IsGlobalETSObjectType()) {
@@ -848,7 +854,14 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
         }
     }
 
-    auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
+    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
+        relation, (relation->ApplyWidening() ? TypeRelationFlag::WIDENING : TypeRelationFlag::NONE) |
+                      (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE) |
+                      (relation->OnlyCheckBoxingUnboxing() ? TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING
+                                                           : TypeRelationFlag::NONE));
+
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    auto *boxedSourceType = checker->PrimitiveTypeAsETSBuiltinType(source);
     if (boxedSourceType == nullptr) {
         return;
     }
@@ -1023,14 +1036,14 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
 
         auto const *const param = signature->Function()->Params()[index]->AsETSParameterExpression()->Ident();
         ir::AstNode *typeAnn = param->TypeAnnotation();
-        Type *const parameterType = signature->Params()[index]->TsType();
+        Type *parameterType = signature->Params()[index]->TsType();
 
         bool const rc = CheckLambdaTypeAnnotation(typeAnn, arrowFuncExpr, parameterType, flags);
-        if (!rc && (flags & TypeRelationFlag::NO_THROW) == 0) {
-            Type *const argumentType = arrowFuncExpr->Check(this);
-            const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(parameterType);
+        if (!rc && (flags & TypeRelationFlag::NO_THROW) == 0U) {
+            Type const *const argumentType = arrowFuncExpr->TsTypeOrError();
+            parameterType = TryGettingFunctionTypeFromInvokeFunction(parameterType);
             const std::initializer_list<TypeErrorMessageElement> list = {
-                "Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1};
+                "Type '", argumentType, "' is not compatible with type '", parameterType, "' at index ", index + 1};
             LogTypeError(list, arrowFuncExpr->Start());
             return false;
         }
