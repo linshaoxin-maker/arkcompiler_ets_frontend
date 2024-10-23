@@ -764,6 +764,13 @@ class ArkProgram():
             self.compile_aot()
             self.execute_aot()
         else:
+            if not os.path.exists(self.arch_root + "lib/ld-musl-aarch64.so.1"):
+                try:
+                    os.makedirs(self.arch_root + 'lib')
+                    shutil.copy(self.arch_root + 'ld-musl-aarch64.so.1', self.arch_root + "lib/ld-musl-aarch64.so.1")
+                    print(f"ld-musl-aarch64.so.1 file copied to {self.arch_root}")
+                except Exception as e:
+                    print(f"error accured to copy ld-musl-aarch64.so.1 file: {e}")
             self.execute()
 
 
