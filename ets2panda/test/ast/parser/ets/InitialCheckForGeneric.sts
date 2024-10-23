@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ function foo<U, V>() {
     let u:U // CTE
     let v:V // CTE
 
-    console.log("What ? :-)", u, v)
+    console.log("What ? :-)", /* @@ IdentTest1 */u, /* @@ IdentTest2 */v)
 }
 
 
@@ -26,6 +26,6 @@ function main(): void {
     foo<string, string>()
 }
 
-/* @@? 20:31 Warning Warning: Variable 'u' is used before being assigned.  */
-/* @@? 20:34 Warning Warning: Variable 'v' is used before being assigned.  */
-/* @@? 1:1 Error TypeError: There were errors during assign analysis (2)  */
+/* @@@ IdentTest1 Warning Warning: Variable 'u' is used before being assigned.  */
+/* @@@ IdentTest2 Warning Warning: Variable 'v' is used before being assigned.  */
+/* @@@ IdentTest Error TypeError: There were errors during assign analysis (2)  */

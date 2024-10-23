@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 function fn(): void {
     let v: JSValue;
     let new_prop_value: JSValue;
-    v.prop_name = new_prop_value;
+    /* @@ IdentTest1 */v.prop_name = /* @@ IdentTest2 */new_prop_value;
 }
 
-/* @@? 19:5 Warning Warning: Variable 'v' is used before being assigned.  */
-/* @@? 19:19 Warning Warning: Variable 'new_prop_value' is used before being assigned.  */
-/* @@? 1:1 Error TypeError: There were errors during assign analysis (2)  */
+/* @@@ IdentTest1 Warning Warning: Variable 'v' is used before being assigned.  */
+/* @@@ IdentTest2 Warning Warning: Variable 'new_prop_value' is used before being assigned.  */
+/* @@@ IdentTest Error TypeError: There were errors during assign analysis (2)  */
