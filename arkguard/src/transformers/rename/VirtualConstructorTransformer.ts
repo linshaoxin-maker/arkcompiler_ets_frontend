@@ -36,7 +36,7 @@ import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import type {IOptions} from '../../configs/IOptions';
 import {NodeUtils} from '../../utils/NodeUtils';
-import {performancePrinter} from '../../ArkObfuscator';
+import {ArkObfuscator, performancePrinter} from '../../ArkObfuscator';
 import {EventList} from '../../utils/PrinterUtils';
 
 namespace secharmony {
@@ -55,12 +55,16 @@ function virtualConstructorTransformer(node: SourceFile, context: Transformation
   if (!NodeUtils.isDETSFile(node)) {
     return node;
   }
+  ArkObfuscator.recordStage(
+    'VirtualConstructorTransformer(virtualConstructorTransformer: Virtual constructor obfuscation)');
   performancePrinter?.singleFilePrinter?.startEvent(EventList.VIRTUAL_CONSTRUCTOR_OBFUSCATION,
       performancePrinter.timeSumPrinter);
   let astWithoutVirtualConstructor = removeVirtualConstructor(node, context);
   let parentNodes = setParentRecursive(astWithoutVirtualConstructor, true);
   performancePrinter?.singleFilePrinter?.endEvent(EventList.VIRTUAL_CONSTRUCTOR_OBFUSCATION,
       performancePrinter.timeSumPrinter);
+  ArkObfuscator.stopRecordStage(
+    'VirtualConstructorTransformer(virtualConstructorTransformer: Virtual constructor obfuscation)');
   return parentNodes;
 }
 

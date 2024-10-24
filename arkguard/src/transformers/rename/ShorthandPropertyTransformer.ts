@@ -62,11 +62,14 @@ namespace secharmony {
         if (isSourceFile(node) && ArkObfuscator.isKeptCurrentFile) {
           return node;
         }
-
+        ArkObfuscator.recordStage(
+            'ShorthandPropertyTransformer(shorthandPropertyTransformFactory: Shorthand obfuscation)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.SHORT_HAND_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret = transformShortHandProperty(node);
         let parentNodes = setParentRecursive(ret, true);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.SHORT_HAND_OBFUSCATION, performancePrinter.timeSumPrinter);
+		ArkObfuscator.stopRecordStage(
+            'ShorthandPropertyTransformer(shorthandPropertyTransformFactory: Shorthand obfuscation)');
         return parentNodes;
       }
 

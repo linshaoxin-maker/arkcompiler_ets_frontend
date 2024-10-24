@@ -162,13 +162,17 @@ namespace secharmony {
           return node;
         }
 
+        ArkObfuscator.recordStage('RenameIdentifierTransformer(renameTransformer: Create checker)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_CHECKER, performancePrinter.timeSumPrinter);
         checker = TypeUtils.createChecker(node);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_CHECKER, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenameIdentifierTransformer(renameTransformer: Create checker)');
 
+        ArkObfuscator.recordStage('RenameIdentifierTransformer(renameTransformer: Scope analyze)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.SCOPE_ANALYZE, performancePrinter.timeSumPrinter);
         manager.analyze(node, checker, exportObfuscation);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.SCOPE_ANALYZE, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenameIdentifierTransformer(renameTransformer: Scope analyze)');
 
         // the reservedNames of manager contain the struct name.
         if (!exportObfuscation) {
@@ -181,17 +185,21 @@ namespace secharmony {
         fileExportNames = root.fileExportNames;
         fileImportNames = root.fileImportNames;
 
+        ArkObfuscator.recordStage('RenameIdentifierTransformer(renameTransformer: Create obfuscated names)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_OBFUSCATED_NAMES, performancePrinter.timeSumPrinter);
         renameInScope(root);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_OBFUSCATED_NAMES, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenameIdentifierTransformer(renameTransformer: Create obfuscated names)');
 
         root = undefined;
 
+        ArkObfuscator.recordStage('RenameIdentifierTransformer(renameTransformer: Obfuscate nodes)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.OBFUSCATE_NODES, performancePrinter.timeSumPrinter);
         let ret: Node = visit(node);
 
         let parentNodes = setParentRecursive(ret, true);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.OBFUSCATE_NODES, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenameIdentifierTransformer(renameTransformer: Obfuscate nodes)');
         return parentNodes;
       }
 

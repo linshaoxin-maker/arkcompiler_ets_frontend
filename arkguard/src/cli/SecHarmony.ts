@@ -19,7 +19,7 @@ import {program} from 'commander';
 import * as path from 'path';
 
 import { ArkObfuscatorForTest } from '../ArkObfuscatorForTest';
-import { performancePrinter } from '../ArkObfuscator';
+import { ArkObfuscator, performancePrinter } from '../ArkObfuscator';
 import { EventList } from '../utils/PrinterUtils';
 import { UnitTestUtil } from '../utils/UnitTestUtil';
 import { FileUtils } from '../utils/FileUtils';

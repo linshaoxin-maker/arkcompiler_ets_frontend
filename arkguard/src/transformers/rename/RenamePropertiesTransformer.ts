@@ -97,11 +97,13 @@ namespace secharmony {
 
         collectReservedNames(node);
 
+        ArkObfuscator.recordStage('RenamePropertiesTransformer(renamePropertiesFactory: Property obfuscation)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = renameProperties(node);
         UpdateMemberMethodName(nameCache, PropCollections.globalMangledTable, classInfoInMemberMethodCache);
         let parentNodes = setParentRecursive(ret, true);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenamePropertiesTransformer(renamePropertiesFactory: Property obfuscation)');
         return parentNodes;
       }
 
