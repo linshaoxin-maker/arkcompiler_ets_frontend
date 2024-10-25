@@ -152,6 +152,11 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
 {
     ETSChecker *checker = GetETSChecker();
 
+    // NOTE: check if we're still in static method
+    if (!node->IsStatic()) {
+        checker->RemoveStatus(checker::CheckerStatus::IN_STATIC_CONTEXT);
+    }
+
     auto *scriptFunc = node->Function();
 
     if (scriptFunc == nullptr) {
