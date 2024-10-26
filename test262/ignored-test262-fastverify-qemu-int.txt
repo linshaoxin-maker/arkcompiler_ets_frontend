@@ -140,3 +140,4 @@ test262/data/test_es2021/intl402/NumberFormat/prototype/format/format-fraction-d
 test262/data/test_es2021/intl402/RelativeTimeFormat/constructor/constructor/options-numberingSystem-valid.js
 test262/data/test_es2021/intl402/RelativeTimeFormat/constructor/supportedLocalesOf/options-localeMatcher-invalid.js
 test262/data/test_es2021/intl402/Segmenter/prototype/segment/containing/iswordlike.js
+test262/data/test_es2021/intl402/Intl/getCanonicalLocales/transformed-ext-valid.js
