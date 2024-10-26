@@ -273,6 +273,63 @@ static bool GenerateAbcFiles(std::map<std::string, panda::es2panda::util::Progra
     return true;
 }
 
+static void CollectReexportLazyImport(const std::map<std::string, panda::es2panda::util::ProgramCache *> &programsInfo)
+{
+    for (const auto &progInfo : programsInfo) {
+        auto &program = progInfo.second->program;
+        for (const auto &record : program.record_table) {
+            std::set<std::uint16_t> lazyModulesIdx;
+            std::set<std::string> lazyModulesLocalImport;
+            for (const pandasm::Field &field : record.second.field_list) {
+                if (field.name == "moduleRequestPhaseIdx") {
+                    auto literalKey = field.metadata->GetValue().value().GetValue<std::string>();
+                    auto iter = program.literalarray_table.find(literalKey);
+                    for (uint16_t idx = 0; idx < iter->second.literals_.size(); idx++) {
+                        if (std::get<uint8_t>(iter->second.literals_[idx].value_)) {
+                            lazyModulesIdx.insert(idx);
+                        }
+                    }
+                }
+            }
+            for (const pandasm::Field &field : record.second.field_list) {
+                if (field.name == util::MODULE_RECORD_IDX) {
+                    auto literalKey = field.metadata->GetValue().value().GetValue<std::string>();
+                    auto iter = program.literalarray_table.find(literalKey);
+                    uint32_t index = 1;  // skipping position of size
+                    index += std::get<uint32_t>(iter->second.literals_[0].value_);  // skipping moduleRequests, 0 is the position of size
+                    uint32_t localImportSize = std::get<uint32_t>(iter->second.literals_[index++].value_);
+                    for (size_t idx = 0; idx < localImportSize; idx++) {
+                        std::string localName = std::get<std::string>(iter->second.literals_[index++].value_);
+                        std::string importName = std::get<std::string>(iter->second.literals_[index++].value_);
+                        uint16_t moduleIdx = std::get<uint16_t>(iter->second.literals_[index++].value_);
+                        if (lazyModulesIdx.count(moduleIdx)) {
+                            lazyModulesLocalImport.insert(localName);
+                            lazyModulesLocalImport.insert(importName);
+                        }
+                    }
+                    uint32_t namespaceSizeIdx = index;
+                    index++;
+                    index += std::get<uint32_t>(iter->second.literals_[namespaceSizeIdx].value_) * 2;  // skipping namespace imports
+
+                    uint32_t localExportSizeIdx = index;
+                    index++;
+                    index += std::get<uint32_t>(iter->second.literals_[localExportSizeIdx].value_) * 2;  // skipping local Exports
+
+                    uint32_t indirectExportSize = std::get<uint32_t>(iter->second.literals_[index++].value_);
+                    for (size_t idx = 0; idx < indirectExportSize; idx++) {
+                        std::string exportName = std::get<std::string>(iter->second.literals_[index++].value_);
+                        std::string importName = std::get<std::string>(iter->second.literals_[index++].value_);
+                        index++;
+                        if (lazyModulesLocalImport.count(importName)) {
+                            std::cout << "ReExport Lazy-import record: " << record.first << ", ReExported Name: " << importName << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::util::ProgramCache *> &programsInfo,
                                  const std::unique_ptr<panda::es2panda::aot::Options> &options,
                                  std::map<std::string, std::unordered_set<std::string>> &resolvedDepsRelation)
@@ -288,6 +345,7 @@ static bool ResolveAndGenerate(std::map<std::string, panda::es2panda::util::Prog
     // A mapping of program to its records which are resolved and collected as valid dependencies.
     std::map<std::string, std::unordered_set<std::string>> resolvedDepsRelation {};
 
+    CollectReexportLazyImport(programsInfo);
     if (options->NeedCollectDepsRelation() &&
         !ResolveDepsRelations(programsInfo, options, resolvedDepsRelation)) {
         return true;
