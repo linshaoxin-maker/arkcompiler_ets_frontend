@@ -329,6 +329,7 @@ protected:
     ir::Statement *ParseStatementControlFlowTokenHelper(StatementParsingFlags flags = StatementParsingFlags::NONE);
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Statement *ParseStatementPunctuatorsHelper(StatementParsingFlags flags = StatementParsingFlags::NONE);
+    ir::Statement *ParseStatementHelper(StatementParsingFlags flags = StatementParsingFlags::NONE);
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     // NOLINTNEXTLINE(google-default-arguments)
@@ -389,6 +390,7 @@ protected:
     virtual ir::Statement *ParseConstStatement(StatementParsingFlags flags);
 
     virtual ir::AnnotatedExpression *ParseVariableDeclaratorKey(VariableParsingFlags flags);
+    virtual ir::Statement *ParseAnnotationsInStatement(StatementParsingFlags flags);
     virtual ir::VariableDeclarator *ParseVariableDeclarator(ir::Expression *init, lexer::SourcePosition startLoc,
                                                             VariableParsingFlags flags);
     virtual ir::VariableDeclarator *ParseVariableDeclaratorInitializer(ir::Expression *init, VariableParsingFlags flags,

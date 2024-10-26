@@ -155,6 +155,11 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
         return ParseStatementControlFlowTokenHelper(flags);
     }
 
+    return ParseStatementHelper(flags);
+}
+
+ir::Statement *ParserImpl::ParseStatementHelper(StatementParsingFlags flags)
+{
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::KEYW_ASSERT:
             return ParseAssertStatement();
@@ -182,9 +187,19 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
             return ParseEnumDeclaration();
         case lexer::TokenType::KEYW_INTERFACE:
             return ParseInterfaceDeclaration(false);
+        case lexer::TokenType::PUNCTUATOR_AT:
+            if (IsETSParser()) {
+                return ParseAnnotationsInStatement(flags);
+            }
+            [[fallthrough]];
         default:
             return ParseExpressionStatement(flags);
     }
+}
+
+ir::Statement *ParserImpl::ParseAnnotationsInStatement([[maybe_unused]] StatementParsingFlags flags)
+{
+    UNREACHABLE();
 }
 
 ir::Statement *ParserImpl::ParseVarStatement()

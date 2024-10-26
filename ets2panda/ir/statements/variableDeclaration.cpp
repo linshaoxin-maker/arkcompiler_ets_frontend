@@ -36,6 +36,13 @@ void VariableDeclaration::TransformChildren(const NodeTransformer &cb, std::stri
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     for (auto *&it : declarators_) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
@@ -47,6 +54,10 @@ void VariableDeclaration::TransformChildren(const NodeTransformer &cb, std::stri
 void VariableDeclaration::Iterate(const NodeTraverser &cb) const
 {
     for (auto *it : decorators_) {
+        cb(it);
+    }
+
+    for (auto *it : annotations_) {
         cb(it);
     }
 
@@ -81,6 +92,7 @@ void VariableDeclaration::Dump(ir::AstDumper *dumper) const
                  {"declarations", declarators_},
                  {"kind", kind},
                  {"decorators", AstDumper::Optional(decorators_)},
+                 {"annotations", AstDumper::Optional(annotations_)},
                  {"declare", AstDumper::Optional(declare_)}});
 }
 
@@ -119,6 +131,7 @@ VariableDeclaration::VariableDeclaration([[maybe_unused]] Tag const tag, Variabl
       kind_(other.kind_),
       decorators_(allocator->Adapter()),
       declarators_(allocator->Adapter()),
+      annotations_(allocator->Adapter()),
       declare_(other.declare_)
 {
     for (auto const &d : other.decorators_) {

@@ -32,6 +32,13 @@ void TSEnumDeclaration::TransformChildren(const NodeTransformer &cb, std::string
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     if (auto *transformedNode = cb(key_); key_ != transformedNode) {
         key_->SetTransformedNode(transformationName, transformedNode);
         key_ = transformedNode->AsIdentifier();
@@ -51,6 +58,10 @@ void TSEnumDeclaration::Iterate(const NodeTraverser &cb) const
         cb(it);
     }
 
+    for (auto *it : annotations_) {
+        cb(it);
+    }
+
     cb(key_);
 
     for (auto *it : members_) {
@@ -62,6 +73,7 @@ void TSEnumDeclaration::Dump(ir::AstDumper *dumper) const
 {
     dumper->Add({{"type", "TSEnumDeclaration"},
                  {"decorators", AstDumper::Optional(decorators_)},
+                 {"annotations", AstDumper::Optional(annotations_)},
                  {"id", key_},
                  {"members", members_},
                  {"const", isConst_}});

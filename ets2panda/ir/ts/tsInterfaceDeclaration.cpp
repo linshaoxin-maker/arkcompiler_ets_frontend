@@ -41,6 +41,13 @@ void TSInterfaceDeclaration::TransformChildren(const NodeTransformer &cb, std::s
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     if (auto *transformedNode = cb(id_); id_ != transformedNode) {
         id_->SetTransformedNode(transformationName, transformedNode);
         id_ = transformedNode->AsIdentifier();
@@ -72,6 +79,10 @@ void TSInterfaceDeclaration::Iterate(const NodeTraverser &cb) const
         cb(it);
     }
 
+    for (auto *it : annotations_) {
+        cb(it);
+    }
+
     cb(id_);
 
     if (typeParams_ != nullptr) {
@@ -89,6 +100,7 @@ void TSInterfaceDeclaration::Dump(ir::AstDumper *dumper) const
 {
     dumper->Add({{"type", "TSInterfaceDeclaration"},
                  {"decorators", AstDumper::Optional(decorators_)},
+                 {"annotations", AstDumper::Optional(annotations_)},
                  {"body", body_},
                  {"id", id_},
                  {"extends", extends_},

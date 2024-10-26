@@ -18,6 +18,7 @@
 
 #include "varbinder/scope.h"
 #include "ir/statement.h"
+#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::varbinder {
 class Variable;
@@ -52,7 +53,8 @@ public:
           extends_(std::move(extends)),
           isStatic_(data.isStatic),
           isExternal_(data.isExternal),
-          lang_(data.lang)
+          lang_(data.lang),
+          annotations_(allocator->Adapter())
     {
         if (isStatic_) {
             AddModifier(ir::ModifierFlags::STATIC);
@@ -182,6 +184,24 @@ public:
         anonClass_ = anonClass;
     }
 
+    [[nodiscard]] ArenaVector<ir::AnnotationUsage *> &Annotations() noexcept
+    {
+        return annotations_;
+    }
+
+    [[nodiscard]] const ArenaVector<ir::AnnotationUsage *> &Annotations() const noexcept
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<ir::AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (ir::AnnotationUsage *anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Dump(ir::SrcDumper *dumper) const override;
@@ -208,6 +228,7 @@ private:
     bool isExternal_;
     es2panda::Language lang_;
     ClassDeclaration *anonClass_ {nullptr};
+    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 

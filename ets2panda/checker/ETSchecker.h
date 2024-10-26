@@ -207,7 +207,6 @@ public:
     void CheckInnerClassMembers(const ETSObjectType *classType);
     void CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &checkerStatus);
     void CheckClassDefinition(ir::ClassDefinition *classDef);
-    void CheckClassAnnotations(ir::ClassDefinition *classDef);
     void CheckClassMembers(ir::ClassDefinition *classDef);
     void CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType);
     void FindAssignment(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
@@ -526,7 +525,7 @@ public:
     bool IsConstantExpression(ir::Expression *expr, Type *type);
     void ValidateUnaryOperatorOperand(varbinder::Variable *variable);
     bool ValidateAnnotationPropertyType(checker::Type *tsType);
-    bool CheckDuplicateAnnotations(const ArenaVector<ir::AnnotationUsage *> &annotations);
+    void CheckAnnotations(const ArenaVector<ir::AnnotationUsage *> &annotations);
     void CheckAnnotationPropertyType(ir::ClassProperty *property);
     void CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
                                        ETSChecker *checker);

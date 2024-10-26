@@ -665,7 +665,7 @@ ir::AstNode *ETSParser::ParseAnnotationProperty(ir::Identifier *fieldName, ir::M
     return field;
 }
 
-ArenaVector<ir::AnnotationUsage *> ETSParser::ParseAnnotations(ir::ModifierFlags &flags, bool isTopLevelSt)
+ArenaVector<ir::AnnotationUsage *> ETSParser::ParseAnnotations(bool isTopLevelSt)
 {
     ArenaVector<ir::AnnotationUsage *> annotations(Allocator()->Adapter());
     bool hasMoreAnnotations = true;
@@ -678,8 +678,7 @@ ArenaVector<ir::AnnotationUsage *> ETSParser::ParseAnnotations(ir::ModifierFlags
             if (!isTopLevelSt) {
                 ThrowSyntaxError("Annotations can only be declared at the top level.");
             }
-            flags |= ir::ModifierFlags::ANNOTATION_DECLARATION;
-            return annotations;
+            UNREACHABLE();
         }
 
         annotations.emplace_back(ParseAnnotationUsage());
@@ -689,7 +688,6 @@ ArenaVector<ir::AnnotationUsage *> ETSParser::ParseAnnotations(ir::ModifierFlags
             Lexer()->NextToken();
         }
     }
-    flags |= ir::ModifierFlags::ANNOTATION_USAGE;
     return annotations;
 }
 
@@ -1635,8 +1633,25 @@ ir::ETSUnionType *ETSParser::CreateOptionalParameterTypeNode(ir::TypeNode *typeA
     return unionType;
 }
 
+ir::Expression *ETSParser::ParseFunctionParameterAnnotations()
+{
+    Lexer()->NextToken();  // eat '@'
+
+    auto annotations = ParseAnnotations(false);
+    auto savePos = Lexer()->GetToken().Start();
+    ir::Expression *result = ParseFunctionParameter();
+    if (result != nullptr) {
+        ApplyAnnotationsToNode(result, std::move(annotations), savePos);
+    }
+    return result;
+}
+
 ir::Expression *ETSParser::ParseFunctionParameter()
 {
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
+        return ParseFunctionParameterAnnotations();
+    }
+
     auto *const paramIdent = GetAnnotatedExpressionFromParam();
     if (paramIdent == nullptr) {  // Error processing.
         return nullptr;
@@ -1694,7 +1709,7 @@ ir::Expression *ETSParser::CreateParameterThis(const util::StringView className)
     typeAnnotation->SetParent(paramIdent);
     paramIdent->SetTsTypeAnnotation(typeAnnotation);
 
-    auto *paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
+    auto *paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr, Allocator());
     paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
 
     return paramExpression;

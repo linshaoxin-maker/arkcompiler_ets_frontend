@@ -288,6 +288,10 @@ void ETSBinder::InitializeInterfaceIdent(ir::TSInterfaceDeclaration *decl)
 
 void ETSBinder::ResolveEnumDeclaration(ir::TSEnumDeclaration *enumDecl)
 {
+    for (auto *anno : enumDecl->Annotations()) {
+        ResolveReference(anno);
+    }
+
     auto enumScopeCtx = LexicalScope<LocalScope>::Enter(this, enumDecl->Scope());
 
     for (auto *member : enumDecl->Members()) {
@@ -301,6 +305,10 @@ void ETSBinder::ResolveInterfaceDeclaration(ir::TSInterfaceDeclaration *decl)
 
     for (auto *extend : decl->Extends()) {
         ResolveReference(extend);
+    }
+
+    for (auto *anno : decl->Annotations()) {
+        ResolveReference(anno);
     }
 
     auto scopeCtx = LexicalScope<ClassScope>::Enter(this, decl->Scope()->AsClassScope());

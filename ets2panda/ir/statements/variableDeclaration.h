@@ -17,6 +17,7 @@
 #define ES2PANDA_IR_STATEMENT_VARIABLE_DECLARATION_H
 
 #include "ir/statement.h"
+#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::ir {
 class VariableDeclarator;
@@ -34,6 +35,7 @@ public:
           kind_(kind),
           decorators_(allocator->Adapter()),
           declarators_(std::move(declarators)),
+          annotations_(allocator->Adapter()),
           declare_(declare)
     {
     }
@@ -75,6 +77,24 @@ public:
         return true;
     }
 
+    const ArenaVector<ir::AnnotationUsage *> &Annotations() const
+    {
+        return annotations_;
+    }
+
+    [[nodiscard]] ArenaVector<ir::AnnotationUsage *> &Annotations() noexcept
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<ir::AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (AnnotationUsage *anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -95,6 +115,7 @@ private:
     VariableDeclarationKind kind_;
     ArenaVector<Decorator *> decorators_;
     ArenaVector<VariableDeclarator *> declarators_;
+    ArenaVector<AnnotationUsage *> annotations_;
     bool declare_;
 };
 }  // namespace ark::es2panda::ir

@@ -16,8 +16,9 @@
 #ifndef ES2PANDA_IR_TS_ENUM_DECLARATION_H
 #define ES2PANDA_IR_TS_ENUM_DECLARATION_H
 
-#include "varbinder/scope.h"
 #include "ir/statement.h"
+#include "ir/statements/annotationUsage.h"
+#include "varbinder/scope.h"
 
 namespace ark::es2panda::varbinder {
 class EnumVariable;
@@ -41,6 +42,7 @@ public:
                                ConstructorFlags &&flags)
         : TypedStatement(AstNodeType::TS_ENUM_DECLARATION),
           decorators_(allocator->Adapter()),
+          annotations_(allocator->Adapter()),
           key_(key),
           members_(std::move(members)),
           isConst_(flags.isConst),
@@ -140,6 +142,19 @@ public:
         return !inTs;
     }
 
+    const ArenaVector<ir::AnnotationUsage *> &Annotations() const
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<ir::AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (AnnotationUsage *anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
     static varbinder::EnumMemberResult EvaluateEnumMember(checker::TSChecker *checker, varbinder::EnumVariable *enumVar,
                                                           const ir::AstNode *expr);
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
@@ -159,6 +174,7 @@ public:
 private:
     varbinder::LocalScope *scope_ {nullptr};
     ArenaVector<ir::Decorator *> decorators_;
+    ArenaVector<AnnotationUsage *> annotations_;
     Identifier *key_;
     ArenaVector<AstNode *> members_;
     util::StringView internalName_;
