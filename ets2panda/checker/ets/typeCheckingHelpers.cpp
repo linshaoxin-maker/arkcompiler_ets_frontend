@@ -14,43 +14,28 @@
  */
 
 #include "checker/checker.h"
+#include "checker/ets/boxingConverter.h"
 #include "checker/ets/narrowingWideningConverter.h"
-#include "checker/types/globalTypesHolder.h"
+#include "checker/ets/typeRelationContext.h"
+#include "checker/ets/unboxingConverter.h"
+#include "checker/ETSchecker.h"
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/types/globalTypesHolder.h"
+#include "checker/types/type.h"
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"
-#include "ir/expression.h"
-#include "ir/typeNode.h"
-#include "ir/base/scriptFunction.h"
 #include "ir/base/classProperty.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/statements/variableDeclarator.h"
-#include "ir/statements/switchCaseStatement.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/callExpression.h"
-#include "ir/expressions/memberExpression.h"
-#include "ir/expressions/arrowFunctionExpression.h"
-#include "ir/statements/labelledStatement.h"
-#include "ir/statements/tryStatement.h"
-#include "ir/ets/etsNewClassInstanceExpression.h"
-#include "ir/ets/etsParameterExpression.h"
-#include "ir/ts/tsTypeAliasDeclaration.h"
-#include "ir/ts/tsEnumMember.h"
-#include "ir/ts/tsTypeParameter.h"
-#include "ir/ets/etsUnionType.h"
-#include "ir/ets/etsTypeReference.h"
+#include "ir/base/scriptFunction.h"
 #include "ir/ets/etsTypeReferencePart.h"
-#include "utils/arena_containers.h"
-#include "varbinder/variable.h"
-#include "varbinder/scope.h"
+#include "ir/ets/etsUnionType.h"
+#include "ir/expression.h"
+#include "ir/expressions/arrowFunctionExpression.h"
+#include "ir/expressions/identifier.h"
+#include "ir/ts/tsTypeAliasDeclaration.h"
+#include "ir/typeNode.h"
 #include "varbinder/declaration.h"
-#include "parser/program/program.h"
-#include "checker/ETSchecker.h"
 #include "varbinder/ETSBinder.h"
-#include "checker/ets/typeRelationContext.h"
-#include "checker/ets/boxingConverter.h"
-#include "checker/ets/unboxingConverter.h"
-#include "util/helpers.h"
+#include "varbinder/variable.h"
 
 namespace ark::es2panda::checker {
 void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
@@ -341,6 +326,11 @@ bool Type::IsETSReferenceType() const
 bool Type::IsETSUnboxableObject() const
 {
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE);
+}
+
+bool Type::IsConstantType() const
+{
+    return MatchConstituentOrConstraint(this, [](const Type *t) { return t->HasTypeFlag(TypeFlag::CONSTANT); });
 }
 
 bool ETSChecker::IsConstantExpression(ir::Expression *expr, Type *type)

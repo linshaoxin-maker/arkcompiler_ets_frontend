@@ -182,14 +182,15 @@ void AliveAnalyzer::AnalyzeDef(const ir::AstNode *node)
     }
 }
 
-void AliveAnalyzer::AnalyzeStat(const ir::AstNode *node)
+void AliveAnalyzer::AnalyzeStat(const ir::AstNode *node, bool warning)
 {
     if (node == nullptr) {
         return;
     }
 
     if (status_ == LivenessStatus::DEAD) {
-        checker_->LogTypeError("Unreachable statement.", node->Start());
+        auto msg = "Unreachable statement.";
+        warning ? checker_->Warning(msg, node->Start()) : checker_->LogTypeError(msg, node->Start());
         return;
     }
 
@@ -290,7 +291,7 @@ void AliveAnalyzer::AnalyzeWhileLoop(const ir::WhileStatement *whileStmt)
     ASSERT(whileStmt->Test()->TsType() && whileStmt->Test()->TsType()->IsConditionalExprType());
     const auto exprRes = whileStmt->Test()->TsType()->ResolveConditionExpr();
     status_ = And(status_, static_cast<LivenessStatus>(!std::get<0>(exprRes) || std::get<1>(exprRes)));
-    AnalyzeStat(whileStmt->Body());
+    AnalyzeStat(whileStmt->Body(), true);
     status_ = Or(status_, ResolveContinues(whileStmt));
     status_ = Or(ResolveBreaks(whileStmt), From(!std::get<0>(exprRes) || !std::get<1>(exprRes)));
 }
@@ -313,7 +314,7 @@ void AliveAnalyzer::AnalyzeForLoop(const ir::ForUpdateStatement *forStmt)
         status_ = LivenessStatus::ALIVE;
     }
 
-    AnalyzeStat(forStmt->Body());
+    AnalyzeStat(forStmt->Body(), true);
     status_ = Or(status_, ResolveContinues(forStmt));
     AnalyzeNode(forStmt->Update());
     status_ = Or(ResolveBreaks(forStmt), From(condType != nullptr && (!resolveType || !res)));

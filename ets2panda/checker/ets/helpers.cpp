@@ -655,18 +655,6 @@ void ETSChecker::CheckEnumType(ir::Expression *init, checker::Type *initType, co
     }
 }
 
-static bool NeedWideningBasedOnInitializerHeuristics(ir::Expression *e)
-{
-    // NOTE: need to be done by smart casts. Return true if we need to infer wider type.
-    if (e->IsUnaryExpression()) {
-        return NeedWideningBasedOnInitializerHeuristics(e->AsUnaryExpression()->Argument());
-    }
-    const bool isConstInit =
-        e->IsIdentifier() && e->Variable() != nullptr && e->Variable()->Declaration()->IsConstDecl();
-
-    return e->IsConditionalExpression() || e->IsLiteral() || isConstInit;
-}
-
 // Isolated until 'constant' types are tracked in some cases
 static bool ShouldPreserveConstantTypeInVariableDeclaration(Type *annotation, Type *init)
 {
@@ -732,8 +720,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     CheckEnumType(init, initType, varName);
 
-    // NOTE: need to be done by smart casts
-    auto needWidening = !omitConstInit && typeAnnotation == nullptr && NeedWideningBasedOnInitializerHeuristics(init);
+    auto needWidening = !omitConstInit && typeAnnotation == nullptr;
     bindingVar->SetTsType(needWidening ? GetNonConstantType(initType) : initType);
 
     return FixOptionalVariableType(bindingVar, flags, init);
@@ -771,6 +758,12 @@ checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::
     //  For left-hand variable of primitive type leave it as is.
     if (targetType->IsETSPrimitiveType()) {
         return targetType;
+    }
+
+    //  For left-hand variable of string type check if it can be narrowed to a string literal type
+    if (targetType->IsETSStringType()) {
+        // NOTE: remove check for source is string when constant flags will be removed
+        return sourceType->IsETSStringType() && sourceType->IsConstantType() ? sourceType : targetType;
     }
 
     //  For left-hand variable of tuple type leave it as is.
