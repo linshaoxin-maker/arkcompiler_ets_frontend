@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 class A {}
 
 let arr : Object[] | null = [new Object(), new A()];
-let elem : Object | undefined = arr[0];
+let elem : Object | undefined = /* @@ IdentTest1 */arr[0];
 
-/* @@? 19:33 Error TypeError: Value is possibly nullish.  */
-/* @@? 0:0 Error TypeError:   */
+/* @@@ IdentTest1 Error TypeError: Value is possibly nullish.  */
+/* @@@ IdentTest Error TypeError:   */

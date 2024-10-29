@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,12 @@ function printBoxedValue<T>(x : Boxx<T>) {
 }
 
 function doSomethingUseful() {
-    let box1 = new Boxx(123)
+    let box1 = new /* @@ IdentTest1 */Boxx(123)
     printBoxedValue(box1)
     let box2 = new Boxx("hello")
     printBoxedValue(box2)
 }
 
 
-/* @@? 36:20 Error TypeError: Type 'Boxx<T>' is generic but type argument were not provided.  */
-/* @@? 0:0 Error TypeError:   */
+/* @@@ IdentTest1 Error TypeError: Type 'Boxx<T>' is generic but type argument were not provided.  */
+/* @@@ IdentTest Error TypeError:   */

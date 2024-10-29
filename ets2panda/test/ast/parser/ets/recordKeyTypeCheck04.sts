@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 
 function main(){
     let r: Record<number, number> = {
-        "hello": 1,
+        /* @@ IdentTest1 */"hello": 1,
     }
 }
-/* @@? 18:9 Error TypeError: Type '"hello"' is not compatible with type 'Double' at index 1  */
-/* @@? 1:1 Error TypeError: No matching call signature for set("hello", int)  */
+/* @@@ IdentTest1 Error TypeError: Type '"hello"' is not compatible with type 'Double' at index 1  */
+/* @@@ IdentTest Error TypeError: No matching call signature for set("hello", int)  */

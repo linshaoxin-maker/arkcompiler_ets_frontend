@@ -1,4 +1,4 @@
-/*
+/* @@ IdentTest *//*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ class A<T> {
     }
 }
 
-class Z {
+clas/* @@ IdentTest1 */s Z {
     c: byte = 12;
 }
 
@@ -36,5 +36,5 @@ function main(): void {
     d.b.a.c = 127;
 }
 
-/* @@? 30:5 Warning Warning: Variable 'd' is used before being assigned.  */
-/* @@? 1:1 Error TypeError: There were errors during assign analysis (1)  */
+/* @@@ IdentTest1 Warning Warning: Variable 'd' is used before being assigned.  */
+/* @@@ IdentTest Error TypeError: There were errors during assign analysis (1)  */
