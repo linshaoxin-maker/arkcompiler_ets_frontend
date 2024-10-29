@@ -935,10 +935,13 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags, i
     if ((flags & ir::ModifierFlags::STATIC) == 0 && body == nullptr) {
         func->AddModifier(ir::ModifierFlags::ABSTRACT);
     }
+
+    ValidateGetterSetter(methodKind, func->Params().size());
+
     func->SetRange({startLoc, body != nullptr                           ? body->End()
                               : func->ReturnTypeAnnotation() != nullptr ? func->ReturnTypeAnnotation()->End()
                               : func->Params().empty()                  ? Lexer()->GetToken().End()
-                                                                        : (*func->Params().end())->End()});
+                                                                        : func->Params().back()->End()});
 
     auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
     funcExpr->SetRange(func->Range());
