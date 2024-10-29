@@ -66,10 +66,9 @@ if(NOT PANDA_PRODUCT_BUILD)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-  set_source_files_properties(
-    util/options.cpp
-    PROPERTIES COMPILE_DEFINITIONS "ES2PANDA_DATE=\"${CURRENT_DATE}\";ES2PANDA_HASH=\"${LAST_COMMIT_HASH}\""
-  )
+
+  add_definitions(-DES2PANDA_DATE="${CURRENT_DATE}")
+  add_definitions(-DES2PANDA_HASH="${LAST_COMMIT_HASH}")
 endif()
 
 add_custom_command(
@@ -534,6 +533,7 @@ set(ES2PANDA_LIB_SRC
   util/bitset.cpp
   util/errorHandler.cpp
   util/errorLogger.cpp
+  util/errorRecovery.cpp
   util/helpers.cpp
   util/importPathManager.cpp
   util/path.cpp
