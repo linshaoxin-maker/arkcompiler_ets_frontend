@@ -14,7 +14,7 @@
  */
 
 
-this."foo";
+this./* @@ IdentTest */"foo";
 
-/* @@? 17:6 Error SyntaxError: Identifier expected, got 'string literal'. */
-/* @@? 17:6 Error SyntaxError: Unexpected token 'string literal'. */
+/* @@@ IdentTest Error SyntaxError: Identifier expected, got 'string literal'. */
+/* @@@ IdentTest Error SyntaxError: Unexpected token 'string literal'. */

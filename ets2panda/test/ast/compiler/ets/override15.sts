@@ -18,8 +18,8 @@ interface I {
 }
 
 interface I2 extends I {
-  fn(): float;
+  fn/* @@ IdentTest */(): float;
 }
 
-/* @@? 21:5 Error TypeError: fn(): float in I2 cannot override fn(): int in I because overriding return type is not compatible with the other return type.  */
-/* @@? 21:5 Error TypeError: Method fn(): float in I2 not overriding any method  */
+/* @@@ IdentTest Error TypeError: fn(): float in I2 cannot override fn(): int in I because overriding return type is not compatible with the other return type.  */
+/* @@@ IdentTest Error TypeError: Method fn(): float in I2 not overriding any method  */

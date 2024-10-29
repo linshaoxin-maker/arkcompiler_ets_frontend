@@ -18,10 +18,10 @@ class A{
 };
 
 function attr(name: String): String {
-  return 2;
-  return A;
+  return /* @@ IdentTest */2;
+  return /* @@ IdentTest1 */A;
 }
 
-/* @@? 21:10 Error TypeError: Type 'int' is not compatible with the enclosing method's return type 'String' */
-/* @@? 22:10 Error TypeError: Class name "A" used in the wrong context */
-/* @@? 22:10 Error TypeError: Type 'A' is not compatible with the enclosing method's return type 'String'  */
+/* @@@ IdentTest Error TypeError: Type 'int' is not compatible with the enclosing method's return type 'String' */
+/* @@@ IdentTest1 Error TypeError: Class name "A" used in the wrong context */
+/* @@@ IdentTest1 Error TypeError: Type 'A' is not compatible with the enclosing method's return type 'String'  */

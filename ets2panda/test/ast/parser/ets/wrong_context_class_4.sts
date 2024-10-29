@@ -23,8 +23,8 @@ class a
 }
 function main()
 {
-    a[3]
+    /* @@ IdentTest */a[3]
 }
 
-/* @@? 26:5 Error TypeError: Class name "a" used in the wrong context  */
-/* @@? 26:5 Error TypeError: Object type doesn't have proper index access method.  */
+/* @@@ IdentTest Error TypeError: Class name "a" used in the wrong context  */
+/* @@@ IdentTest Error TypeError: Object type doesn't have proper index access method.  */

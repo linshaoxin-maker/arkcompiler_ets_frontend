@@ -15,7 +15,7 @@
 
 import * as Test from "import_tests/packages";
 
-function main() { Test() }
+function main() { /* @@ IdentTest */Test() }
 
-/* @@? 18:19 Error TypeError: Namespace style identifier Test is not callable.  */
-/* @@? 18:19 Error TypeError: No static invoke method and static instantiate method in Test. Test() is not allowed.  */
+/* @@@ IdentTest Error TypeError: Namespace style identifier Test is not callable.  */
+/* @@@ IdentTest Error TypeError: No static invoke method and static instantiate method in Test. Test() is not allowed.  */

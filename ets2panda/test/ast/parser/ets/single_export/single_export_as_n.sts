@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-export a as A
+export a /* @@ IdentTest */as A
 
 let a = 2;
 
-/* @@? 16:10 Error SyntaxError: Unexpected token 'as'. */
-/* @@? 16:10 Error SyntaxError: Unexpected token 'as'. */
+/* @@@ IdentTest Error SyntaxError: Unexpected token 'as'. */
+/* @@@ IdentTest Error SyntaxError: Unexpected token 'as'. */

@@ -23,7 +23,7 @@ let dog: Dog = {
     name: "Scooby"
 }
 
-let hasSting = dog?.hasSting;
+let hasSting = dog?./* @@ IdentTest */hasSting;
 
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
+/* @@@ IdentTest Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
+/* @@@ IdentTest Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */

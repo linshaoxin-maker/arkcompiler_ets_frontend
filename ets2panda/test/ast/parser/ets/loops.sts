@@ -16,7 +16,7 @@
 function fors(): void {
   for (let i = 1; i < 5; i++) continue;
   let j = 1;
-  for (j = 1; i < 5; i++) continue;
+  for (j = 1; /* @@ IdentTest */i < 5; /* @@ IdentTest1 */i++) continue;
   // Valid but must be fixed in grammar
   // for (;;) break;
   for (let i = 1, j = 3; i + j < 30; i += j) {
@@ -64,7 +64,7 @@ function labeledcontinue(): void {
   }
 }
 
-/* @@? 19:15 Error TypeError: Unresolved reference i  */
-/* @@? 19:15 Error TypeError: Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.  */
-/* @@? 19:22 Error TypeError: Unresolved reference i  */
-/* @@? 19:22 Error TypeError: Bad operand type, the type of the operand must be numeric type.  */
+/* @@@ IdentTest Error TypeError: Unresolved reference i  */
+/* @@@ IdentTest Error TypeError: Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.  */
+/* @@@ IdentTest1 Error TypeError: Unresolved reference i  */
+/* @@@ IdentTest1 Error TypeError: Bad operand type, the type of the operand must be numeric type.  */

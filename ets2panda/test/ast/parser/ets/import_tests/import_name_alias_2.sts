@@ -16,7 +16,7 @@
 import {foo as Foo, dbl} from "import_tests/packages";
 
 // Throw error: Foo qualifier should be used instead of foo.
-let x = foo(dbl);
+let x = /* @@ IdentTest */foo(dbl);
 
-/* @@? 19:9 Error TypeError: Unresolved reference foo  */
-/* @@? 19:9 Error TypeError: Unresolved reference foo  */
+/* @@@ IdentTest Error TypeError: Unresolved reference foo  */
+/* @@@ IdentTest Error TypeError: Unresolved reference foo  */

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function foo (): void
-let y = foo()
-/* @@? 16:9 Error TypeError: Cannot use type 'void' as value.   */
-/* @@? 16:9 Error TypeError: Cannot use type 'void' as value.   */
-/* @@? 15:13 Error TypeError: Only abstract or native methods can't have body.  */
+function foo/* @@ IdentTest */ (): void
+let y = /* @@ IdentTest1 */foo()
+/* @@@ IdentTest1 Error TypeError: Cannot use type 'void' as value.   */
+/* @@@ IdentTest1 Error TypeError: Cannot use type 'void' as value.   */
+/* @@@ IdentTest Error TypeError: Only abstract or native methods can't have body.  */

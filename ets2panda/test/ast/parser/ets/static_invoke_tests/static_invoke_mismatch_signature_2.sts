@@ -20,8 +20,8 @@ class A {
 }
 
 function main() {
-    A()
+    /* @@ IdentTest */A()
 }
 
-/* @@? 23:5 Error TypeError: Expected 0 arguments, got 1.  */
-/* @@? 23:5 Error TypeError: No matching call signature  */
+/* @@@ IdentTest Error TypeError: Expected 0 arguments, got 1.  */
+/* @@@ IdentTest Error TypeError: No matching call signature  */
