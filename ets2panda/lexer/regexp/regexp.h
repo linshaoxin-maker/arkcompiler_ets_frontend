@@ -18,6 +18,7 @@
 
 #include "util/enumbitops.h"
 #include "util/ustring.h"
+#include "parser/parserImpl.h"
 
 #include "../../parser/parserImpl.h"
 
