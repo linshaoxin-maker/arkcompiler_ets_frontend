@@ -698,6 +698,8 @@ class ArkProgram():
         if self.run_baseline_jit:
             cmd_args.insert(-1, f'--compiler-enable-baselinejit=true')
             cmd_args.insert(-1, f'--compiler-force-baselinejit-compile-main=true')
+            cmd_args.insert(-1, f'--compiler-enable-jitfort=false')
+            cmd_args.insert(-1, f'--compiler-codesign-disable=false')
         if self.stub_file != "":
             cmd_args.insert(-1, f"--stub-file={self.stub_file}")
         retcode = 0
