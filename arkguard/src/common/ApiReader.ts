@@ -15,19 +15,23 @@
 
 import path from 'path';
 import {ApiExtractor} from './ApiExtractor';
-import {ListUtil} from '../utils/ListUtil';
 import type {IOptions} from '../configs/IOptions';
 import { stringPropsSet, structPropsSet, enumPropsSet } from '../utils/OhsUtil';
 import type { MergedConfig } from '../ArkObfuscator';
 
-export let scanProjectConfig: {
+export interface ScanProjectConfig {
+  isEnabledPropertyObfuscation: boolean,
   mPropertyObfuscation?: boolean,
   mKeepStringProperty?: boolean,
   mExportObfuscation?: boolean,
   mkeepFilesAndDependencies?: Set<string>,
   isHarCompiled?: boolean
   mStripSystemApiArgs?: boolean;
-} = {};
+}
+
+export let scanProjectConfig: ScanProjectConfig = {
+  isEnabledPropertyObfuscation : false
+};
 
 /**
  * if rename property is not open, api read and extract can be skipped
@@ -65,6 +69,7 @@ export function isEnabledPropertyObfuscation(customProfiles: IOptions): boolean 
 }
 
 function initScanProjectConfig(customProfiles: IOptions, isHarCompiled?: boolean): void {
+  scanProjectConfig.isEnabledPropertyObfuscation = isEnabledPropertyObfuscation(customProfiles);
   scanProjectConfig.mPropertyObfuscation = customProfiles.mNameObfuscation?.mRenameProperties;
   scanProjectConfig.mKeepStringProperty = customProfiles.mNameObfuscation?.mKeepStringProperty;
   scanProjectConfig.mExportObfuscation = customProfiles.mExportObfuscation;
@@ -147,7 +152,9 @@ export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<s
   }
 
   // scanProjectConfig needs to be cleared to prevent affecting incremental compilation
-  scanProjectConfig = {};
+  scanProjectConfig = {
+    isEnabledPropertyObfuscation : false
+  };
 
   return {
     structPropertySet: structPropertySet,

@@ -60,6 +60,7 @@ import {
 } from './OhsUtil';
 import { Extension } from '../common/type';
 import { MergedConfig } from '../initialization/ConfigResolver';
+import { ProjectCollections } from './CommonCollections';
 
 export class NodeUtils {
   public static isPropertyDeclarationNode(node: Node): boolean {

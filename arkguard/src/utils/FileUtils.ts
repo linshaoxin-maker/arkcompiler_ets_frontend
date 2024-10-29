@@ -189,4 +189,10 @@ export class FileUtils {
         fs.unlinkSync(filePath);
     }
   }
+
+  public static createDirectory(dirPath: string): void {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  }
 }
