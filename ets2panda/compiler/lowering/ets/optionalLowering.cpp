@@ -120,15 +120,8 @@ static ir::AstNode *LowerChain(public_lib::Context *ctx, ir::ChainExpression *co
     UNREACHABLE();
 }
 
-bool OptionalLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool OptionalLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            Perform(ctx, extProg);
-        }
-    }
-
     program->Ast()->TransformChildrenRecursively(
         [ctx](ir::AstNode *const node) -> ir::AstNode * {
             if (node->IsChainExpression()) {
@@ -141,17 +134,8 @@ bool OptionalLowering::Perform(public_lib::Context *ctx, parser::Program *progra
     return true;
 }
 
-bool OptionalLowering::Postcondition(public_lib::Context *ctx, const parser::Program *program)
+bool OptionalLowering::PostconditionForModule([[maybe_unused]] public_lib::Context *ctx, const parser::Program *program)
 {
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            if (!Postcondition(ctx, extProg)) {
-                return false;
-            }
-        }
-    }
-
     return !program->Ast()->IsAnyChild([](const ir::AstNode *node) {
         return node->IsChainExpression() || (node->IsMemberExpression() && node->AsMemberExpression()->IsOptional()) ||
                (node->IsCallExpression() && node->AsCallExpression()->IsOptional());

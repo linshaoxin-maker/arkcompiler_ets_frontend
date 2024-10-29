@@ -141,18 +141,8 @@ ir::Statement *ObjectIteratorLowering::ProcessObjectIterator(parser::ETSParser *
     return loweringResult;
 }
 
-bool ObjectIteratorLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool ObjectIteratorLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    const auto &options = ctx->config->options->CompilerOptions();
-    if (options.compilationMode == CompilationMode::GEN_STD_LIB) {
-        for (auto &[_, extPrograms] : program->ExternalSources()) {
-            (void)_;
-            for (auto *extProg : extPrograms) {
-                Perform(ctx, extProg);
-            }
-        }
-    }
-
     auto *const parser = ctx->parser->AsETSParser();
     ASSERT(parser != nullptr);
     auto *const checker = ctx->checker->AsETSChecker();

@@ -1151,19 +1151,7 @@ static ir::AstNode *BuildLambdaClassWhenNeeded(public_lib::Context *ctx, ir::Ast
     return node;
 }
 
-static void CallPerformForExtSources(LambdaConversionPhase *phase, public_lib::Context *ctx, parser::Program *program)
-{
-    auto *varBinder = ctx->checker->VarBinder()->AsETSBinder();
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            varbinder::RecordTableContext bctx {varBinder, extProg};
-            phase->Perform(ctx, extProg);
-        }
-    }
-}
-
-bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool LambdaConversionPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
     parser::SavedFormattingFileName savedFormattingName(ctx->parser->AsETSParser(), "lambda-conversion");
 
@@ -1171,10 +1159,6 @@ bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *p
     // the same process's lifetime.
     if (program == ctx->parserProgram) {
         ResetCalleeCount();
-    }
-
-    if (ctx->config->options->CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB) {
-        CallPerformForExtSources(this, ctx, program);
     }
 
     program->Ast()->TransformChildrenRecursivelyPostorder(
@@ -1192,7 +1176,8 @@ bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *p
     return true;
 }
 
-bool LambdaConversionPhase::Postcondition([[maybe_unused]] public_lib::Context *ctx, parser::Program const *program)
+bool LambdaConversionPhase::PostconditionForModule([[maybe_unused]] public_lib::Context *ctx,
+                                                   parser::Program const *program)
 {
     return !program->Ast()->IsAnyChild([](ir::AstNode const *node) { return node->IsArrowFunctionExpression(); });
 }

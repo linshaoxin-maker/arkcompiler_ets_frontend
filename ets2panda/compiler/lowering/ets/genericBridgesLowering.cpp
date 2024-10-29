@@ -275,20 +275,9 @@ ir::ClassDefinition *GenericBridgesPhase::ProcessClassDefinition(ir::ClassDefini
     return classDefinition;
 }
 
-bool GenericBridgesPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool GenericBridgesPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    if (context_ == nullptr) {
-        context_ = ctx;
-    }
-
-    if (ctx->config->options->CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB) {
-        for (auto &[_, ext_programs] : program->ExternalSources()) {
-            (void)_;
-            for (auto *extProg : ext_programs) {
-                Perform(ctx, extProg);
-            }
-        }
-    }
+    context_ = ctx;
 
     program->Ast()->TransformChildrenRecursively(
         [this](ir::AstNode *ast) -> ir::AstNode * {

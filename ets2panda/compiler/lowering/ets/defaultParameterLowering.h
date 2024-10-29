@@ -20,7 +20,7 @@
 
 namespace ark::es2panda::compiler {
 
-class DefaultParameterLowering : public Phase {
+class DefaultParameterLowering : public PhaseForDeclarations {
     std::pair<bool, std::size_t> HasDefaultParam(const ir::ScriptFunction *function, parser::Program *program);
     void ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos,
                           parser::Program *program) const
@@ -50,7 +50,7 @@ public:
     {
         return "DefaultParameterLowering";
     }
-    bool Perform(public_lib::Context *ctx, parser::Program *program) override;
+    bool PerformForModule(public_lib::Context *ctx, parser::Program *program) override;
 };
 
 }  // namespace ark::es2panda::compiler

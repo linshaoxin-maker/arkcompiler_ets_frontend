@@ -335,15 +335,8 @@ void DefaultParameterLowering::ProcessGlobalFunctionDefinition(ir::MethodDefinit
     RemoveInitializers(std::move(params));
 }
 
-bool DefaultParameterLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool DefaultParameterLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            Perform(ctx, extProg);
-        }
-    }
-
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
     ArenaVector<ir::MethodDefinition *> foundNodes(checker->Allocator()->Adapter());
     program->Ast()->IterateRecursively([&foundNodes, this, program](ir::AstNode *ast) {

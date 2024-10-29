@@ -81,15 +81,8 @@ std::string SpreadConstructionPhase::CreateETSCode(ir::ArrayExpression *array, s
     return src.str();
 }
 
-bool SpreadConstructionPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool SpreadConstructionPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            Perform(ctx, extProg);
-        }
-    }
-
     auto *const parser = ctx->parser->AsETSParser();
     checker::ETSChecker *const checker = ctx->checker->AsETSChecker();
 
@@ -117,19 +110,6 @@ bool SpreadConstructionPhase::Perform(public_lib::Context *ctx, parser::Program 
             return node;
         },
         Name());
-    return true;
-}
-
-bool SpreadConstructionPhase::Postcondition(public_lib::Context *ctx, const parser::Program *program)
-{
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            if (!Postcondition(ctx, extProg)) {
-                return false;
-            }
-        }
-    }
     return true;
 }
 
