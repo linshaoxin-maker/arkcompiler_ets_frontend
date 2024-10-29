@@ -138,6 +138,10 @@ public:
     const GlobalArraySignatureMap &GlobalArrayTypes() const;
 
     Type *GlobalTypeError() const;
+    [[nodiscard]] Type *InvalidateType(ir::Typed<ir::AstNode> *node);
+    [[nodiscard]] Type *TypeError(ir::Typed<ir::AstNode> *node, std::string_view message,
+                                  const lexer::SourcePosition &at);
+    [[nodiscard]] Type *TypeError(varbinder::Variable *var, std::string_view message, const lexer::SourcePosition &at);
 
     void InitializeBuiltins(varbinder::ETSBinder *varbinder);
     void InitializeBuiltin(varbinder::Variable *var, const util::StringView &name);
@@ -202,6 +206,8 @@ public:
     void CheckInnerClassMembers(const ETSObjectType *classType);
     void CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &checkerStatus);
     void CheckClassDefinition(ir::ClassDefinition *classDef);
+    void CheckClassAnnotations(ir::ClassDefinition *classDef);
+    void CheckClassMembers(ir::ClassDefinition *classDef);
     void CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType);
     void FindAssignment(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
     void FindAssignments(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
@@ -510,6 +516,14 @@ public:
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
     bool IsConstantExpression(ir::Expression *expr, Type *type);
     void ValidateUnaryOperatorOperand(varbinder::Variable *variable);
+    bool ValidateAnnotationPropertyType(checker::Type *tsType);
+    bool CheckDuplicateAnnotations(const ArenaVector<ir::AnnotationUsage *> &annotations);
+    void CheckAnnotationPropertyType(ir::ClassProperty *property);
+    void CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                       ETSChecker *checker);
+    void CheckMultiplePropertiesAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                           ETSChecker *checker,
+                                           std::unordered_map<util::StringView, ir::ClassProperty *> &fieldMap);
     void InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::ArrowFunctionExpression *init);
     bool TestUnionType(Type *type, TypeFlag test);
     std::tuple<Type *, bool> ApplyBinaryOperatorPromotion(Type *left, Type *right, TypeFlag test,
@@ -615,6 +629,7 @@ public:
     void ModifyPreferredType(ir::ArrayExpression *arrayExpr, Type *newPreferredType);
     Type *SelectGlobalIntegerTypeForNumeric(Type *type);
     Type *TryGettingFunctionTypeFromInvokeFunction(Type *type);
+
     ir::ClassProperty *ClassPropToImplementationProp(ir::ClassProperty *classProp, varbinder::ClassScope *scope);
     ir::Expression *GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiateMethod,
                                                    const std::string &className);
@@ -639,10 +654,41 @@ public:
     Type *HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstantiation *typeParams,
                                          const std::string_view &utilityType);
     // Partial
+    static constexpr auto PARTIAL_CLASS_SUFFIX = "$partial";
     Type *HandlePartialType(Type *typeToBePartial);
+    Type *HandlePartialTypeNode(ir::TypeNode *typeParamNode);
+    Type *HandlePartialInterface(Type *typeToBePartial);
+    Type *HandlePartialClass(Type *typeToBePartial);
     ir::ClassProperty *CreateNullishProperty(ir::ClassProperty *prop, ir::ClassDefinition *newClassDefinition);
-    ir::ClassDefinition *CreatePartialClassDeclaration(ir::ClassDefinition *newClassDefinition,
-                                                       const ir::ClassDefinition *classDef);
+    ir::ClassProperty *CreateNullishProperty(ir::ClassProperty *const prop,
+                                             ir::TSInterfaceDeclaration *const newTSInterfaceDefinition);
+    void ConvertGetterAndSetterToProperty(ir::TSInterfaceDeclaration *interfaceDecl,
+                                          ir::TSInterfaceDeclaration *partialInterface);
+    ir::MethodDefinition *CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                ir::TSInterfaceDeclaration *interface);
+    ir::ClassProperty *CreateNullishPropertyFromAccessorInInterface(
+        ir::MethodDefinition *const accessor, ir::TSInterfaceDeclaration *const newTSInterfaceDefinition);
+    ir::ClassProperty *CreateNullishPropertyFromAccessor(ir::MethodDefinition *const accessor,
+                                                         ir::ClassDefinition *newClassDefinition);
+    ir::MethodDefinition *CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                ir::ClassDefinition *classDefinition);
+    ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *CreatePartialClassDeclaration(
+        ir::ClassDefinition *newClassDefinition, ir::ClassDefinition *classDef, Type *superPartialType);
+    ir::ETSTypeReference *BuildSuperPartialTypeReference(Type *superPartialType,
+                                                         ir::TSTypeParameterInstantiation *superPartialRefTypeParams);
+    ir::TSInterfaceDeclaration *CreateInterfaceProto(util::StringView name, const bool isStatic,
+                                                     const bool isClassDeclaredInCurrentFile,
+                                                     const ir::ModifierFlags flags);
+    ir::TSTypeParameterInstantiation *CreateNewSuperPartialRefTypeParamsDecl(
+        ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution, const Type *const superPartialType,
+        ir::Expression *superRef);
+    ir::TSTypeParameterDeclaration *ProcessTypeParamAndGenSubstitution(
+        ir::TSTypeParameterDeclaration const *const thisTypeParams,
+        ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution,
+        ir::TSTypeParameterDeclaration *newTypeParams);
+    Type *CreatePartialTypeInterfaceDecl(util::StringView qualifiedName,
+                                         ir::TSInterfaceDeclaration *const interfaceDecl,
+                                         ir::TSInterfaceDeclaration *partialInterface);
     void CreateConstructorForPartialType(ir::ClassDefinition *partialClassDef, checker::ETSObjectType *partialType,
                                          varbinder::RecordTable *recordTable);
     ir::ClassDefinition *CreateClassPrototype(util::StringView name, parser::Program *classDeclProgram);
