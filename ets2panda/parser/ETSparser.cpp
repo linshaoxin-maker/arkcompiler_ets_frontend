@@ -823,13 +823,9 @@ ir::TSTypeAliasDeclaration *ETSParser::ParseTypeAliasDeclaration()
         ThrowSyntaxError(errMsg.c_str());
     }
 
-    const util::StringView ident = Lexer()->GetToken().Ident();
-    auto *id = AllocNode<ir::Identifier>(ident, Allocator());
-    id->SetRange(Lexer()->GetToken().Loc());
+    ir::Identifier *id = ExpectIdentifier();
 
     auto *typeAliasDecl = AllocNode<ir::TSTypeAliasDeclaration>(Allocator(), id);
-
-    Lexer()->NextToken();  // eat alias name
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options =
