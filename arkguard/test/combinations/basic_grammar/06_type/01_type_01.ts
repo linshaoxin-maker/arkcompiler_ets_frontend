@@ -41,7 +41,7 @@ let temp2: number & (string | number) = 1;
 assert(temp2 === 1);
 type temp7 = number;
 type temp8 = string;
-function foo<T>(param: T extends temp7 ? temp7 : temp8) { return param};
+function foo<T>(param: T extends temp7 ? temp7 : temp8) { return param}
 assert(foo<number>(1) === 1);
 
 type X2<T> = T extends {a: infer U, b: infer U} ? U : never;
@@ -55,7 +55,7 @@ assert(temp6[1] === 2);
 interface Person {
   name: string;
   age: number;
-};
+}
 type PersonKeys = keyof Person;
 let b: PersonKeys = "name";
 assert(b === "name");
