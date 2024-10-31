@@ -172,6 +172,8 @@ static bool GenerateProgram(std::map<std::string, panda::es2panda::util::Program
 
     if (programsInfo.size() == 1) {
         auto *prog = &(programsInfo.begin()->second->program);
+        panda::pandasm::MakeSlotNumberRecord(prog);
+        panda::pandasm::MakeSlotNumberAnnotation(prog);
         if (options->OutputFiles().empty() && options->CompilerOutput().empty()) {
             GenerateBase64Output(prog, options);
             return true;
