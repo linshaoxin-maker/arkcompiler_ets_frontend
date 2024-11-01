@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_PARSER_CORE_TS_PARSER_H
 #define ES2PANDA_PARSER_CORE_TS_PARSER_H
 
-#include "TypedParser.h"
+#include "ThrowableTypedParser.h"
 #include "parserFlags.h"
 
 namespace ark::es2panda::ir {
@@ -25,10 +25,10 @@ enum class TSTupleKind;
 }  // namespace ark::es2panda::ir
 
 namespace ark::es2panda::parser {
-class TSParser : public TypedParser {
+class TSParser : public ThrowableTypedParser {
 public:
     TSParser(Program *program, const CompilerOptions &options, ParserStatus status = ParserStatus::NO_OPTS)
-        : TypedParser(program, options, status)
+        : ThrowableTypedParser(program, options, status)
     {
     }
 

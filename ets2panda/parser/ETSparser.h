@@ -18,7 +18,7 @@
 
 #include "util/arktsconfig.h"
 #include "util/importPathManager.h"
-#include "TypedParser.h"
+#include "ThrowableTypedParser.h"
 #include "ir/base/classDefinition.h"
 #include <utility>
 
@@ -30,7 +30,7 @@ enum class PrimitiveType;
 
 namespace ark::es2panda::parser {
 
-class ETSParser final : public TypedParser {
+class ETSParser final : public ThrowableTypedParser {
 public:
     ETSParser(Program *program, const CompilerOptions &options, ParserStatus status = ParserStatus::NO_OPTS);
 

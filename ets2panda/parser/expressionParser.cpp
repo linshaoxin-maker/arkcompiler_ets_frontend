@@ -1022,7 +1022,7 @@ ir::RegExpLiteral *ParserImpl::ParseRegularExpression()
     lexer_->ResetTokenEnd();
     auto regexp = lexer_->ScanRegExp();
 
-    lexer::RegExpParser reParser(regexp, Allocator(), *this);
+    lexer::RegExpParser reParser(regexp, Allocator(), this);
 
     reParser.ParsePattern();
 

@@ -16,14 +16,14 @@
 #ifndef ES2PANDA_PARSER_CORE_AS_PARSER_H
 #define ES2PANDA_PARSER_CORE_AS_PARSER_H
 
-#include "TypedParser.h"
+#include "ThrowableTypedParser.h"
 #include "parserFlags.h"
 
 namespace ark::es2panda::parser {
-class ASParser : public TypedParser {
+class ASParser : public ThrowableTypedParser {
 public:
     ASParser(Program *program, const CompilerOptions &options, ParserStatus status = ParserStatus::NO_OPTS)
-        : TypedParser(program, options, status)
+        : ThrowableTypedParser(program, options, status)
     {
     }
 

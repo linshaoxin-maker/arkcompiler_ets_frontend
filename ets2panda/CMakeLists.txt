@@ -436,6 +436,7 @@ set(ES2PANDA_LIB_SRC
   parser/ETSNolintParser.cpp
   parser/TSparser.cpp
   parser/TypedParser.cpp
+  parser/ThrowableTypedParser.cpp
   parser/program/entityNameVisitor.cpp
   parser/program/program.cpp
   parser/statementParser.cpp
