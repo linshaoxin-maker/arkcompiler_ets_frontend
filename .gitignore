@@ -12,10 +12,9 @@ ets2panda/linter*/**/*.tsbuildinfo
 ets2panda/linter*/**/.vs
 ets2panda/linter*/**/.vscode
 ets2panda/linter*/**/.cache
-ets2panda/linter*/test/**/results
-ets2panda/linter*/test_rules/**/results
-ets2panda/linter*/test_regression/**/results
-ets2panda/linter*/test_extended_features/**/results
+ets2panda/linter*/test*/**/results
+ets2panda/linter*/test*/**/results_rt
+ets2panda/linter*/test*/**/results_sdk
 ets2panda/linter*/**/package-lock.json
 **/compile_commands.json
 .cache
