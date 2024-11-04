@@ -23,15 +23,15 @@
         },
         {
             "line": 28,
-            "column": 3,
-            "problem": "SendablePropType",
+            "column": 6,
+            "problem": "SendablePropTypeWarning",
             "suggest": "",
             "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
             "line": 29,
-            "column": 3,
-            "problem": "SendablePropType",
+            "column": 6,
+            "problem": "SendablePropTypeWarning",
             "suggest": "",
             "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
         },

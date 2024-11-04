@@ -133,3 +133,4 @@ faultDesc[FaultID.ObjectLiteralProperty] = 'Object literal property';
 faultDesc[FaultID.OptionalMethod] = 'Optional method';
 faultDesc[FaultID.ImportType] = 'Import type syntax';
 faultDesc[FaultID.DynamicCtorCall] = 'Dynamic constructor call';
+faultDesc[FaultID.SendablePropTypeWarning] = 'Sendable PropType Warning';
