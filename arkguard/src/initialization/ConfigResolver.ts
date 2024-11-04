@@ -83,7 +83,13 @@ type SystemApiContent = {
  *   obfuscationCacheDir: string
  *   exportRulePath: string
  */
+class ByteCodeObf{
+  enable:boolean;
+  debugging:boolean;
+  enhanced:boolean;
+}
 class ObOptions {
+  byteCodeObf: ByteCodeObf;
   disableObfuscation: boolean = false;
   enablePropertyObfuscation: boolean = false;
   enableStringPropertyObfuscation: boolean = false;
@@ -211,7 +217,7 @@ export class ObConfigResolver {
     } else {
       selfConfig.options.disableObfuscation = true;
     }
-
+    selfConfig.options.byteCodeObf = sourceObConfig.selfConfig.ruleOptions.byteCodeObf;
     let needConsumerConfigs: boolean =
       this.isHarCompiled &&
       sourceObConfig.selfConfig.consumerRules &&
@@ -231,11 +237,19 @@ export class ObConfigResolver {
     const mergedConfigs: MergedConfig = this.getMergedConfigs(selfConfig, dependencyConfigs);
     UnobfuscationCollections.printKeptName = mergedConfigs.options.printKeptNames;
     this.handleReservedArray(mergedConfigs);
-
+    /**
+     * Bytecode obfuscate mode:
+     * temporary variable or in non-top-level scope is obfuscated to be added to the obfuscate name set,
+     * All names that appear in the confused name collection will be obfuscated later
+     * So when a developer-defined name has the same name as systemApi
+     * Without a whitelist, all the same names would be obfuscated, leading to devastating errors
+     * so in order to work properly, Bytecode obfuscate enables the obfuscate function and requires whitelist
+     */
     let needKeepSystemApi =
       enableObfuscation &&
       (mergedConfigs.options.enablePropertyObfuscation ||
-        (mergedConfigs.options.enableExportObfuscation && mergedConfigs.options.enableToplevelObfuscation));
+        (mergedConfigs.options.enableExportObfuscation && mergedConfigs.options.enableToplevelObfuscation))||
+        (mergedConfigs.options.byteCodeObf?.enable);
 
     if (needKeepSystemApi && sourceObConfig.obfuscationCacheDir) {
       const systemApiCachePath: string = path.join(sourceObConfig.obfuscationCacheDir, 'systemApiCache.json');
@@ -605,18 +619,29 @@ export class ObConfigResolver {
       }
     }
     let systemApiContent: SystemApiContent = {};
+    const savedNameAndPropertySet = new Set([...ApiExtractor.mPropertySet, ...arkUIWhitelist.ReservedPropertyNames]);
+    const savedExportNamesSet = new Set(ApiExtractor.mSystemExportSet);
 
-    if (systemConfigs.options.enablePropertyObfuscation) {
-      const savedNameAndPropertySet = new Set([...ApiExtractor.mPropertySet, ...arkUIWhitelist.ReservedPropertyNames]);
+    if (systemConfigs.options.byteCodeObf?.enable) {
+      systemApiContent = {
+        ReservedGlobalNames: Array.from(savedExportNamesSet),
+        ReservedPropertyNames: Array.from(savedNameAndPropertySet),
+        ReservedLocalNames: Array.from(ApiExtractor.mPropertySet),
+      };
       UnobfuscationCollections.reservedSdkApiForProp = savedNameAndPropertySet;
       UnobfuscationCollections.reservedSdkApiForLocal = new Set(ApiExtractor.mPropertySet);
-      systemApiContent.ReservedPropertyNames = Array.from(savedNameAndPropertySet);
-      systemApiContent.ReservedLocalNames = Array.from(ApiExtractor.mPropertySet);
-    }
-    if (systemConfigs.options.enableToplevelObfuscation && systemConfigs.options.enableExportObfuscation) {
-      const savedExportNamesSet = new Set(ApiExtractor.mSystemExportSet);
       UnobfuscationCollections.reservedSdkApiForGlobal = savedExportNamesSet;
-      systemApiContent.ReservedGlobalNames = Array.from(savedExportNamesSet);
+    } else {
+      if (systemConfigs.options.enablePropertyObfuscation) {
+        systemApiContent.ReservedPropertyNames = Array.from(savedNameAndPropertySet);
+        systemApiContent.ReservedLocalNames = Array.from(ApiExtractor.mPropertySet);
+        UnobfuscationCollections.reservedSdkApiForProp = savedNameAndPropertySet;
+        UnobfuscationCollections.reservedSdkApiForLocal = new Set(ApiExtractor.mPropertySet);
+      }
+      if (systemConfigs.options.enableToplevelObfuscation && systemConfigs.options.enableExportObfuscation) {
+        systemApiContent.ReservedGlobalNames = Array.from(savedExportNamesSet);
+        UnobfuscationCollections.reservedSdkApiForGlobal = savedExportNamesSet;
+      }
     }
 
     if (!fs.existsSync(path.dirname(systemApiCachePath))) {
@@ -1016,7 +1041,7 @@ export function printWhitelist(obfuscationOptions: ObOptions, nameOptions: IName
   let enumSet: Set<string>;
   if (enableProperty) {
     enumSet = UnobfuscationCollections.reservedEnum;
-  } 
+  }
   whitelistObj.enum = convertSetToArray(enumSet);
 
   let whitelistContent = JSON.stringify(whitelistObj, null, 2); // 2: indentation
@@ -1077,7 +1102,7 @@ export function printUnobfuscationReasons(configPath: string, defaultPath: strin
     fs.mkdirSync(path.dirname(defaultPath), { recursive: true });
   }
   fs.writeFileSync(defaultPath, unobfuscationContent);
-  
+
   if (!fs.existsSync(path.dirname(configPath))) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
   }
@@ -1102,6 +1127,9 @@ export function enableObfuscatedFilePathConfig(isPackageModules: boolean, projec
   const isDebugMode = isDebug(projectConfig);
   const hasObfuscationConfig = projectConfig.obfuscationMergedObConfig;
   if (isDebugMode || !hasObfuscationConfig) {
+    return false;
+  }
+  if(hasObfuscationConfig.options.byteCodeObf?.enable){
     return false;
   }
   const disableObfuscation = hasObfuscationConfig.options.disableObfuscation;

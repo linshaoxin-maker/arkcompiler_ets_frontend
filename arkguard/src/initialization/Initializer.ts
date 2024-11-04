@@ -55,7 +55,9 @@ export function initObfuscationConfig(projectConfig: any, arkProjectConfig: any,
     mergedObConfig.reservedFileNames.push(...reservedFileNamesInIDEconfig);
   }
   arkProjectConfig.obfuscationMergedObConfig = mergedObConfig;
-
+  if (mergedObConfig.options.byteCodeObf?.enable) {
+    return;
+  }
   arkProjectConfig.arkObfuscator = initArkGuardConfig(
     projectConfig.obfuscationOptions?.obfuscationCacheDir,
     logger,
