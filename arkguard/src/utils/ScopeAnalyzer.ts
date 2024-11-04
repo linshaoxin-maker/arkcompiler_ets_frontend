@@ -73,6 +73,7 @@ namespace secharmony {
   type ForLikeStatement = ForStatement | ForInOrOfStatement;
   type ClassLikeDeclaration = ClassDeclaration | ClassExpression;
   export const noSymbolIdentifier: Set<string> = new Set();
+  export const symbolMap: Map<Node, Symbol> = new Map();
 
   /**
    * type of scope
@@ -465,11 +466,13 @@ namespace secharmony {
           if (!propertySymbol) {
             noSymbolIdentifier.add(propetyNameNode.text);
           } else {
+            symbolMap.set(propetyNameNode, propertySymbol);
             current.addDefinition(propertySymbol);
           }
 
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
+            symbolMap.set(node.name, nameSymbol);
             current.addDefinition(nameSymbol);
           }
         } else {
@@ -539,6 +542,7 @@ namespace secharmony {
         if (!propertySymbol) {
           noSymbolIdentifier.add(propetyNameNode.text);
         }
+        symbolMap.set(propetyNameNode, propertySymbol);
       }
       forEachChild(node, analyzeScope);
     }
@@ -550,6 +554,7 @@ namespace secharmony {
 
       let symbol = checker.getSymbolAtLocation(node.name);
       if (symbol) {
+        symbolMap.set(node.name, symbol);
         current.addDefinition(symbol, true);
       }
     }
@@ -725,11 +730,14 @@ namespace secharmony {
       let symbol: Symbol;
       if ((isFunctionExpression(node) || isArrowFunction(node)) && isVariableDeclaration(node.parent)) {
         symbol = checker.getSymbolAtLocation(node.name ? node.name : node.parent.name);
+        symbolMap.set(node.name ? node.name : node.parent.name, symbol);
       } else {
         if (isFunctionDeclaration(node)) {
           symbol = NodeUtils.findSymbolOfIdentifier(checker, node.name);
+          symbolMap.set(node.name ? node.name : node.name, symbol);
         } else {
           symbol = checker.getSymbolAtLocation(node.name);
+          symbolMap.set(node.name ? node.name : node.name, symbol);
         }
       }
       if (symbol) {
@@ -889,6 +897,8 @@ namespace secharmony {
         return;
       }
 
+      symbolMap.set(node, symbol);
+
       // ignore all identifiers that treat as property in property declaration
       if (NodeUtils.isPropertyDeclarationNode(node)) {
         return;
@@ -939,6 +949,7 @@ namespace secharmony {
       if (!sym) {
         return undefined;
       }
+      symbolMap.set(node, sym);
 
       for (const scope of scopes) {
         if (scope?.defs.has(sym)) {
@@ -964,6 +975,7 @@ namespace secharmony {
         root.fileExportNames.add(node.name.text);
         let sym: Symbol | undefined = checker.getSymbolAtLocation(node.name);
         if (sym) {
+          symbolMap.set(node.name, sym);
           current.addDefinition(sym, true);
         }
       }
@@ -984,6 +996,7 @@ namespace secharmony {
       if (!sym) {
         current.mangledNames.add((node as Identifier).text);
       }
+      symbolMap.set(node, sym);
     }
 
     function findNoSymbolIdentifiers(node: Node): void {

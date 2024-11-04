@@ -594,8 +594,9 @@ export class ObConfigResolver {
     }
     let arkUIWhitelist: ArkUIWhitelist = { ReservedPropertyNames: [] };
     const sdkApis: string[] = sortAndDeduplicateStringArr(this.sourceObConfig.sdkApis);
+    const scannedComponent: Set<string> = new Set();
     for (let apiPath of sdkApis) {
-      this.getSdkApiCache(apiPath);
+      this.getSdkApiCache(apiPath, scannedComponent);
       const UIPath: string = path.join(apiPath, '../build-tools/ets-loader/lib/pre_define.js');
       if (fs.existsSync(UIPath)) {
         this.getUIApiCache(UIPath);
@@ -632,10 +633,11 @@ export class ObConfigResolver {
     return this.getSystemApiCache(systemConfigs, systemApiCachePath);
   }
 
-  private getSdkApiCache(sdkApiPath: string): void {
+  private getSdkApiCache(sdkApiPath: string, scannedComponent: Set<string>): void {
     ApiExtractor.traverseApiFiles(sdkApiPath, ApiExtractor.ApiType.API);
     const componentPath: string = path.join(sdkApiPath, '../component');
-    if (fs.existsSync(componentPath)) {
+    if (!scannedComponent.has(componentPath) && fs.existsSync(componentPath)) {
+      scannedComponent.add(componentPath);
       ApiExtractor.traverseApiFiles(componentPath, ApiExtractor.ApiType.COMPONENT);
     }
   }
