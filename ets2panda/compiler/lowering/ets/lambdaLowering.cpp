@@ -149,15 +149,13 @@ static std::pair<ir::TSTypeParameterDeclaration *, checker::Substitution *> Clon
     return {newIrTypeParams, substitution};
 }
 
-using ParamsAndVarMap =
-    std::pair<ArenaVector<ir::Expression *>, ArenaMap<varbinder::Variable *, varbinder::Variable *>>;
-ParamsAndVarMap CreateLambdaCalleeParameters(public_lib::Context *ctx, const CalleeParameterInfo &calleeParameterInfo)
+void ProcessCapturedVars(public_lib::Context *ctx, const CalleeParameterInfo &calleeParameterInfo,
+                         ArenaVector<ir::Expression *> &resParams,
+                         ArenaMap<varbinder::Variable *, varbinder::Variable *> &varMap)
 {
     auto allocator = ctx->allocator;
     auto checker = ctx->checker->AsETSChecker();
     auto varBinder = ctx->checker->VarBinder();
-    auto resParams = ArenaVector<ir::Expression *>(allocator->Adapter());
-    auto varMap = ArenaMap<varbinder::Variable *, varbinder::Variable *>(allocator->Adapter());
 
     auto paramLexScope =
         varbinder::LexicalScope<varbinder::ParamScope>::Enter(varBinder, calleeParameterInfo.paramScope);
@@ -176,6 +174,18 @@ ParamsAndVarMap CreateLambdaCalleeParameters(public_lib::Context *ctx, const Cal
         resParams.push_back(param);
         varMap[capturedVar] = var;
     }
+}
+
+void ProcessLambdaParams(public_lib::Context *ctx, const CalleeParameterInfo &calleeParameterInfo,
+                         ArenaVector<ir::Expression *> &resParams,
+                         ArenaMap<varbinder::Variable *, varbinder::Variable *> &varMap)
+{
+    auto allocator = ctx->allocator;
+    auto checker = ctx->checker->AsETSChecker();
+    auto varBinder = ctx->checker->VarBinder();
+
+    auto paramLexScope =
+        varbinder::LexicalScope<varbinder::ParamScope>::Enter(varBinder, calleeParameterInfo.paramScope);
 
     size_t i = 0;
 
@@ -184,7 +194,13 @@ ParamsAndVarMap CreateLambdaCalleeParameters(public_lib::Context *ctx, const Cal
             break;
         }
 
-        auto *oldParamType = oldParam->AsETSParameterExpression()->Ident()->TypeAnnotation()->TsType();
+        checker::Type *oldParamType;
+        auto *restParam = oldParam->AsETSParameterExpression()->RestParameter();
+        if (restParam != nullptr) {
+            oldParamType = restParam->TypeAnnotation()->TsType();
+        } else {
+            oldParamType = oldParam->AsETSParameterExpression()->Ident()->TypeAnnotation()->TsType();
+        }
         auto *newParamType = oldParamType->Substitute(checker->Relation(), calleeParameterInfo.substitution);
         auto *newParam = oldParam->AsETSParameterExpression()->Clone(allocator, nullptr);
         newParam->Ident()->SetVariable(nullptr);  // Remove the cloned variable.
@@ -205,7 +221,18 @@ ParamsAndVarMap CreateLambdaCalleeParameters(public_lib::Context *ctx, const Cal
             InitScopesPhaseETS::RunExternalNode(newParam->TypeAnnotation(), varBinder);
         }
     }
+}
 
+using ParamsAndVarMap =
+    std::pair<ArenaVector<ir::Expression *>, ArenaMap<varbinder::Variable *, varbinder::Variable *>>;
+ParamsAndVarMap CreateLambdaCalleeParameters(public_lib::Context *ctx, const CalleeParameterInfo &calleeParameterInfo)
+{
+    auto allocator = ctx->allocator;
+    auto resParams = ArenaVector<ir::Expression *>(allocator->Adapter());
+    auto varMap = ArenaMap<varbinder::Variable *, varbinder::Variable *>(allocator->Adapter());
+
+    ProcessCapturedVars(ctx, calleeParameterInfo, resParams, varMap);
+    ProcessLambdaParams(ctx, calleeParameterInfo, resParams, varMap);
     return {resParams, varMap};
 }
 
