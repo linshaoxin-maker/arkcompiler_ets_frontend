@@ -725,7 +725,8 @@ void ETSBinder::ValidateImportVariable(varbinder::Variable *const var, const ir:
         ThrowError(importPath->Start(), "Use the default import syntax to import a default exported element");
     }
 
-    if (import->IsTypeKind() && !var->Declaration()->Node()->IsExportedType()) {
+    if (import->IsTypeKind() && !var->Declaration()->Node()->IsExportedType()
+                             && !var->Declaration()->Node()->IsExported()) {
         ThrowError(importPath->Start(),
                    "Cannot import '" + imported.Mutf8() + "', imported type imports only exported types.");
     }
