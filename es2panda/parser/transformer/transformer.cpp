@@ -1035,7 +1035,7 @@ std::vector<ir::ExpressionStatement *> Transformer::VisitStaticProperty(ir::Clas
      // When targetApiVersion is greater than 10, for classes with decorators,
      // the static public class properties in them will go through the transform process.
      // The number 10 is used to indicate the target api version
-    if (program_->TargetApiVersion() > 10 && !(node->IsClassDecoratorPresent())) {
+    if (VersionManager::GetVersion().IsClassSupported() && !(node->IsClassDecoratorPresent())) {
         return {};
     }
 
@@ -1080,7 +1080,7 @@ std::vector<ir::ExpressionStatement *> Transformer::VisitStaticProperty(ir::Clas
         // the value of the public static class property in the class will be assigned to nullptr,
         // and the value will be assigned outside the class.
         // The number 10 is used to indicate the target api version
-        if (program_->TargetApiVersion() > 10) {
+        if (VersionManager::GetVersion().IsClassSupported()) {
             classProperty->RemoveValue();
         }
         res.push_back(AllocNode<ir::ExpressionStatement>(assignment));

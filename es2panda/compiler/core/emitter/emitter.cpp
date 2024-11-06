@@ -49,6 +49,7 @@
 #include <macros.h>
 #include <parser/program/program.h>
 #include <util/helpers.h>
+#include <version_manager.h>
 
 #include <string>
 #include <string_view>
@@ -681,8 +682,7 @@ void Emitter::AddScopeNamesRecord(CompilerContext *context)
 {
     std::lock_guard<std::mutex> lock(m_);
     // make literalarray for scope names
-    if (util::Helpers::IsDefaultApiVersion(context->Binder()->Program()->TargetApiVersion(),
-        context->Binder()->Program()->GetTargetApiSubVersion())) {
+    if (!VersionManager::GetVersion().IsFuncNameManglingRefactoringSupported()) {
         return;
     }
     const auto &scopeNamesMap = context->Binder()->GetScopeNames();

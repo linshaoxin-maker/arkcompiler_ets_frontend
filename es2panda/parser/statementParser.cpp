@@ -3191,7 +3191,7 @@ ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *speci
 
 void ParserImpl::VerifySupportLazyImportVersion()
 {
-    if (!util::Helpers::IsSupportLazyImportVersion(program_.TargetApiVersion(), program_.GetTargetApiSubVersion())) {
+    if (!VersionManager::GetVersion().IsLazyImportSupported()) {
         std::string errMessage = "Current configuration does not support using lazy import. Lazy import can be "
             "used in the beta3 version of API 12 or higher versions.\n"
             "Solutions: > Check the compatibleSdkVersion and compatibleSdkVersionStage in build-profile.json5."

@@ -31,6 +31,7 @@
 #include "os/file.h"
 #include "utils/pandargs.h"
 #include "utils/timers.h"
+#include "version_manager.h"
 
 #include "mergeProgram.h"
 #include "util/helpers.h"
@@ -420,15 +421,14 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode version. If both bc-version and"\
         "bc-min-version are enabled, only bc-version will take effects");
     panda::PandArg<bool> bcMinVersion("bc-min-version", false, "Print ark bytecode minimum supported version");
-    // todo(huyunhui): change default api verion to 0 after refactoring
-    // The latest api version in isa.yaml is 15
-    panda::PandArg<int> targetApiVersion("target-api-version", 15,
+    // 0 is default api version, alaways corresponds to the newest bytecode version.
+    panda::PandArg<int> targetApiVersion("target-api-version", 0,
         "Specify the targeting api version for es2abc to generated the corresponding version of bytecode");
     panda::PandArg<bool> targetBcVersion("target-bc-version", false, "Print the corresponding ark bytecode version"\
         "for target api version. If both target-bc-version and bc-version are enabled, only target-bc-version"\
         "will take effects");
     panda::PandArg<std::string> targetApiSubVersion("target-api-sub-version",
-        std::string {util::Helpers::DEFAULT_SUB_API_VERSION},
+        std::string {util::Helpers::DEFAULT_API_SUB_VERSION},
         "Specify the targeting api sub version for es2abc to generated the corresponding version of bytecode");
     panda::PandArg<bool> enableAnnotations("enable-annotations", false, "Permits es2abc to compile annotations");
 
@@ -517,8 +517,7 @@ bool Options::Parse(int argc, const char **argv)
 
     bool parseStatus = argparser_->Parse(argc, argv);
 
-    compilerOptions_.targetApiVersion = targetApiVersion.GetValue();
-    compilerOptions_.targetApiSubVersion = targetApiSubVersion.GetValue();
+    VersionManager::Init(targetApiVersion.GetValue(), targetApiSubVersion.GetValue());
     if (parseStatus && targetBcVersion.GetValue()) {
         compilerOptions_.targetBcVersion = targetBcVersion.GetValue();
         return true;

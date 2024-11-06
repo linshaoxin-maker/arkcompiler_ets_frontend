@@ -45,13 +45,11 @@ void EmitFileQueue::Schedule()
 {
     ASSERT(jobsCount_ == 0);
     std::unique_lock<std::mutex> lock(m_);
-    auto targetApi = options_->CompilerOptions().targetApiVersion;
-    auto targetSubApi = options_->CompilerOptions().targetApiSubVersion;
 
     if (mergeAbc_) {
         // generate merged abc
         auto emitMergedAbcJob = new EmitMergedAbcJob(options_->CompilerOutput(),
-            options_->CompilerOptions().transformLib, progsInfo_, targetApi, targetSubApi);
+            options_->CompilerOptions().transformLib, progsInfo_);
         // Disable generating cached files when cross-program optimization is required, to prevent cached files from
         // not being invalidated when their dependencies are changed
         if (!options_->CompilerOptions().requireGlobalOptimization) {
@@ -66,8 +64,7 @@ void EmitFileQueue::Schedule()
                 // generate multi abcs
                 auto outputFileName = options_->OutputFiles().empty() ? options_->CompilerOutput() :
                     options_->OutputFiles().at(info.first);
-                auto emitSingleAbcJob = new EmitSingleAbcJob(outputFileName, &(info.second->program), statp_,
-                                                             targetApi, targetSubApi);
+                auto emitSingleAbcJob = new EmitSingleAbcJob(outputFileName, &(info.second->program), statp_);
                 jobs_.push_back(emitSingleAbcJob);
                 jobsCount_++;
             } catch (std::exception &error) {
@@ -84,7 +81,7 @@ void EmitSingleAbcJob::Run()
 {
     panda::Timer::timerStart(panda::EVENT_EMIT_SINGLE_PROGRAM, outputFileName_);
     if (!panda::pandasm::AsmEmitter::Emit(panda::os::file::File::GetExtendedFilePath(outputFileName_), *prog_, statp_,
-        nullptr, true, nullptr, targetApiVersion_, targetApiSubVersion_)) {
+        nullptr, true, nullptr)) {
         throw Error(ErrorType::GENERIC, "Failed to emit " + outputFileName_ + ", error: " +
             panda::pandasm::AsmEmitter::GetLastError());
     }
@@ -104,8 +101,7 @@ void EmitMergedAbcJob::Run()
     }
 
     bool success = panda::pandasm::AsmEmitter::EmitPrograms(
-        panda::os::file::File::GetExtendedFilePath(outputFileName_), progs, true,
-        targetApiVersion_, targetApiSubVersion_);
+        panda::os::file::File::GetExtendedFilePath(outputFileName_), progs, true);
 
     for (auto *dependant : dependants_) {
         dependant->Signal();

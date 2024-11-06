@@ -68,8 +68,9 @@ void Compiler::CheckOptionsAndFileForAbcInput(const std::string &fname, const Co
         throw Error(ErrorType::GENERIC, "\"--enable-abc-input\" is not enabled, abc file " + fname +
             "could not be used as the input.");
     }
-    if (options.targetApiVersion < util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) {
-        throw Error(ErrorType::GENERIC, "Target api version '" + std::to_string(options.targetApiVersion) +
+    if (!VersionManager::GetVersion().IsAbc2ProgramSupported()) {
+        throw Error(ErrorType::GENERIC, "Target api version '" +
+                    std::to_string(VersionManager::GetVersion().GetMajorVersion()) +
                     "' should be greater than or equal to '" +
                     std::to_string(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) + "'.");
     }
@@ -81,7 +82,7 @@ void Compiler::CheckOptionsAndFileForAbcInput(const std::string &fname, const Co
         throw Error(ErrorType::GENERIC, "Open abc file " + fname + " failed.");
     }
     if (!abcToAsmCompiler_->CheckFileVersionIsSupported(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_BYTECODE_VERSION,
-                                                        options.targetApiVersion, options.targetApiSubVersion)) {
+                                                        VersionManager::GetVersion())) {
         throw Error(ErrorType::GENERIC, "The input abc file '" + fname + "' owns a higher api version or a higher " +
                     "sdkReleaseType compared to current compilation process.");
     }
@@ -226,7 +227,7 @@ int Compiler::CompileFiles(CompilerOptions &options,
     if (!options.patchFixOptions.symbolTable.empty() || !options.patchFixOptions.dumpSymbolTable.empty()) {
         symbolTable = new util::SymbolTable(options.patchFixOptions.symbolTable,
             options.patchFixOptions.dumpSymbolTable);
-        if (!symbolTable->Initialize(options.targetApiVersion, options.targetApiSubVersion)) {
+        if (!symbolTable->Initialize()) {
             std::cerr << "Failed to initialize for Hotfix." << std::endl;
             return 1;
         }

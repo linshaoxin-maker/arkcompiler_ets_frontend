@@ -25,10 +25,8 @@ const std::string SymbolTable::SECOND_LEVEL_SEPERATOR = ";";
 const size_t FUNCTION_ITEM_NUMBER = 3;
 const size_t MODULE_ITEM_NUMBER = 1;
 
-bool SymbolTable::Initialize(int targetApiVersion, std::string targetApiSubVersion)
+bool SymbolTable::Initialize()
 {
-    targetApiVersion_ = targetApiVersion;
-    targetApiSubVersion_ = targetApiSubVersion;
     if (!symbolTable_.empty() && !ReadSymbolTable(symbolTable_)) {
         std::cerr << "Failed to open the symbol table file'" << std::endl;
         return false;
@@ -112,7 +110,7 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             }
 
             originFunctionInfo_.insert(std::pair<std::string, OriginFunctionInfo>(info.funcInternalName, info));
-            if (util::Helpers::IsDefaultApiVersion(targetApiVersion_, targetApiSubVersion_)) {
+            if (!VersionManager::GetVersion().IsFuncNameManglingRefactoringSupported()) {
                 // index of function in its record's special function array
                 std::string specialFuncIndex{funcItems[3]};
                 ReadRecordHashFunctionNames(info.recordName, info.funcInternalName, specialFuncIndex);

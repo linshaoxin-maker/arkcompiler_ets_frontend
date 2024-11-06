@@ -175,26 +175,6 @@ public:
         isDebug_ = isDebug;
     }
 
-    int TargetApiVersion() const
-    {
-        return targetApiVersion_;
-    }
-
-    void SetTargetApiVersion(int targetApiVersion)
-    {
-        targetApiVersion_ = targetApiVersion;
-    }
-
-    void SetTargetApiSubVersion(std::string targetApiSubVersion)
-    {
-        targetApiSubVersion_ = targetApiSubVersion;
-    }
-
-    std::string GetTargetApiSubVersion() const
-    {
-        return targetApiSubVersion_;
-    }
-
     bool UseDefineSemantic() const
     {
         return useDefineSemantic_;
@@ -255,11 +235,9 @@ private:
     bool isDtsFile_ {false};
     bool hasTLA_ {false};
     bool isDebug_ {false};
-    int targetApiVersion_ {0};
     bool useDefineSemantic_ {true};
     bool isShared_ {false};
     bool enableAnnotations_ {false};
-    std::string targetApiSubVersion_ { util::Helpers::DEFAULT_SUB_API_VERSION };
     std::string moduleRecordFieldName_;
 };
 
