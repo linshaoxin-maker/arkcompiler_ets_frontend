@@ -196,15 +196,35 @@ varbinder::LocalVariable *ETSObjectType::CollectSignaturesForSyntheticType(ETSFu
 
     if ((flags & PropertySearchFlags::SEARCH_STATIC_METHOD) != 0) {
         if (auto *found = GetOwnProperty<PropertyType::STATIC_METHOD>(name); found != nullptr) {
-            ASSERT(found->TsType()->IsETSFunctionType());
-            addSignature(found);
+            ASSERT((found->TsType()->IsETSObjectType() &&
+                    found->TsType()->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) ||
+                   (found->TsType()->IsETSUnionType() &&
+                    found->TsType()->AsETSUnionType()->ConstituentTypes()[0]->IsETSObjectType() &&
+                    found->TsType()->AsETSUnionType()->ConstituentTypes()[0]->AsETSObjectType()->HasObjectFlag(
+                        ETSObjectFlags::FUNCTIONAL)) ||
+                   found->TsType()->IsETSFunctionType());
+            if (found->TsType()->IsETSFunctionType()) {
+                addSignature(found);
+            } else {
+                return found;
+            }
         }
     }
 
     if ((flags & PropertySearchFlags::SEARCH_INSTANCE_METHOD) != 0) {
         if (auto *found = GetOwnProperty<PropertyType::INSTANCE_METHOD>(name); found != nullptr) {
-            ASSERT(found->TsType()->IsETSFunctionType());
-            addSignature(found);
+            ASSERT((found->TsType()->IsETSObjectType() &&
+                    found->TsType()->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) ||
+                   (found->TsType()->IsETSUnionType() &&
+                    found->TsType()->AsETSUnionType()->ConstituentTypes()[0]->IsETSObjectType() &&
+                    found->TsType()->AsETSUnionType()->ConstituentTypes()[0]->AsETSObjectType()->HasObjectFlag(
+                        ETSObjectFlags::FUNCTIONAL)) ||
+                   found->TsType()->IsETSFunctionType());
+            if (found->TsType()->IsETSFunctionType()) {
+                addSignature(found);
+            } else {
+                return found;
+            }
         }
     }
 
@@ -317,7 +337,13 @@ ArenaMap<util::StringView, const varbinder::LocalVariable *> ETSObjectType::Coll
 void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
 {
     if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-        GetFunctionalInterfaceInvokeType()->ToString(ss, precise);
+        auto *invoke = GetOwnProperty<PropertyType::INSTANCE_METHOD>(FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME);
+        if (invoke->FunctionInfo() != nullptr) {
+            invoke->FunctionInfo()->CallSignatures()[0]->ToString(ss, nullptr, false, precise);
+            return;
+        }
+        ASSERT(invoke && invoke->TsType());
+        invoke->TsType()->AsETSFunctionType()->ToString(ss, precise);
         return;
     }
 
@@ -859,7 +885,15 @@ static varbinder::LocalVariable *CopyPropertyWithTypeArguments(varbinder::LocalV
     auto *const checker = relation->GetChecker()->AsETSChecker();
     auto *const varType = ETSChecker::IsVariableGetterSetter(prop) ? prop->TsType() : checker->GetTypeOfVariable(prop);
     auto *const copiedPropType = SubstituteVariableType(relation, substitution, varType);
-    auto *const copiedProp = prop->Copy(checker->Allocator(), prop->Declaration());
+    auto *copiedProp = prop->Copy(checker->Allocator(), prop->Declaration());
+    if (copiedProp->FunctionInfo() != nullptr) {
+        auto callSig = copiedProp->FunctionInfo()->CallSignatures();
+        for (size_t i = 0; i < callSig.size(); ++i) {
+            callSig[i] = callSig[i]->Substitute(relation, substitution);
+        }
+        copiedProp->FunctionInfo()->SetCallSignatures(callSig);
+    }
+
     copiedPropType->SetVariable(copiedProp);
     copiedProp->SetTsType(copiedPropType);
     return copiedProp;
@@ -972,6 +1006,7 @@ ETSObjectType *ETSObjectType::Substitute(TypeRelation *relation, const Substitut
     // Lambda types can capture type params in their bodies, normal classes cannot.
     // NOTE: gogabr. determine precise conditions where we do not need to copy.
     // Perhaps keep track of captured type parameters for each type.
+    // NOTE: Ekko. Will be removed soon, Inprogress.
     if (!anyChange && !HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
         return this;
     }

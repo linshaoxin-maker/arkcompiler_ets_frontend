@@ -234,8 +234,22 @@ checker::RelationResult ETSFunctionType::CastFunctionParams(TypeRelation *relati
 
 void ETSFunctionType::Cast(TypeRelation *relation, Type *target)
 {
-    ASSERT(relation->GetNode()->IsArrowFunctionExpression());
+    if (this->FunctionalInterface() != nullptr) {
+        if (target->IsETSFunctionType() && target->AsETSFunctionType()->FunctionalInterface() != nullptr) {
+            this->FunctionalInterface()->Cast(relation, target->AsETSFunctionType()->FunctionalInterface());
+            return;
+        }
+        this->FunctionalInterface()->Cast(relation, target);
+        return ;
+    }
+
+    ASSERT(relation->GetNode()->IsArrowFunctionExpression() || relation->GetNode()->IsIdentifier());
     auto *savedNode = relation->GetNode();
+    if (target->IsETSFunctionType() && target->AsETSFunctionType()->FunctionalInterface() != nullptr &&
+        this->FunctionalInterface() != nullptr) {
+        this->Cast(relation, target->AsETSFunctionType()->FunctionalInterface());
+        return;
+    }
     conversion::Forbidden(relation);
     if (target->HasTypeFlag(TypeFlag::ETS_OBJECT)) {
         auto *targetType = target->AsETSObjectType();

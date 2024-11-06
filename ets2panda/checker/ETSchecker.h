@@ -361,6 +361,7 @@ public:
     Type *PerformRelationOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
 
     // Function
+    static bool IsFunctionInterfaceType(Type*type);
     bool NeedTypeInference(const ir::ScriptFunction *lambda);
     std::vector<bool> FindTypeInferenceArguments(const ArenaVector<ir::Expression *> &arguments);
     void InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunctionType *calleeType,

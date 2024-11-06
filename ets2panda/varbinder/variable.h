@@ -26,7 +26,9 @@
 
 namespace ark::es2panda::checker {
 class Type;
+enum class SignatureFlags : uint32_t;
 enum class PropertyType;
+class Signature;
 // NOLINTBEGIN(readability-redundant-declaration)
 bool IsTypeError(Type const *tp);
 [[noreturn]] void ThrowEmptyError();
@@ -43,6 +45,126 @@ class VariableScope;
 #define DECLARE_CLASSES(type, className) class className;  // CC-OFF(G.PRE.02) name part
 VARIABLE_TYPES(DECLARE_CLASSES)
 #undef DECLARE_CLASSES
+
+class FunctionInfoData {
+    public:
+    FunctionInfoData(ArenaAllocator *allocator)
+        : nameUnion_(), setterInternalName_(), signatureFlags_(), callSignatures_(allocator->Adapter()) {};
+
+    [[nodiscard]]const ArenaVector<checker::Signature *> &CallSignatures() const
+    {
+        return callSignatures_;
+    }
+
+    [[nodiscard]] FunctionInfoData *Copy(ArenaAllocator *allocator) const
+    {
+        auto *newFunctionInfoData = allocator->New<FunctionInfoData>(allocator);
+        newFunctionInfoData->SetCallSignatures(CallSignatures());
+        newFunctionInfoData->SetInternalName(nameUnion_.internalName_);
+        newFunctionInfoData->SetInternalSetterName(setterInternalName_);
+        newFunctionInfoData->SetSigFlags(SigFlags());
+        newFunctionInfoData->SetSigSetterFlags(SigSetterFlags());
+        return newFunctionInfoData;
+    }
+
+    void SetCallSignatures(const ArenaVector<checker::Signature *> &callSig)
+    {
+        callSignatures_.clear();
+        callSignatures_.insert(callSignatures_.begin(),callSig.begin(),callSig.end());
+    }
+
+    [[nodiscard]] util::StringView InternalName() const
+    {
+        if (nameUnion_.internalName_ == "") {
+            UNREACHABLE();
+        }
+        return nameUnion_.internalName_;
+    }
+
+    void SetInternalName(const util::StringView &internalName)
+    {
+        nameUnion_.internalName_ = internalName;
+    }
+
+    [[nodiscard]] util::StringView InternalGetterName() const
+    {
+        if (nameUnion_.getterInternalName_ == "") {
+            UNREACHABLE();
+        }
+        return nameUnion_.getterInternalName_;
+    }
+
+    void SetInternalGetterName(const util::StringView &internalName)
+    {
+        nameUnion_.getterInternalName_ = internalName;
+    }
+
+    [[nodiscard]] util::StringView InternalSetterName() const
+    {
+        if (setterInternalName_ == "") {
+            UNREACHABLE();
+        }
+        return setterInternalName_;
+    }
+
+    void SetInternalSetterName(const util::StringView &internalName)
+    {
+        setterInternalName_ = internalName;
+    }
+
+    [[nodiscard]] checker::SignatureFlags SigFlags() const
+    {
+        return signatureFlags_.sigFlags_;
+    }
+
+    void SetSigFlags(const checker::SignatureFlags &sigFlags)
+    {
+        signatureFlags_.sigFlags_ = sigFlags;
+    }
+
+    [[nodiscard]] const checker::SignatureFlags &SigGetterFlags() const
+    {
+        return signatureFlags_.getterSigFlags_;
+    }
+
+    void SetSigGetterFlags(const checker::SignatureFlags &sigFlags)
+    {
+        signatureFlags_.getterSigFlags_ = sigFlags;
+    }
+
+    [[nodiscard]] checker::SignatureFlags SigSetterFlags() const
+    {
+        return setterSigFlags_;
+    }
+
+    void SetSigSetterFlags(const checker::SignatureFlags &sigFlags)
+    {
+        setterSigFlags_ = sigFlags;
+    }
+
+    union NameUnion {
+        NameUnion() : internalName_() {};
+        util::StringView internalName_;
+        util::StringView getterInternalName_;
+    };
+    union SigFlagsUnion {
+        SigFlagsUnion() : sigFlags_() {};
+        checker::SignatureFlags sigFlags_;
+        checker::SignatureFlags getterSigFlags_;
+    };
+
+private:
+    NameUnion nameUnion_;
+    util::StringView setterInternalName_;
+    SigFlagsUnion signatureFlags_;
+    checker::SignatureFlags setterSigFlags_;
+
+    // todo
+    // to finish the whole transfer from etsfuntiontype to functionInterface , we will remove this in the future.
+    // The problem exist now is that we use check() after CheckerPhase and LambdaLowering, mainly from build of new
+    // types and node.
+    ArenaVector<checker::Signature *> callSignatures_;
+};
 
 class Variable {
 public:
@@ -99,6 +221,17 @@ public:
         return tsType_;
     }
 
+    [[nodiscard]] FunctionInfoData *FunctionInfo() const
+    {
+        return functionInfo_;
+    }
+
+    void SetFunctionInfo(FunctionInfoData *functionInfo)
+    {
+        functionInfo_ = functionInfo;
+    }
+
+
     [[nodiscard]] checker::Type *TsTypeOrError() const noexcept
     {
         return tsType_;
@@ -149,12 +282,13 @@ public:
     virtual void SetLexical(Scope *scope) = 0;
 
 protected:
-    explicit Variable(Decl *decl, VariableFlags flags) : decl_(decl), flags_(flags) {}
-    explicit Variable(VariableFlags flags) : flags_(flags) {}
+    explicit Variable(Decl *decl, VariableFlags flags) : decl_(decl), flags_(flags), functionInfo_(nullptr) {}
+    explicit Variable(VariableFlags flags) : flags_(flags), functionInfo_(nullptr) {}
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     Decl *decl_ {};
     VariableFlags flags_ {};
+    FunctionInfoData *functionInfo_;
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 
 private:

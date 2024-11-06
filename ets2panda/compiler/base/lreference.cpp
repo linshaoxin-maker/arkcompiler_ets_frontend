@@ -312,15 +312,20 @@ void ETSLReference::SetValueComputed(const ir::MemberExpression *memberExpr) con
 
 void ETSLReference::SetValueGetterSetter(const ir::MemberExpression *memberExpr) const
 {
-    const auto *sig = memberExpr->PropVar()->TsType()->AsETSFunctionType()->FindSetter();
 
     auto argReg = etsg_->AllocReg();
     etsg_->StoreAccumulator(Node(), argReg);
 
-    if (sig->Function()->IsStatic()) {
-        etsg_->CallExact(Node(), sig->InternalName(), argReg);
+    auto *propVar = memberExpr->PropVar();
+
+    if ((propVar->FunctionInfo()->SigSetterFlags() & checker::SignatureFlags::STATIC) != 0) {
+        etsg_->CallExact(Node(), propVar->FunctionInfo()->InternalSetterName(), argReg);
     } else {
-        etsg_->CallVirtual(Node(), sig, baseReg_, argReg);
+        if (etsg_->IsDevirtualizedSignatureFlags(propVar->FunctionInfo()->SigSetterFlags())) {
+            etsg_->CallExact(Node(), propVar->FunctionInfo()->InternalSetterName(), baseReg_, argReg);
+        } else {
+            etsg_->CallVirtual(Node(), propVar->FunctionInfo()->InternalSetterName(), baseReg_, argReg);
+        }
     }
 }
 
@@ -345,7 +350,7 @@ void ETSLReference::SetValue() const
         return;
     }
 
-    if (memberExpr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+    if (memberExpr->PropVar()->HasFlag(varbinder::VariableFlags::GETTER_SETTER)) {
         SetValueGetterSetter(memberExpr);
         return;
     }

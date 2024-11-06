@@ -1110,7 +1110,13 @@ static ir::AstNode *InsertInvokeCall(public_lib::Context *ctx, ir::CallExpressio
     newCallee->SetObjectType(ifaceType);
 
     call->SetCallee(newCallee);
-    call->SetSignature(prop->TsType()->AsETSFunctionType()->CallSignatures()[0]);
+    // NOTE: Ekko. Because of the existance of PerformForExtSources, some ETSfunctionType will be transfer before this
+    // transfer(ETSfuntionType to interface) in lambdalowering
+    if(prop->FunctionInfo()!=nullptr){
+        call->SetSignature(prop->FunctionInfo()->CallSignatures()[0]);
+    }else{
+        call->SetSignature(prop->TsType()->AsETSFunctionType()->CallSignatures()[0]);
+    }
 
     /* NOTE(gogabr): argument types may have been spoiled by widening/narrowing conversions.
        Repair them here.
@@ -1137,6 +1143,21 @@ static bool IsRedirectingConstructorCall(ir::CallExpression *expr)
 static bool IsInCalleePosition(ir::Expression *expr)
 {
     return expr->Parent()->IsCallExpression() && expr->Parent()->AsCallExpression()->Callee() == expr;
+}
+
+[[maybe_unused]] static ir::AstNode *CheckAllFunctionTypeCastedToFunctionInterface(ir::AstNode *node)
+{
+    if (node->IsTyped()) {
+        auto *typedNode = node->AsTyped();
+        auto *var = node->Variable();
+        if (typedNode->TsTypeOrError() != nullptr) {
+            ASSERT(!typedNode->TsTypeOrError()->IsETSFunctionType());
+        }
+        if (var != nullptr && var->TsTypeOrError() != nullptr) {
+            ASSERT(!var->TsTypeOrError()->IsETSFunctionType());
+        }
+    }
+    return node;
 }
 
 static ir::AstNode *BuildLambdaClassWhenNeeded(public_lib::Context *ctx, ir::AstNode *node)
@@ -1186,8 +1207,79 @@ static void CallPerformForExtSources(LambdaConversionPhase *phase, public_lib::C
     }
 }
 
+
+void LambdaConversionPhase::BuildFunctionEssentialInfo(checker::ETSChecker *checker, varbinder::Variable *var,
+                                       checker::ETSFunctionType *functionType, checker::Type *funcInterface)
+{
+    varbinder::FunctionInfoData* functionInfoData =
+        checker->Allocator()->New<varbinder::FunctionInfoData>(checker->Allocator());
+    functionInfoData->SetCallSignatures(functionType->CallSignatures());
+    if (functionType->HasTypeFlag(checker::TypeFlag::GETTER)) {
+        var->AddFlag(varbinder::VariableFlags::GETTER);
+        auto *getterSig = functionType->FindGetter();
+        functionInfoData->SetInternalGetterName(getterSig->InternalName());
+        functionInfoData->SetSigGetterFlags(getterSig->GetFlags());
+        // funcInterface->AddTypeFlag(checker::TypeFlag::GETTER);
+    } else {
+        functionInfoData->SetInternalName(functionType->CallSignatures()[0]->InternalName());
+        functionInfoData->SetSigFlags(functionType->CallSignatures()[0]->GetFlags());
+    }
+    if (functionType->HasTypeFlag(checker::TypeFlag::SETTER)) {
+        var->AddFlag(varbinder::VariableFlags::SETTER);
+        auto *setterSig = functionType->FindSetter();
+        functionInfoData->SetInternalSetterName(setterSig->InternalName());
+        functionInfoData->SetSigSetterFlags(setterSig->GetFlags());
+        // funcInterface->AddTypeFlag(checker::TypeFlag::SETTER);
+    }
+    if (functionType->CallSignatures()[0]->HasSignatureFlag(checker::SignatureFlags::STATIC)) {
+        var->AddFlag(varbinder::VariableFlags::STATIC);
+    }
+    if (functionType->HasTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG)) {
+        funcInterface->AddTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG);
+    }
+
+    var->SetFunctionInfo(functionInfoData);
+    var->SetTsType(funcInterface);
+}
+
+
+[[maybe_unused]] static ir::AstNode *TransferFunctionTypeToFunctionInterfaceType(public_lib::Context *ctx,
+                                                                                ir::AstNode *node)
+{
+    if (!node->IsTyped()) {
+        return node;
+    }
+    auto *typedNode = node->AsTyped();
+    auto *var = node->Variable();
+    checker::Type *interfaceType;
+    checker::ETSFunctionType *functionType;
+
+    if (typedNode->TsTypeOrError() != nullptr && typedNode->TsTypeOrError()->IsETSFunctionType()) {
+        functionType = typedNode->TsTypeOrError()->AsETSFunctionType();
+    } else if (var != nullptr && var->TsTypeOrError() != nullptr && var->TsTypeOrError()->IsETSFunctionType()) {
+        functionType = var->TsTypeOrError()->AsETSFunctionType();
+    } else {
+        return node;
+    }
+
+    interfaceType = functionType->FunctionalInterface() == nullptr
+                        ? ctx->checker->AsETSChecker()->ResolveFunctionalInterfaces(functionType->CallSignatures())
+                        : functionType->FunctionalInterface();
+    typedNode->SetTsType(interfaceType);
+
+    if (var != nullptr) {
+        LambdaConversionPhase::BuildFunctionEssentialInfo(ctx->checker->AsETSChecker(), var, functionType, interfaceType);
+    }
+    // todo set to null
+    interfaceType->SetVariable(var);
+
+    return node;
+}
+
 bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *program)
 {
+    ctx->checker->AddStatus(checker::CheckerStatus::REACH_LAMBDA_LOWERING);
+
     parser::SavedFormattingFileName savedFormattingName(ctx->parser->AsETSParser(), "lambda-conversion");
 
     // For reproducibility of results when several compilation sessions are executed during
@@ -1211,6 +1303,11 @@ bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *p
         return node;
     };
     program->Ast()->TransformChildrenRecursively(insertInvokeIfNeeded, Name());
+
+    program->Ast()->TransformChildrenRecursivelyPreorder(
+        [ctx](ir::AstNode *node) { return TransferFunctionTypeToFunctionInterfaceType(ctx, node); }, Name());
+
+    // todo: run CheckAllFunctionTypeCastedToFunctionInterface() here
 
     return true;
 }

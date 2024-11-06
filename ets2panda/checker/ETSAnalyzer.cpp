@@ -1080,8 +1080,8 @@ checker::Signature *ETSAnalyzer::ResolveSignature(ETSChecker *checker, ir::CallE
     if (extensionFunctionType) {
         return ResolveCallExtensionFunction(calleeType->AsETSFunctionType(), checker, expr);
     }
-    auto &signatures = ChooseSignatures(checker, calleeType, expr->IsETSConstructorCall(), isFunctionalInterface,
-                                        isUnionTypeWithFunctionalInterface);
+    auto &signatures = ChooseSignatures(checker, expr->Callee(), calleeType, expr->IsETSConstructorCall(),
+                                        isFunctionalInterface, isUnionTypeWithFunctionalInterface);
     // Remove static signatures if the callee is a member expression and the object is initialized
     if (expr->Callee()->IsMemberExpression() &&
         !expr->Callee()->AsMemberExpression()->Object()->TsType()->IsETSEnumType() &&
@@ -1107,6 +1107,17 @@ checker::Signature *ETSAnalyzer::ResolveSignature(ETSChecker *checker, ir::CallE
     return signature;
 }
 
+static Type *CheckProptyHasSig(ETSChecker *checker, ir::CallExpression *expr, Type *calleeType)
+{
+    auto propVar = expr->Callee()->IsMemberExpression() ? expr->Callee()->AsMemberExpression()->PropVar()
+                                                        : expr->Callee()->AsIdentifier()->Variable();
+    if (propVar == nullptr || propVar->FunctionInfo() == nullptr || propVar->FunctionInfo()->CallSignatures().empty()) {
+        checker->LogTypeError({"Type '", calleeType, "' has no call signatures."}, expr->Start());
+        return checker->GlobalTypeError();
+    }
+    return nullptr;
+}
+
 checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Type *calleeType) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1129,10 +1140,19 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
         isFunctionalInterface = true;
     }
 
+    Type* returnType= nullptr;
+
     if (!isFunctionalInterface && !calleeType->IsETSFunctionType() && !isConstructorCall &&
         !etsExtensionFuncHelperType && !isUnionTypeWithFunctionalInterface) {
-        checker->LogTypeError({"Type '", calleeType, "' has no call signatures."}, expr->Start());
-        return checker->GlobalTypeError();
+        ASSERT(expr->Callee()->IsMemberExpression() || expr->Callee()->IsIdentifier());
+        if (LIKELY(!checker->HasStatus(CheckerStatus::REACH_LAMBDA_LOWERING))) {
+            returnType = CheckProptyHasSig(checker, expr, calleeType);
+        } else if (expr->Callee()->IsIdentifier()) {
+            returnType = CheckProptyHasSig(checker, expr, calleeType);
+        }
+    }
+    if(returnType !=nullptr){
+        return returnType;
     }
 
     checker::Signature *signature =
@@ -1162,7 +1182,7 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
         expr->SetSignature(signature);
     }
 
-    auto *returnType = signature->ReturnType();
+    returnType = signature->ReturnType();
 
     if (signature->HasSignatureFlag(SignatureFlags::THIS_RETURN_TYPE)) {
         returnType = ChooseCalleeObj(checker, expr, calleeType, isConstructorCall);
@@ -1257,7 +1277,12 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
 
     CheckCallee(checker, expr);
 
-    checker::Type *returnType = GetCallExpressionReturnType(expr, calleeType);
+    checker::Type *returnType;
+    if (calleeType->IsETSFunctionType() && calleeType->AsETSFunctionType()->FunctionalInterface() != nullptr) {
+        returnType = GetCallExpressionReturnType(expr, calleeType->AsETSFunctionType()->FunctionalInterface());
+    } else {
+        returnType = GetCallExpressionReturnType(expr, calleeType);
+    }
     if (returnType->IsTypeError()) {
         expr->SetTsType(returnType);
         return returnType;

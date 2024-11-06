@@ -537,6 +537,13 @@ public:
                                            checker::SignatureFlags::CONSTRUCTOR);
     }
 
+    bool IsDevirtualizedSignatureFlags(const checker::SignatureFlags sigFlags)
+    {
+        ASSERT((sigFlags & checker::SignatureFlags::STATIC) == 0);
+        return (sigFlags & (checker::SignatureFlags::FINAL | checker::SignatureFlags::PRIVATE |
+                            checker::SignatureFlags::CONSTRUCTOR)) != 0;
+    }
+
     void CallExact(const ir::AstNode *node, checker::Signature *signature,
                    const ArenaVector<ir::Expression *> &arguments)
     {

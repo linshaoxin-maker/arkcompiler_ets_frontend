@@ -192,7 +192,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
 
     AllowRequiredTypeInstantiation(loweringResult);
 
-    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
+    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY |
+                                                   checker::CheckerStatus::REACH_LAMBDA_LOWERING};
     loweringResult->Check(checker);
 
     return loweringResult;

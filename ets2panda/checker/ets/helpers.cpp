@@ -58,14 +58,22 @@ varbinder::Variable *ETSChecker::FindVariableInGlobal(const ir::Identifier *cons
 bool ETSChecker::IsVariableStatic(const varbinder::Variable *var)
 {
     if (var->HasFlag(varbinder::VariableFlags::METHOD)) {
-        return var->TsType()->AsETSFunctionType()->CallSignatures()[0]->HasSignatureFlag(SignatureFlags::STATIC);
+        if (var->TsType()->IsETSFunctionType()) {
+            return var->TsType()->AsETSFunctionType()->CallSignatures()[0]->HasSignatureFlag(SignatureFlags::STATIC);
+        } else if (var->TsType()->IsETSObjectType() ||
+                   (var->TsType()->IsETSUnionType() &&
+                    var->TsType()->AsETSUnionType()->ConstituentTypes()[0]->IsETSObjectType())) {
+            return var->HasFlag(varbinder::VariableFlags::STATIC);
+        } else {
+            UNREACHABLE();
+        }
     }
     return var->HasFlag(varbinder::VariableFlags::STATIC);
 }
 
 bool ETSChecker::IsVariableGetterSetter(const varbinder::Variable *var)
 {
-    return var->TsTypeOrError() != nullptr && var->TsTypeOrError()->HasTypeFlag(TypeFlag::GETTER_SETTER);
+    return var->HasFlag(varbinder::VariableFlags::GETTER_SETTER) || (var->TsTypeOrError() != nullptr && var->TsTypeOrError()->HasTypeFlag(TypeFlag::GETTER_SETTER));
 }
 
 void ETSChecker::LogUnResolvedError(ir::Identifier *const ident)
@@ -769,10 +777,12 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             return bindingVar->TsTypeOrError();
         }
 
-        annotationType =
+        auto funcInterfaceType =
             initType->AsETSFunctionType()->FunctionalInterface() == nullptr
                 ? FunctionTypeToFunctionalInterfaceType(initType->AsETSFunctionType()->CallSignatures().front())
                 : initType->AsETSFunctionType()->FunctionalInterface();
+        annotationType = initType->AsETSFunctionType();
+        annotationType->AsETSFunctionType()->SetFunctionalInterface(funcInterfaceType);
         bindingVar->SetTsType(annotationType);
     }
 

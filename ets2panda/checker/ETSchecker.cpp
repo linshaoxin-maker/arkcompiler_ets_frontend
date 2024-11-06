@@ -552,6 +552,26 @@ void ETSChecker::HandleUpdatedCallExpressionNode(ir::CallExpression *callExpr)
     VarBinder()->AsETSBinder()->HandleCustomNodes(callExpr);
 }
 
+bool ETSChecker::IsFunctionInterfaceType(Type *type)
+{
+    if (type == nullptr) {
+        return false;
+    }
+    if (!type->IsETSUnionType()) {
+        if (type->IsETSObjectType()) {
+            return type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE);
+        }
+        return false;
+    }
+    for (auto &cType : type->AsETSUnionType()->ConstituentTypes()) {
+        if (!(cType->IsETSObjectType() &&
+              cType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 Type *ETSChecker::SelectGlobalIntegerTypeForNumeric(Type *type)
 {
     switch (ETSType(type)) {

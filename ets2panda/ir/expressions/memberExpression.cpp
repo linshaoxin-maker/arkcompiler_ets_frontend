@@ -22,6 +22,7 @@
 #include "compiler/core/pandagen.h"
 #include "ir/astDump.h"
 #include "ir/srcDump.h"
+#include "compiler/lowering/ets/lambdaLowering.h"
 
 namespace ark::es2panda::ir {
 MemberExpression::MemberExpression([[maybe_unused]] Tag const tag, MemberExpression const &other,
@@ -184,6 +185,14 @@ std::pair<checker::Type *, varbinder::LocalVariable *> MemberExpression::Resolve
             if (resolveRes[0]->Kind() == checker::ResolvedKind::PROPERTY) {
                 auto var = resolveRes[0]->Variable()->AsLocalVariable();
                 checker->ValidatePropertyAccess(var, objType_, property_->Start());
+                if (checker->HasStatus(checker::CheckerStatus::REACH_LAMBDA_LOWERING) &&
+                    var->TsType()->IsETSFunctionType()) {
+                    auto *interfaceType = checker->ResolveFunctionalInterfaces(var->TsType()->AsETSFunctionType()->CallSignatures());
+                    compiler::LambdaConversionPhase::BuildFunctionEssentialInfo(
+                        checker, var, var->TsType()->AsETSFunctionType(), interfaceType);
+                    // todo set type ->var to null
+                    interfaceType->SetVariable(var);
+                }
                 return {checker->GetTypeOfVariable(var), var};
             }
             return {checker->GetTypeOfVariable(resolveRes[0]->Variable()), nullptr};

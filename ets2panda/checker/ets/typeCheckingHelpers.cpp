@@ -371,11 +371,28 @@ Type *ETSChecker::GetNonConstantType(Type *type)
 
 Type *ETSChecker::GetTypeOfSetterGetter(varbinder::Variable *const var)
 {
-    auto *propType = var->TsType()->AsETSFunctionType();
-    if (propType->HasTypeFlag(checker::TypeFlag::GETTER)) {
-        return propType->FindGetter()->ReturnType();
+    auto * type = var->TsType();
+    if (!IsFunctionInterfaceType(type)) {
+        auto *propType = type->AsETSFunctionType();
+        if (propType->HasTypeFlag(checker::TypeFlag::GETTER)) {
+            return propType->FindGetter()->ReturnType();
+        }
+        return propType->FindSetter()->Params()[0]->TsType();
     }
-    return propType->FindSetter()->Params()[0]->TsType();
+
+    // NOTE: Lose infomation of box and unbox primitive types in FunctionInterface, fetch in signature
+    if (type->IsETSObjectType()) {
+        return var->HasFlag(varbinder::VariableFlags::GETTER) ? var->FunctionInfo()->CallSignatures()[0]->ReturnType()
+                                                              : var->FunctionInfo()->CallSignatures()[0]->Params()[0]->TsType();
+    } else if (type->IsETSUnionType()) {
+        auto sigs = var->FunctionInfo()->CallSignatures();
+        ASSERT(sigs.size() == 2);
+        if(sigs[0]->HasSignatureFlag(SignatureFlags::GETTER)){
+            return sigs[0]->ReturnType();
+        }
+        return sigs[0]->Params()[0]->TsType();
+    }
+    UNREACHABLE();
 }
 
 void ETSChecker::IterateInVariableContext(varbinder::Variable *const var)
@@ -495,11 +512,37 @@ Type *ETSChecker::GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *
         return nullptr;
     }
     if (IsVariableGetterSetter(prop)) {
-        auto *method = prop->TsType()->AsETSFunctionType();
-        if (!method->HasTypeFlag(checker::TypeFlag::GETTER)) {
-            return nullptr;
+        if (prop->TsType()->IsETSFunctionType()) {
+            auto *method = prop->TsType()->AsETSFunctionType();
+            if (!method->HasTypeFlag(checker::TypeFlag::GETTER)) {
+                return nullptr;
+            }
+            return GuaranteedTypeForUncheckedCallReturn(method->FindGetter());
+        }else if(IsFunctionInterfaceType(prop->TsType())){
+            if(prop->TsType()->IsETSObjectType()) {
+                auto *funcInterface = prop->TsType()->AsETSObjectType();
+                if (!funcInterface->HasTypeFlag(checker::TypeFlag::GETTER)) {
+                    return nullptr;
+                }
+                auto *sig = prop->Declaration()
+                                ->Node()
+                                ->AsMethodDefinition()
+                                ->Value()
+                                ->AsFunctionExpression()
+                                ->Function()
+                                ->Signature();
+                return GuaranteedTypeForUncheckedCallReturn(sig);
+            }else{
+                auto &sigs = prop->FunctionInfo()->CallSignatures();
+                for(auto &sig: sigs){
+                    if(sig->HasSignatureFlag(SignatureFlags::GETTER)){
+                        return GuaranteedTypeForUncheckedCallReturn(sig);
+                    }
+                }
+                return nullptr;
+            }
         }
-        return GuaranteedTypeForUncheckedCallReturn(method->FindGetter());
+        UNREACHABLE();
     }
     // NOTE(vpukhov): mark ETSDynamicType properties
     if (prop->Declaration() == nullptr || prop->Declaration()->Node() == nullptr) {
@@ -512,7 +555,7 @@ Type *ETSChecker::GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *
             baseProp = node->AsClassProperty()->Id()->Variable();
             break;
         case ir::AstNodeType::METHOD_DEFINITION:
-            baseProp = node->AsMethodDefinition()->Variable();
+            baseProp = node->AsMethodDefinition()->Id()->Variable();
             break;
         case ir::AstNodeType::CLASS_DEFINITION:
             baseProp = node->AsClassDefinition()->Ident()->Variable();
@@ -545,7 +588,7 @@ void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifie
     const auto *const targetType = GetTypeOfVariable(id->Variable());
     ASSERT(targetType != nullptr);
 
-    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType()) {
+    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType() && !targetType->IsETSFunctionType()) {
         LogTypeError("Initializers type is not assignable to the target type", ident->Start());
     }
 }
