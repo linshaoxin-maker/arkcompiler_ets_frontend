@@ -1176,7 +1176,7 @@ ArenaVector<ir::Expression *> &ParserImpl::ParseExpressionsArrayFormatPlaceholde
     ThrowSyntaxError("ArenaVector of ir::Expression *'s expected.");
 }
 
-util::StringView ParserImpl::ParseSymbolIteratorIdentifier() const noexcept
+util::StringView ParserImpl::ParseSymbolIteratorIdentifier() const
 {
     // Duplicate check - just in case of improper call!
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
