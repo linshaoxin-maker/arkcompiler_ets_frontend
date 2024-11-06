@@ -755,6 +755,13 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         return GlobalTypeError();
     }
 
+    TypeStackElement typeStackElement(this, init, {"Circular dependency detected"}, init->Start());
+    if (typeStackElement.HasTypeError()) {
+        if (init->IsIdentifier()) {
+            LogTypeError({"Circular dependency between ", varName, " and ", init->AsIdentifier()->Name()}, init->Start());
+        }
+        return GlobalTypeError();
+    }
     checker::Type *initType = init->Check(this);
 
     if (initType == nullptr) {
