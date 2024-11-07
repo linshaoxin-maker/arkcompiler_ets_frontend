@@ -278,6 +278,8 @@ set (HEADERS_TO_BE_PARSED
     ${ES2PANDA_ROOT}/parser/ETSparser.h
     ${ES2PANDA_ROOT}/parser/parserFlags.h
     ${ES2PANDA_ROOT}/es2panda.h
+    ${ES2PANDA_ROOT}/ast_verifier/ASTVerifier.h
+    ${ES2PANDA_ROOT}/ast_verifier/checkContext.h
 )
 
 set (ES2PANDA_API_GENERATED
@@ -537,6 +539,8 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/checker/resolveResult.yaml
     ${LIBGEN_DIR}/gen/headers/parser/parserFlags.yaml
     ${LIBGEN_DIR}/gen/headers/parser/ETSparser.yaml
+    ${LIBGEN_DIR}/gen/headers/ast_verifier/ASTVerifier.yaml
+    ${LIBGEN_DIR}/gen/headers/ast_verifier/checkContext.yaml
     )
 
 
@@ -560,7 +564,7 @@ panda_gen(
     API ${RB_LIST}
     DESTINATION ${LIBGEN_DIR}
     SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
-    EXTRA_DEPENDENCIES gen_yamls
+    EXTRA_DEPENDENCIES gen_yamls ${CMAKE_CURRENT_SOURCE_DIR}/enums.rb
 )
 
 set(HEADERS_PARSER_SOURCES

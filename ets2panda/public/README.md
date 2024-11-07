@@ -59,9 +59,9 @@ Tranformation "one to many" is supported to express map of e.g. `std::vector<int
 
           # Cast C argument to C++ class, to call method from it.
             call_cast:
-              call_var: 'es2panda_FunctionSignature *ast'
+              call_var: 'es2panda_FunctionSignature *classInstance'
               start: >-
-                (reinterpret_cast<?const? ir::FunctionSignature *>(ast))->
+                (reinterpret_cast<?const? ir::FunctionSignature *>(classInstance))->
 
           # Create new class and return C++ pointer to it.
             constructor_cast:
@@ -84,10 +84,10 @@ Tranformation "one to many" is supported to express map of e.g. `std::vector<int
 4) Modify it for new type. Below you can see [Template description](#template-description).
 
 ## Template description:
-All non-basic types are described in [cppToCTypes.yaml](./cppToCTypes.yaml).  
+All non-basic types are described in [cppToCTypes.yaml](./cppToCTypes.yaml).
 
 There are 4 keys in first layer:
-1) `es2panda_arg`: describes original C++ argument. It is used to match which **template** from `cppToCTypes.yaml` should be used for current argument.  
+1) `es2panda_arg`: describes original C++ argument. It is used to match which **template** from `cppToCTypes.yaml` should be used for current argument.
 
     <details><summary>More info</summary>
 
@@ -108,7 +108,7 @@ There are 4 keys in first layer:
     original_argument['type']['ptr_depth'] >= es2panda_arg['min_ptr_depth'] &&
     original_argument['type']['ptr_depth'] <= es2panda_arg['max_ptr_depth']
     ```
-    If any of the fields are missing, the generator will skip the corresponding check (except for the type::name field).  
+    If any of the fields are missing, the generator will skip the corresponding check (except for the type::name field).
 
     ### What is `|arg_name|`:
     It is placeholder. After matching **template**, generator stores placeholder values:
@@ -125,15 +125,15 @@ There are 4 keys in first layer:
 
     ### Clarification on ptr_depth and ref_depth:
 
-    `ptr_depth` is number of `*` in argument.  
-    `ref_depth` is number of `&` in argument.  
+    `ptr_depth` is number of `*` in argument.
+    `ref_depth` is number of `&` in argument.
 
     #### Why is it needed:
-    `min_ptr_depth` and `max_ptr_depth` are needed to separate 0 and 1+ ptr-cases, because the es2panda API stores pointers to empty structures and is not able to provide an instance of the class, only a pointer to it (except for primitive C types).  
-    For example:  
-        `AstNode` -> `es2panda_AstNode *`  
-        `AstNode *` -> `es2panda_AstNode *`  
-        `AstNode **` -> `es2panda_AstNode **`  
+    `min_ptr_depth` and `max_ptr_depth` are needed to separate 0 and 1+ ptr-cases, because the es2panda API stores pointers to empty structures and is not able to provide an instance of the class, only a pointer to it (except for primitive C types).
+    For example:
+        `AstNode` -> `es2panda_AstNode *`
+        `AstNode *` -> `es2panda_AstNode *`
+        `AstNode **` -> `es2panda_AstNode **`
     Where es2panda_AstNode is pointer to empty structure in es2panda API.
 
     ---
@@ -180,7 +180,7 @@ There are 4 keys in first layer:
     ```
 
     ### When it is needed:
-    If `original_argument` expands to **several argument** and if it is **return type** additional arguments should appear, through which the necessary values will be returned.  
+    If `original_argument` expands to **several argument** and if it is **return type** additional arguments should appear, through which the necessary values will be returned.
     For example:
     ```c++
     // Example: ArenaVector<int> -> int *, size_t *
@@ -220,7 +220,7 @@ There are 4 keys in first layer:
         ```
 
         ### Note:
-        You can see clever placeholder `|es2panda_arg.type.ptr_depth|`. It allows to get value from `es2panda_arg['type']['ptr_depth']`.  
+        You can see clever placeholder `|es2panda_arg.type.ptr_depth|`. It allows to get value from `es2panda_arg['type']['ptr_depth']`.
         If `es2panda_arg['type']['ptr_depth'] = 2`, then `|es2panda_arg.type.ptr_depth|` will be raplaced with `**` and `|es2panda_arg.type.ptr_depth_int|` will be replaced with `2`.
 
         ---
@@ -263,9 +263,9 @@ There are 4 keys in first layer:
         FunctionSignature in `cppToCTypes.yaml`:
         ```yaml
         call_cast:
-            call_var: 'es2panda_FunctionSignature *ast'
+            call_var: 'es2panda_FunctionSignature *classInstance'
             start: >-
-                (reinterpret_cast<?const? ir::FunctionSignature *>(ast))->
+                (reinterpret_cast<?const? ir::FunctionSignature *>(classInstance))->
         ```
 
         Result:
@@ -276,9 +276,9 @@ There are 4 keys in first layer:
         }
 
         // C-API function
-        void FooInAPI(es2panda_FunctionSignature *ast /* call_var appeared */) {
+        void FooInAPI(es2panda_FunctionSignature *classInstance /* call_var appeared */) {
             // call_cast['start']Foo();
-            (reinterpret_cast<ir::FunctionSignature *>(ast))->Foo();
+            (reinterpret_cast<ir::FunctionSignature *>(classInstance))->Foo();
         }
 
         ```

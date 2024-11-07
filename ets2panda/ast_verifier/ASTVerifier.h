@@ -41,6 +41,8 @@ using InvariantNameSet = std::set<std::string>;
 
 class VerificationContext final {
 public:
+    VerificationContext() = default;
+
     void IntroduceNewInvariants(util::StringView phaseName)
     {
         if (phaseName == "ScopesInitPhase") {
