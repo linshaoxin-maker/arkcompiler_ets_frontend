@@ -71,6 +71,7 @@ import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAP
 import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
 import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
 import { StdClassVarDecls } from './utils/consts/StdClassVariableDeclarations';
+import SendableGenericChecker from './generic/SendableGenericChecker';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -104,11 +105,13 @@ export class TypeScriptLinter {
 
   autofixer: Autofixer | undefined;
   private fileExportSendableDeclCaches: Set<ts.Node> | undefined;
+  private readonly sendableGenericChecker: SendableGenericChecker;
 
   private sourceFile?: ts.SourceFile;
   private readonly compatibleSdkVersion: number;
   private readonly compatibleSdkVersionStage: string;
   private static sharedModulesCache: Map<string, boolean>;
+  static isUsedAsPropCache: Map<string, Map<number, boolean>>;
   static filteredDiagnosticMessages: Set<ts.DiagnosticMessageChain>;
   static strictDiagnosticCache: Set<ts.Diagnostic>;
   static unknowDiagnosticCache: Set<ts.Diagnostic>;
@@ -122,6 +125,7 @@ export class TypeScriptLinter {
     TypeScriptLinter.sharedModulesCache = new Map<string, boolean>();
     TypeScriptLinter.strictDiagnosticCache = new Set<ts.Diagnostic>();
     TypeScriptLinter.unknowDiagnosticCache = new Set<ts.Diagnostic>();
+    TypeScriptLinter.isUsedAsPropCache = new Map<string, Map<number, boolean>>();
   }
 
   private initEtsHandlers(): void {
@@ -164,6 +168,7 @@ export class TypeScriptLinter {
       useRtLogic,
       this.arkts2
     );
+    this.sendableGenericChecker = new SendableGenericChecker(this.tsTypeChecker, this.tsUtils);
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
     this.libraryTypeCallDiagnosticChecker = new LibraryTypeCallDiagnosticChecker(
@@ -1948,6 +1953,10 @@ export class TypeScriptLinter {
       const faultId = this.arkts2 ? FaultID.EsObjectTypeError : FaultID.EsObjectType;
       this.incrementCounters(node, faultId);
     }
+
+    if (this.sendableGenericChecker.isWrongCallOrNewExpression(tsCallExpr)) {
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
+    }
   }
 
   private handleEtsComponentExpression(node: ts.Node): void {
@@ -2226,6 +2235,10 @@ export class TypeScriptLinter {
       this.handleGenericCallWithNoTypeArgs(tsNewExpr, callSignature);
     }
     this.handleSendableGenericTypes(tsNewExpr);
+    // this.sendableGenericChecker.checkNewExpression(tsNewExpr);
+    if (this.sendableGenericChecker.isWrongCallOrNewExpression(tsNewExpr)) {
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
+    }
   }
 
   private handleSendableGenericTypes(node: ts.NewExpression): void {
@@ -2239,11 +2252,24 @@ export class TypeScriptLinter {
       return;
     }
 
-    for (const arg of typeArgs) {
-      if (!this.tsUtils.isSendableTypeNode(arg)) {
-        this.incrementCounters(arg, FaultID.SendableGenericTypes);
-      }
+    const decl = this.getTrueDecl(node);
+    if (
+      decl === undefined ||
+      !ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl) ||
+      decl.typeParameters === undefined
+    ) {
+      return;
     }
+    const isCollectionDecl = TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl);
+    this.checkGenericTypeArguments(typeArgs, decl, isCollectionDecl);
+  }
+
+  private getTrueDecl(node: ts.NewExpression): ts.Declaration | undefined {
+    let decl = this.tsUtils.getDeclarationNode(node.expression);
+    while (decl && ts.isVariableDeclaration(decl) && decl.initializer) {
+      decl = this.tsUtils.getDeclarationNode(decl.initializer);
+    }
+    return decl;
   }
 
   private handleAsExpression(node: ts.Node): void {
@@ -2297,6 +2323,9 @@ export class TypeScriptLinter {
     if (this.tsUtils.isSendableClassOrInterface(typeNameType)) {
       this.checkSendableTypeArguments(typeRef);
     }
+    if (this.sendableGenericChecker.isWrongTypeReference(typeRef)) {
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
+    }
   }
 
   private checkPartialType(node: ts.Node): void {
@@ -2321,12 +2350,63 @@ export class TypeScriptLinter {
     }
   }
 
+  private checkUsedAsProp(decl: ts.ClassDeclaration | ts.InterfaceDeclaration, genericTypeRef: string): boolean {
+    return decl.members.some((classMember) => {
+      return (
+        (ts.isPropertyDeclaration(classMember) || ts.isPropertySignature(classMember)) &&
+        this.tsUtils.typeNodeContainsTypeName(classMember.type, genericTypeRef)
+      );
+    });
+  }
+
   private checkSendableTypeArguments(typeRef: ts.TypeReferenceNode): void {
-    if (typeRef.typeArguments) {
-      for (const typeArg of typeRef.typeArguments) {
+    if (typeRef.typeArguments === undefined) {
+      return;
+    }
+    const decl = this.tsUtils.getDeclarationNode(typeRef.typeName) as ts.ClassDeclaration | ts.InterfaceDeclaration;
+    if (decl?.typeParameters === undefined) {
+      return;
+    }
+    const isCollectionDecl = TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl);
+    this.checkGenericTypeArguments(typeRef.typeArguments, decl, isCollectionDecl);
+  }
+
+  private checkGenericTypeArguments(
+    typeArgs: readonly ts.TypeNode[],
+    decl: ts.ClassDeclaration | ts.InterfaceDeclaration,
+    isCollectionDecl: boolean
+  ): void {
+    if (decl.typeParameters === undefined) {
+      return;
+    }
+    const declCacheKey = decl.getText();
+
+    let declCache = TypeScriptLinter.isUsedAsPropCache.get(declCacheKey);
+    if (!declCache) {
+      declCache = new Map<number, boolean>();
+      TypeScriptLinter.isUsedAsPropCache.set(declCacheKey, declCache);
+    }
+    for (let i = 0; i < typeArgs.length; i++) {
+      const typeArg = typeArgs[i];
+      if (isCollectionDecl) {
         if (!this.tsUtils.isSendableTypeNode(typeArg)) {
           this.incrementCounters(typeArg, FaultID.SendableGenericTypes);
         }
+        continue;
+      }
+
+      const genericTypeRef = decl.typeParameters[i].getText();
+
+      let isUsedAsProp = false;
+      if (declCache.has(i)) {
+        isUsedAsProp = declCache.get(i)!;
+      } else {
+        isUsedAsProp = this.checkUsedAsProp(decl, genericTypeRef);
+        declCache.set(i, isUsedAsProp);
+      }
+
+      if (isUsedAsProp && !this.tsUtils.isSendableTypeNode(typeArg)) {
+        this.incrementCounters(typeArg, FaultID.SendableGenericTypes);
       }
     }
   }

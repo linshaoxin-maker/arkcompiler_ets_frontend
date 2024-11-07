@@ -1,0 +1,18 @@
+{
+    "nodes": [
+        {
+            "line": 12,
+            "column": 25,
+            "problem": "SendableGenericTypes",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        },
+        {
+            "line": 15,
+            "column": 20,
+            "problem": "SendableGenericTypes",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        }
+    ]
+}

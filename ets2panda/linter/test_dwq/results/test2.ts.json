@@ -1,0 +1,17 @@
+{
+    "nodes": [
+        {
+            "line": 3,
+            "column": 1,
+            "problem": "GenericCallNoTypeArgs",
+            "suggest": "",
+            "rule": "Type inference in case of generic function calls is limited (arkts-no-inferred-generic-params)"
+        },
+        {
+            "line": 3,
+            "column": 1,
+            "problem": "Rule_1",
+            "rule": "这次调用会导致错误的Sendable赋值 (arkts-1)"
+        }
+    ]
+}

@@ -134,6 +134,7 @@ export enum FaultID {
   OptionalMethod,
   ImportType,
   DynamicCtorCall,
+  SendableGenericPropagate,
   // this should always be last enum
   LAST_ID
 }
