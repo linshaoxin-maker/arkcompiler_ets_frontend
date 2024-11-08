@@ -1,0 +1,98 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+constructorTest1_751 { 4 [ tag_value:5, string:"BasicClass", tag_value:5, string:"TestClass3", ]}
+
+constructorTest1_765 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+constructorTest1_793 { 2 [ tag_value:2, i32:0, ]}
+
+constructorTest1_802 { 2 [ tag_value:2, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record constructorTest1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames constructorTest1_751
+	u32 moduleRecordIdx constructorTest1_765
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructorTest1.#~@0=#BasicClass(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 19           # column: 0
+	stobjbyname 0x0, __name, a2              # line: 19           # column: 0
+	lda a2                                   # line: 20           # column: 0
+	return                                   # line: 20           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 12
+.function any constructorTest1.#~@1=#TestClass3(any a0, any a1, any a2, any a3, any a4, any a5) {
+	lda a3                                   # line: 25           # column: 0
+	stobjbyname 0x0, __publicParam, a2       # line: 25           # column: 0
+	lda a4                                   # line: 25           # column: 0
+	stobjbyname 0x2, __privateParam, a2      # line: 25           # column: 0
+	lda a5                                   # line: 25           # column: 0
+	stobjbyname 0x4, __protectedParam, a2    # line: 25           # column: 0
+	ldai 0x1                                 # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	stobjbyname 0x6, __publicParam, a2       # line: 25           # column: 0
+	lda.str 123                              # line: 26           # column: 0
+	stobjbyname 0x8, __privateParam, a2      # line: 26           # column: 0
+	lda v0                                   # line: 27           # column: 0
+	stobjbyname 0xa, __protectedParam, a2    # line: 27           # column: 0
+	lda a2                                   # line: 28           # column: 0
+	return                                   # line: 28           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any constructorTest1.func_main_0(any a0, any a1, any a2) {
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x0, constructorTest1.#~@0=#BasicClass, constructorTest1_793, 0x1, v0 # line: 15           # column: 0
+	ldobjbyname 0x1, prototype               # line: 15           # column: 0
+	ldhole                                   # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	defineclasswithbuffer 0x3, constructorTest1.#~@1=#TestClass3, constructorTest1_802, 0x3, v0 # line: 23           # column: 0
+	ldobjbyname 0x4, prototype               # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+123
+__name
+__privateParam
+__protectedParam
+__publicParam
+constructorTest1.#~@0=#BasicClass
+constructorTest1.#~@1=#TestClass3
+prototype

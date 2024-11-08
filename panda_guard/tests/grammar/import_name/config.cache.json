@@ -1,0 +1,21 @@
+{
+  "export_funtion": {
+    "IdentifierCache": {
+      "#c:16:19": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "export_funtion"
+  },
+  "import_function": {
+    "IdentifierCache": {
+      "#foo:18:23": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "import_function"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "foo": "a"
+  }
+}

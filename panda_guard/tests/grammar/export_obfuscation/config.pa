@@ -1,0 +1,1606 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+export_obfuscation_1_10108 { 2 [ tag_value:5, string:"PersonClass01", ]}
+
+export_obfuscation_1_10117 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"c", string:"c", string:"b", string:"b", i32:0, i32:0, ]}
+
+export_obfuscation_1_10161 { 2 [ tag_value:2, i32:0, ]}
+
+export_obfuscation_2_10170 
+
+export_obfuscation_2_10174 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"d", string:"d", i32:0, i32:0, ]}
+
+export_obfuscation_3_10210 { 2 [ tag_value:5, string:"SortMethod", ]}
+
+export_obfuscation_3_10219 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+export_obfuscation_3_10247 { 14 [ tag_value:5, string:"h", tag_value:6, method:export_obfuscation_3.#~@0>#h, tag_value:9, method_affiliate:2, tag_value:5, string:"i", tag_value:6, method:export_obfuscation_3.#~@0>#i, tag_value:9, method_affiliate:2, tag_value:2, i32:2, ]}
+
+export_struct_transform_class_10282 { 6 [ tag_value:5, string:"ViewPU", tag_value:5, string:"Retransmission1", tag_value:5, string:"Retransmission2", ]}
+
+export_struct_transform_class_10301 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"l", string:"l", i32:0, i32:0, ]}
+
+export_struct_transform_class_10337 { 2 [ tag_value:2, i32:0, ]}
+
+export_struct_transform_class_10346 { 8 [ tag_value:5, string:"m", tag_value:6, method:export_struct_transform_class.#~@1>#m, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+export_struct_transform_class_10368 { 8 [ tag_value:5, string:"k", tag_value:6, method:export_struct_transform_class.#~@2>#k, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+import_obfuscation_1_10390 
+
+import_obfuscation_1_10394 { 17 [ i32:1, string:"./export_obfuscation_1", i32:2, string:"c", string:"c", method_affiliate:0, string:"b", string:"b", method_affiliate:0, i32:0, i32:2, string:"n", string:"n", string:"o", string:"o", i32:0, i32:0, ]}
+
+import_obfuscation_2_10462 
+
+import_obfuscation_2_10466 { 20 [ i32:2, string:"./export_obfuscation_2", string:"./import_obfuscation_1", i32:2, string:"r", string:"r", method_affiliate:0, string:"d", string:"d", method_affiliate:0, i32:0, i32:0, i32:2, string:"n", string:"n", method_affiliate:1, string:"o", string:"o", method_affiliate:1, i32:0, ]}
+
+name_as_export_api_1_10542 { 10 [ tag_value:5, string:"Constants", tag_value:5, string:"Constants2", tag_value:5, string:"Constants3", tag_value:5, string:"Constants4", tag_value:5, string:"Constants5", ]}
+
+name_as_export_api_1_10571 { 20 [ i32:0, i32:0, i32:0, i32:7, string:"b1", string:"c1", string:"x", string:"x", string:"w", string:"w", string:"v", string:"d1", string:"u", string:"u", string:"s", string:"s", string:"t", string:"t", i32:0, i32:0, ]}
+
+name_as_export_api_1_10655 { 8 [ tag_value:5, string:"z", tag_value:6, method:name_as_export_api_1.#~@0>#z, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+name_as_export_api_1_10677 { 8 [ tag_value:5, string:"z", tag_value:6, method:name_as_export_api_1.#~@1>#z, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+name_as_export_api_1_10699 { 2 [ tag_value:2, i32:0, ]}
+
+name_as_export_api_1_10708 { 2 [ tag_value:2, i32:0, ]}
+
+name_as_export_api_1_10717 { 2 [ tag_value:2, i32:0, ]}
+
+name_as_import_api_1_10726 
+
+name_as_import_api_1_10730 { 31 [ i32:1, string:"./name_as_export_api_1", i32:6, string:"b1", string:"c1", method_affiliate:0, string:"w", string:"w", method_affiliate:0, string:"h1", string:"w", method_affiliate:0, string:"d1", string:"d1", method_affiliate:0, string:"s", string:"s", method_affiliate:0, string:"i1", string:"t", method_affiliate:0, i32:0, i32:0, i32:2, string:"j1", string:"c1", method_affiliate:0, string:"x", string:"x", method_affiliate:0, i32:0, ]}
+
+oh_modules/export_interface_10842 
+
+oh_modules/export_interface_10846 { 16 [ i32:0, i32:0, i32:0, i32:5, string:"*default*", string:"default", string:"p", string:"p", string:"q", string:"q", string:"e1", string:"k1", string:"f1", string:"f1", i32:0, i32:0, ]}
+
+oh_modules/import_interface_10914 
+
+oh_modules/import_interface_10918 { 25 [ i32:1, string:"./export_interface", i32:6, string:"l1", string:"default", method_affiliate:0, string:"m1", string:"default", method_affiliate:0, string:"n1", string:"p", method_affiliate:0, string:"q", string:"q", method_affiliate:0, string:"e1", string:"k1", method_affiliate:0, string:"f1", string:"f1", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+whole_module_export_api_1_11010 { 6 [ tag_value:5, string:"ns1", tag_value:5, string:"classDemo01", tag_value:5, string:"classDemo02", ]}
+
+whole_module_export_api_1_11029 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"o1", string:"o1", i32:0, i32:0, ]}
+
+whole_module_export_api_1_11065 { 8 [ tag_value:5, string:"u1", tag_value:6, method:whole_module_export_api_1.#&@0~@1>#u1, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+whole_module_export_api_1_11087 { 8 [ tag_value:5, string:"z", tag_value:6, method:whole_module_export_api_1.#&@0~@2>#z, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+whole_module_export_api_2_11109 { 4 [ tag_value:5, string:"classDemo11", tag_value:5, string:"classDemo12", ]}
+
+whole_module_export_api_2_11123 { 14 [ i32:0, i32:0, i32:0, i32:4, string:"x1", string:"x1", string:"w1", string:"w1", string:"v1", string:"v1", string:"z1", string:"z1", i32:0, i32:0, ]}
+
+whole_module_export_api_2_11183 { 8 [ tag_value:5, string:"u1", tag_value:6, method:whole_module_export_api_2.#~@0>#u1, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+whole_module_export_api_2_11205 { 8 [ tag_value:5, string:"z", tag_value:6, method:whole_module_export_api_2.#~@1>#z, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+whole_module_import_api_1_11227 
+
+whole_module_import_api_1_11231 { 10 [ i32:1, string:"./whole_module_export_api_1", i32:1, string:"o1", string:"o1", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+whole_module_import_api_2_11273 
+
+whole_module_import_api_2_11277 { 9 [ i32:1, string:"./whole_module_export_api_2", i32:0, i32:1, string:"a2", method_affiliate:0, i32:0, i32:0, i32:0, ]}
+
+y1_export_alias_11315 { 2 [ tag_value:5, string:"ClassOrinal", ]}
+
+y1_export_alias_11324 { 14 [ i32:0, i32:0, i32:0, i32:4, string:"d2", string:"f2", string:"g2", string:"g2", string:"c2", string:"c2", string:"b2", string:"default", i32:0, i32:0, ]}
+
+y1_export_alias_11384 { 2 [ tag_value:2, i32:0, ]}
+
+y1_export_default_value_11393 
+
+y1_export_default_value_11397 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"*default*", string:"default", i32:0, i32:0, ]}
+
+y1_import_alias_11433 
+
+y1_import_alias_11437 { 16 [ i32:1, string:"./y1_export_alias", i32:0, i32:2, string:"h2", method_affiliate:0, string:"i2", method_affiliate:0, i32:1, string:"h2", string:"j2", i32:1, string:"default", string:"default", method_affiliate:0, i32:0, ]}
+
+y1_import_export_indrect_11499 
+
+y1_import_export_indrect_11503 { 17 [ i32:2, string:"./y1_export_default_value", string:"./y1_import_alias", i32:3, string:"j2", string:"j2", method_affiliate:1, string:"l1", string:"default", method_affiliate:1, string:"k2", string:"default", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+y2_export_default_func_11569 
+
+y2_export_default_func_11573 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"l2", string:"default", i32:0, i32:0, ]}
+
+y2_import_default_11609 
+
+y2_import_default_11613 { 13 [ i32:1, string:"./y2_export_default_func", i32:2, string:"m2", string:"default", method_affiliate:0, string:"n2", string:"default", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+y3_export_list_default_11665 
+
+y3_export_list_default_11669 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"o2", string:"default", i32:0, i32:0, ]}
+
+y3_import_list_default_11705 
+
+y3_import_list_default_11709 { 13 [ i32:1, string:"./y3_export_list_default", i32:2, string:"p2", string:"default", method_affiliate:0, string:"q2", string:"default", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+y4_export_as_11761 
+
+y4_export_as_11765 { 15 [ i32:2, string:"./y1_export_alias", string:"./y3_export_list_default", i32:0, i32:1, string:"h2", method_affiliate:1, i32:1, string:"h2", string:"default", i32:1, string:"r2", string:"default", method_affiliate:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record export_obfuscation_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_obfuscation_1_10108
+	u32 moduleRecordIdx export_obfuscation_1_10117
+}
+.record.source_file 
+
+.record export_obfuscation_2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_obfuscation_2_10170
+	u32 moduleRecordIdx export_obfuscation_2_10174
+}
+.record.source_file 
+
+.record export_obfuscation_3 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_obfuscation_3_10210
+	u32 moduleRecordIdx export_obfuscation_3_10219
+}
+.record.source_file 
+
+.record export_struct_transform_class {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_struct_transform_class_10282
+	u32 moduleRecordIdx export_struct_transform_class_10301
+}
+.record.source_file 
+
+.record import_obfuscation_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames import_obfuscation_1_10390
+	u32 moduleRecordIdx import_obfuscation_1_10394
+}
+.record.source_file 
+
+.record import_obfuscation_2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames import_obfuscation_2_10462
+	u32 moduleRecordIdx import_obfuscation_2_10466
+}
+.record.source_file 
+
+.record name_as_export_api_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames name_as_export_api_1_10542
+	u32 moduleRecordIdx name_as_export_api_1_10571
+}
+.record.source_file 
+
+.record name_as_import_api_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames name_as_import_api_1_10726
+	u32 moduleRecordIdx name_as_import_api_1_10730
+}
+.record.source_file 
+
+.record oh_modules/export_interface {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames oh_modules/export_interface_10842
+	u32 moduleRecordIdx oh_modules/export_interface_10846
+}
+.record.source_file 
+
+.record oh_modules/import_interface {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames oh_modules/import_interface_10914
+	u32 moduleRecordIdx oh_modules/import_interface_10918
+}
+.record.source_file 
+
+.record whole_module_export_api_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames whole_module_export_api_1_11010
+	u32 moduleRecordIdx whole_module_export_api_1_11029
+}
+.record.source_file 
+
+.record whole_module_export_api_2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames whole_module_export_api_2_11109
+	u32 moduleRecordIdx whole_module_export_api_2_11123
+}
+.record.source_file 
+
+.record whole_module_import_api_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames whole_module_import_api_1_11227
+	u32 moduleRecordIdx whole_module_import_api_1_11231
+}
+.record.source_file 
+
+.record whole_module_import_api_2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames whole_module_import_api_2_11273
+	u32 moduleRecordIdx whole_module_import_api_2_11277
+}
+.record.source_file 
+
+.record y1_export_alias {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y1_export_alias_11315
+	u32 moduleRecordIdx y1_export_alias_11324
+}
+.record.source_file 
+
+.record y1_export_default_value {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y1_export_default_value_11393
+	u32 moduleRecordIdx y1_export_default_value_11397
+}
+.record.source_file 
+
+.record y1_import_alias {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y1_import_alias_11433
+	u32 moduleRecordIdx y1_import_alias_11437
+}
+.record.source_file 
+
+.record y1_import_export_indrect {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y1_import_export_indrect_11499
+	u32 moduleRecordIdx y1_import_export_indrect_11503
+}
+.record.source_file 
+
+.record y2_export_default_func {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y2_export_default_func_11569
+	u32 moduleRecordIdx y2_export_default_func_11573
+}
+.record.source_file 
+
+.record y2_import_default {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y2_import_default_11609
+	u32 moduleRecordIdx y2_import_default_11613
+}
+.record.source_file 
+
+.record y3_export_list_default {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y3_export_list_default_11665
+	u32 moduleRecordIdx y3_export_list_default_11669
+}
+.record.source_file 
+
+.record y3_import_list_default {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y3_import_list_default_11705
+	u32 moduleRecordIdx y3_import_list_default_11709
+}
+.record.source_file 
+
+.record y4_export_as {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames y4_export_as_11761
+	u32 moduleRecordIdx y4_export_as_11765
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any export_obfuscation_1.#*#a(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 29           # column: 0
+	ldobjbyname 0x0, s2                      # line: 29           # column: 0
+	callthis0 0x2, a4                        # line: 29           # column: 0
+	add2 0x4, a3                             # line: 29           # column: 0
+	return                                   # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any export_obfuscation_1.#*#b(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 23           # column: 0
+	add2 0x0, a3                             # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	ldai 0x1                                 # line: 23           # column: 0
+	add2 0x1, v0                             # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	ldai 0x2                                 # line: 23           # column: 0
+	add2 0x2, v0                             # line: 23           # column: 0
+	return                                   # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_obfuscation_1.#~@0=#c(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any export_obfuscation_1.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, export_obfuscation_1.#*#b, 0x2 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, export_obfuscation_1.#*#a, 0x2 # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x2, export_obfuscation_1.#~@0=#c, export_obfuscation_1_10161, 0x0, v0 # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	ldobjbyname 0x3, prototype               # line: 15           # column: 0
+	lda v0                                   # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 15           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_obfuscation_2.func_main_0(any a0, any a1, any a2) {
+	ldai 0x64                                # line: 21           # column: 0
+	stmodulevar 0x0                          # line: 21           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any export_obfuscation_3.#*#e(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 34           # column: 0
+	add2 0x0, a3                             # line: 34           # column: 0
+	return                                   # line: 35           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any export_obfuscation_3.#~@0=#f(any a0, any a1, any a2) {
+	ldfalse                                  # line: 17           # column: 0
+	stobjbyname 0x0, g, a2                   # line: 17           # column: 0
+	lda a2                                   # line: 18           # column: 0
+	return                                   # line: 18           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 10
+.function any export_obfuscation_3.#~@0>#h(any a0, any a1, any a2, any a3, any a4) {
+	lda a2                                   # line: 21           # column: 0
+	ldobjbyname 0x0, g                       # line: 21           # column: 0
+	callruntime.istrue 0x2                   # line: 21           # column: 0
+	jnez label@6                             # line: 21           # column: 0
+	ldtrue                                   # line: 21           # column: 0
+	jmp label@7                              # line: 21           # column: 0
+	label@6: ldfalse                         # line: 21           # column: 0
+	label@7: callruntime.isfalse 0x4         # line: 21           # column: 0
+	jnez label@17                            # line: 21           # column: 0
+	tryldglobalbyname 0x6, Error             # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	lda.str List is empty                    # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	mov v2, v0                               # line: 22           # column: 0
+	mov v3, v1                               # line: 22           # column: 0
+	newobjrange 0x7, 0x2, v2                 # line: 22           # column: 0
+	throw                                    # line: 22           # column: 0
+	label@17: lda a4                         # line: 24           # column: 0
+	greater 0x9, a3                          # line: 24           # column: 0
+	return                                   # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_obfuscation_3.#~@0>#i(any a0, any a1, any a2, any a3, any a4) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any export_obfuscation_3.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, export_obfuscation_3.#*#e, 0x2 # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x1, export_obfuscation_3.#~@0=#f, export_obfuscation_3_10247, 0x0, v0 # line: 15           # column: 0
+	ldobjbyname 0x2, prototype               # line: 15           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_struct_transform_class.#~@0=#ViewPU(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any export_struct_transform_class.#~@1=#l(any a0, any a1, any a2) {
+	ldundefined                              # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	mov v1, v0                               # line: 21           # column: 0
+	supercallthisrange 0x0, 0x0, v1          # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	lda a2                                   # line: 21           # column: 0
+	throw.ifsupernotcorrectcall 0x1          # line: 21           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	throw.ifsupernotcorrectcall 0x0          # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	return                                   # line: 22           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_struct_transform_class.#~@1>#m(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 28           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any export_struct_transform_class.#~@2=#j(any a0, any a1, any a2) {
+	ldundefined                              # line: 33           # column: 0
+	sta v0                                   # line: 33           # column: 0
+	mov v1, v0                               # line: 33           # column: 0
+	supercallthisrange 0x0, 0x0, v1          # line: 33           # column: 0
+	sta v0                                   # line: 33           # column: 0
+	lda a2                                   # line: 33           # column: 0
+	throw.ifsupernotcorrectcall 0x1          # line: 33           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	throw.ifsupernotcorrectcall 0x0          # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 34           # column: 0
+	return                                   # line: 34           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_struct_transform_class.#~@2>#k(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 40           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 9
+.function any export_struct_transform_class.func_main_0(any a0, any a1, any a2) {
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x0, export_struct_transform_class.#~@0=#ViewPU, export_struct_transform_class_10337, 0x0, v0 # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	ldobjbyname 0x1, prototype               # line: 15           # column: 0
+	defineclasswithbuffer 0x3, export_struct_transform_class.#~@1=#l, export_struct_transform_class_10346, 0x0, v0 # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldobjbyname 0x4, prototype               # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	stmodulevar 0x0                          # line: 19           # column: 0
+	defineclasswithbuffer 0x6, export_struct_transform_class.#~@2=#j, export_struct_transform_class_10368, 0x0, v0 # line: 31           # column: 0
+	ldobjbyname 0x7, prototype               # line: 31           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any import_obfuscation_1.#*#n(any a0, any a1, any a2) {
+	ldundefined                              # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any import_obfuscation_1.#*#o(any a0, any a1, any a2) {
+	ldundefined                              # line: 27           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 28           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 10
+.function any import_obfuscation_1.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, import_obfuscation_1.#*#o, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, import_obfuscation_1.#*#n, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldexternalmodulevar 0x0                  # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	throw.undefinedifholewithname c          # line: 17           # column: 0
+	mov v3, v0                               # line: 17           # column: 0
+	newobjrange 0x2, 0x1, v3                 # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldobjbyname 0x4, t2                      # line: 18           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x6, u2                      # line: 19           # column: 0
+	ldexternalmodulevar 0x1                  # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	throw.undefinedifholewithname b          # line: 20           # column: 0
+	ldai 0x1                                 # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	ldai 0x2                                 # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	callargs2 0x8, v1, v2                    # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any import_obfuscation_2.#*#p(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any import_obfuscation_2.#*#q(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any import_obfuscation_2.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, import_obfuscation_2.#*#q, 0x0 # line: 18446744073709551615           # column: 0
+	definefunc 0x1, import_obfuscation_2.#*#p, 0x0 # line: 18446744073709551615           # column: 0
+	ldexternalmodulevar 0x1                  # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	throw.undefinedifholewithname d          # line: 18           # column: 0
+	ldai 0x1                                 # line: 18           # column: 0
+	add2 0x2, v0                             # line: 18           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any name_as_export_api_1.#*#s(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 47           # column: 0
+	sta v0                                   # line: 47           # column: 0
+	lda v0                                   # line: 47           # column: 0
+	add2 0x0, v0                             # line: 47           # column: 0
+	return                                   # line: 48           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any name_as_export_api_1.#*#t(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 51           # column: 0
+	sta v0                                   # line: 51           # column: 0
+	lda v0                                   # line: 51           # column: 0
+	add2 0x0, v0                             # line: 51           # column: 0
+	return                                   # line: 52           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any name_as_export_api_1.#~@0=#b1(any a0, any a1, any a2) {
+	lda.str hello                            # line: 17           # column: 0
+	stobjbyname 0x0, y, a2                   # line: 17           # column: 0
+	lda a2                                   # line: 17           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any name_as_export_api_1.#~@0>#static_initializer(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 16           # column: 0
+	definepropertybyname 0x0, a1, a2         # line: 16           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_export_api_1.#~@0>#z(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 21           # column: 0
+	return                                   # line: 21           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any name_as_export_api_1.#~@1=#x(any a0, any a1, any a2) {
+	lda.str hello                            # line: 28           # column: 0
+	stobjbyname 0x0, y, a2                   # line: 28           # column: 0
+	lda a2                                   # line: 28           # column: 0
+	return                                   # line: 28           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any name_as_export_api_1.#~@1>#static_initializer(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 27           # column: 0
+	definepropertybyname 0x0, a1, a2         # line: 27           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_export_api_1.#~@1>#z(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 32           # column: 0
+	return                                   # line: 32           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_export_api_1.#~@2=#w(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_export_api_1.#~@3=#v(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_export_api_1.#~@4=#u(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 23
+.function any name_as_export_api_1.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, name_as_export_api_1.#*#t, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x6                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, name_as_export_api_1.#*#s, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x5                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x2, name_as_export_api_1.#~@0=#b1, name_as_export_api_1_10655, 0x0, v0 # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	ldobjbyname 0x3, prototype               # line: 15           # column: 0
+	lda v0                                   # line: 15           # column: 0
+	definemethod 0x5, name_as_export_api_1.#~@0>#static_initializer, 0x0 # line: 15           # column: 0
+	callthis0 0x6, v0                        # line: 15           # column: 0
+	lda v0                                   # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 15           # column: 0
+	ldhole                                   # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	defineclasswithbuffer 0x8, name_as_export_api_1.#~@1=#x, name_as_export_api_1_10677, 0x0, v0 # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	ldobjbyname 0x9, prototype               # line: 26           # column: 0
+	lda v0                                   # line: 26           # column: 0
+	definemethod 0xb, name_as_export_api_1.#~@1>#static_initializer, 0x0 # line: 26           # column: 0
+	callthis0 0xc, v0                        # line: 26           # column: 0
+	lda v0                                   # line: 26           # column: 0
+	stmodulevar 0x1                          # line: 26           # column: 0
+	ldhole                                   # line: 35           # column: 0
+	sta v0                                   # line: 35           # column: 0
+	defineclasswithbuffer 0xe, name_as_export_api_1.#~@2=#w, name_as_export_api_1_10699, 0x0, v0 # line: 35           # column: 0
+	sta v0                                   # line: 35           # column: 0
+	ldobjbyname 0xf, prototype               # line: 35           # column: 0
+	lda v0                                   # line: 35           # column: 0
+	stmodulevar 0x2                          # line: 35           # column: 0
+	ldhole                                   # line: 38           # column: 0
+	sta v0                                   # line: 38           # column: 0
+	defineclasswithbuffer 0x11, name_as_export_api_1.#~@3=#v, name_as_export_api_1_10708, 0x0, v0 # line: 38           # column: 0
+	sta v0                                   # line: 38           # column: 0
+	ldobjbyname 0x12, prototype              # line: 38           # column: 0
+	lda v0                                   # line: 38           # column: 0
+	stmodulevar 0x3                          # line: 38           # column: 0
+	ldhole                                   # line: 41           # column: 0
+	sta v0                                   # line: 41           # column: 0
+	defineclasswithbuffer 0x14, name_as_export_api_1.#~@4=#u, name_as_export_api_1_10717, 0x0, v0 # line: 41           # column: 0
+	sta v0                                   # line: 41           # column: 0
+	ldobjbyname 0x15, prototype              # line: 41           # column: 0
+	lda v0                                   # line: 41           # column: 0
+	stmodulevar 0x4                          # line: 41           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_import_api_1.#*#e1(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 37           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_import_api_1.#*#f1(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 41           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_import_api_1.#*#g1(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 45           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_import_api_1.#*#p(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 29           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_as_import_api_1.#*#q(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 33           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 11
+.function any name_as_import_api_1.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, name_as_import_api_1.#*#g1, 0x0 # line: 18446744073709551615           # column: 0
+	definefunc 0x1, name_as_import_api_1.#*#p, 0x0 # line: 18446744073709551615           # column: 0
+	definefunc 0x2, name_as_import_api_1.#*#f1, 0x0 # line: 18446744073709551615           # column: 0
+	definefunc 0x3, name_as_import_api_1.#*#q, 0x0 # line: 18446744073709551615           # column: 0
+	definefunc 0x4, name_as_import_api_1.#*#e1, 0x0 # line: 18446744073709551615           # column: 0
+	ldexternalmodulevar 0x4                  # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	throw.undefinedifholewithname s          # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	callarg0 0x5                             # line: 23           # column: 0
+	ldexternalmodulevar 0x5                  # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	throw.undefinedifholewithname i1         # line: 24           # column: 0
+	lda v0                                   # line: 24           # column: 0
+	callarg0 0x7                             # line: 24           # column: 0
+	ldexternalmodulevar 0x2                  # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	throw.undefinedifholewithname h1         # line: 25           # column: 0
+	mov v1, v0                               # line: 25           # column: 0
+	newobjrange 0x9, 0x1, v1                 # line: 25           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any oh_modules/export_interface.#*#e1(any a0, any a1, any a2) {
+	ldundefined                              # line: 26           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any oh_modules/export_interface.#*#f1(any a0, any a1, any a2) {
+	ldundefined                              # line: 32           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 33           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any oh_modules/export_interface.#*#p(any a0, any a1, any a2) {
+	ldundefined                              # line: 16           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any oh_modules/export_interface.#*#q(any a0, any a1, any a2) {
+	ldundefined                              # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 21           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any oh_modules/export_interface.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, oh_modules/export_interface.#*#q, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x2                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, oh_modules/export_interface.#*#e1, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x3                          # line: 18446744073709551615           # column: 0
+	definefunc 0x2, oh_modules/export_interface.#*#p, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	definefunc 0x3, oh_modules/export_interface.#*#f1, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x4                          # line: 18446744073709551615           # column: 0
+	ldai 0x1                                 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 36           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any oh_modules/import_interface.func_main_0(any a0, any a1, any a2) {
+	ldexternalmodulevar 0x2                  # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	throw.undefinedifholewithname n1         # line: 22           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	callarg0 0x0                             # line: 22           # column: 0
+	ldexternalmodulevar 0x3                  # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	throw.undefinedifholewithname q          # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	callarg0 0x2                             # line: 23           # column: 0
+	ldexternalmodulevar 0x4                  # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	throw.undefinedifholewithname e1         # line: 24           # column: 0
+	lda v0                                   # line: 24           # column: 0
+	callarg0 0x4                             # line: 24           # column: 0
+	ldexternalmodulevar 0x5                  # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	throw.undefinedifholewithname f1         # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	callarg0 0x6                             # line: 25           # column: 0
+	ldexternalmodulevar 0x1                  # line: 26           # column: 0
+	throw.undefinedifholewithname m1         # line: 26           # column: 0
+	ldexternalmodulevar 0x0                  # line: 27           # column: 0
+	throw.undefinedifholewithname l1         # line: 27           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 15
+.function any whole_module_export_api_1.#&#o1(any a0, any a1, any a2, any a3) {
+	definefunc 0x0, whole_module_export_api_1.#&@0*#p1, 0x2 # line: 18446744073709551615           # column: 0
+	stobjbyname 0x1, p1, a3                  # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	defineclasswithbuffer 0x3, whole_module_export_api_1.#&@0~@1=#q1, whole_module_export_api_1_11065, 0x1, v0 # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	ldobjbyname 0x4, prototype               # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	stobjbyname 0x6, q1, a3                  # line: 20           # column: 0
+	ldhole                                   # line: 31           # column: 0
+	sta v0                                   # line: 31           # column: 0
+	defineclasswithbuffer 0x8, whole_module_export_api_1.#&@0~@2=#r1, whole_module_export_api_1_11087, 0x1, v0 # line: 31           # column: 0
+	sta v0                                   # line: 31           # column: 0
+	ldobjbyname 0x9, prototype               # line: 31           # column: 0
+	lda v0                                   # line: 31           # column: 0
+	stobjbyname 0xb, r1, a3                  # line: 31           # column: 0
+	ldai 0x1                                 # line: 31           # column: 0
+	stobjbyname 0xd, s1, a3                  # line: 42           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any whole_module_export_api_1.#&@0*#p1(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 17           # column: 0
+	add2 0x0, a3                             # line: 17           # column: 0
+	return                                   # line: 18           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any whole_module_export_api_1.#&@0~@1=#q1(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 28           # column: 0
+	stobjbyname 0x0, t1, a2                  # line: 28           # column: 0
+	lda a2                                   # line: 28           # column: 0
+	return                                   # line: 28           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_1.#&@0~@1>#u1(any a0, any a1, any a2, any a3) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 25           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_1.#&@0~@2=#r1(any a0, any a1, any a2, any a3) {
+	lda a2                                   # line: 39           # column: 0
+	return                                   # line: 39           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_1.#&@0~@2>#z(any a0, any a1, any a2, any a3) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 36           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any whole_module_export_api_1.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	definefunc 0x0, whole_module_export_api_1.#&#o1, 0x1 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldlocalmodulevar 0x0                     # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@11                            # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	label@11: lda v0                         # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v1                         # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any whole_module_export_api_2.#*#v1(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	add2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any whole_module_export_api_2.#~@0=#x1(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 27           # column: 0
+	stobjbyname 0x0, y1, a2                  # line: 27           # column: 0
+	lda a2                                   # line: 27           # column: 0
+	return                                   # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_2.#~@0>#u1(any a0, any a1, any a2, any a3) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_2.#~@1=#w1(any a0, any a1, any a2, any a3) {
+	lda a2                                   # line: 38           # column: 0
+	return                                   # line: 38           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any whole_module_export_api_2.#~@1>#z(any a0, any a1, any a2, any a3) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 35           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any whole_module_export_api_2.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, whole_module_export_api_2.#*#v1, 0x2 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x2                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	defineclasswithbuffer 0x1, whole_module_export_api_2.#~@0=#x1, whole_module_export_api_2_11183, 0x1, v0 # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldobjbyname 0x2, prototype               # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	stmodulevar 0x0                          # line: 19           # column: 0
+	ldhole                                   # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	defineclasswithbuffer 0x4, whole_module_export_api_2.#~@1=#w1, whole_module_export_api_2_11205, 0x1, v0 # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	ldobjbyname 0x5, prototype               # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	stmodulevar 0x1                          # line: 30           # column: 0
+	ldai 0x1                                 # line: 30           # column: 0
+	stmodulevar 0x3                          # line: 41           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any whole_module_import_api_1.func_main_0(any a0, any a1, any a2) {
+	ldexternalmodulevar 0x0                  # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	throw.undefinedifholewithname o1         # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x0, p1                      # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callthis2 0x2, v0, v2, v3                # line: 17           # column: 0
+	ldexternalmodulevar 0x0                  # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	throw.undefinedifholewithname o1         # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	ldobjbyname 0x4, q1                      # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldai 0x1                                 # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	mov v4, v0                               # line: 18           # column: 0
+	mov v5, v1                               # line: 18           # column: 0
+	newobjrange 0x6, 0x2, v4                 # line: 18           # column: 0
+	ldexternalmodulevar 0x0                  # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	throw.undefinedifholewithname o1         # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x8, r1                      # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldai 0x2                                 # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	mov v4, v0                               # line: 19           # column: 0
+	mov v5, v1                               # line: 19           # column: 0
+	newobjrange 0xa, 0x2, v4                 # line: 19           # column: 0
+	ldexternalmodulevar 0x0                  # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	throw.undefinedifholewithname o1         # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	ldobjbyname 0xc, s1                      # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any whole_module_import_api_2.func_main_0(any a0, any a1, any a2) {
+	getmodulenamespace 0x0                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x0, v1                      # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callthis2 0x2, v0, v2, v3                # line: 17           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	ldobjbyname 0x4, x1                      # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	ldai 0x1                                 # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	mov v4, v1                               # line: 18           # column: 0
+	mov v5, v2                               # line: 18           # column: 0
+	newobjrange 0x6, 0x2, v4                 # line: 18           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x8, w1                      # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldai 0x2                                 # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	mov v4, v1                               # line: 19           # column: 0
+	mov v5, v2                               # line: 19           # column: 0
+	newobjrange 0xa, 0x2, v4                 # line: 19           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	ldobjbyname 0xc, z1                      # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any y1_export_alias.#*#b2(any a0, any a1, any a2) {
+	ldai 0x16                                # line: 29           # column: 0
+	return                                   # line: 29           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any y1_export_alias.#*#c2(any a0, any a1, any a2) {
+	lda.str 11                               # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any y1_export_alias.#~@0=#d2(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 0           # column: 0
+	stobjbyname 0x0, e2, a2                  # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any y1_export_alias.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, y1_export_alias.#*#c2, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, y1_export_alias.#*#b2, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x2                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	defineclasswithbuffer 0x2, y1_export_alias.#~@0=#d2, y1_export_alias_11384, 0x0, v0 # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	ldobjbyname 0x3, prototype               # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	stmodulevar 0x0                          # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any y1_export_default_value.func_main_0(any a0, any a1, any a2) {
+	ldai 0x5                                 # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 15           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 18
+.function any y1_import_alias.func_main_0(any a0, any a1, any a2) {
+	getmodulenamespace 0x0                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	getmodulenamespace 0x0                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x0, f2                      # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	mov v4, v1                               # line: 19           # column: 0
+	newobjrange 0x2, 0x1, v4                 # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	tryldglobalbyname 0x4, print             # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	lda v1                                   # line: 20           # column: 0
+	ldobjbyname 0x5, e2                      # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	ldai 0x2                                 # line: 20           # column: 0
+	stricteq 0x7, v1                         # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	lda.str success                          # line: 20           # column: 0
+	sta v3                                   # line: 20           # column: 0
+	lda v2                                   # line: 20           # column: 0
+	callargs2 0x8, v1, v3                    # line: 20           # column: 0
+	tryldglobalbyname 0xa, print             # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	ldobjbyname 0xb, c2                      # line: 22           # column: 0
+	callthis0 0xd, v0                        # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	lda.str 11                               # line: 22           # column: 0
+	stricteq 0xf, v0                         # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	lda.str success                          # line: 22           # column: 0
+	sta v2                                   # line: 22           # column: 0
+	lda v1                                   # line: 22           # column: 0
+	callargs2 0x10, v0, v2                   # line: 22           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 28
+.function any y1_import_export_indrect.func_main_0(any a0, any a1, any a2) {
+	ldexternalmodulevar 0x0                  # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	throw.undefinedifholewithname j2         # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	ldobjbyname 0x0, f2                      # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	mov v3, v0                               # line: 18           # column: 0
+	newobjrange 0x2, 0x1, v3                 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	tryldglobalbyname 0x4, print             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x5, e2                      # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldai 0x2                                 # line: 19           # column: 0
+	stricteq 0x7, v0                         # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x8, v0, v2                    # line: 19           # column: 0
+	tryldglobalbyname 0xa, print             # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	ldexternalmodulevar 0x0                  # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	throw.undefinedifholewithname j2         # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	ldobjbyname 0xb, c2                      # line: 21           # column: 0
+	callthis0 0xd, v1                        # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda.str 11                               # line: 21           # column: 0
+	stricteq 0xf, v1                         # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	callargs2 0x10, v1, v2                   # line: 21           # column: 0
+	tryldglobalbyname 0x12, print            # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	ldexternalmodulevar 0x1                  # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	throw.undefinedifholewithname l1         # line: 22           # column: 0
+	lda v1                                   # line: 22           # column: 0
+	callarg0 0x13                            # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	ldai 0x16                                # line: 22           # column: 0
+	stricteq 0x15, v1                        # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	lda.str success                          # line: 22           # column: 0
+	sta v2                                   # line: 22           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	callargs2 0x16, v1, v2                   # line: 22           # column: 0
+	tryldglobalbyname 0x18, print            # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	ldexternalmodulevar 0x2                  # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	throw.undefinedifholewithname k2         # line: 23           # column: 0
+	ldai 0x5                                 # line: 23           # column: 0
+	stricteq 0x19, v1                        # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	lda.str success                          # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	callargs2 0x1a, v1, v2                   # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any y2_export_default_func.#*#l2(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	mul2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any y2_export_default_func.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, y2_export_default_func.#*#l2, 0x2 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 12
+.function any y2_import_default.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, print             # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldexternalmodulevar 0x1                  # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	throw.undefinedifholewithname n2         # line: 18           # column: 0
+	ldai 0x2                                 # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	ldai 0x3                                 # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	lda v1                                   # line: 18           # column: 0
+	callargs2 0x1, v2, v3                    # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	ldai 0x6                                 # line: 18           # column: 0
+	stricteq 0x3, v1                         # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	lda.str success                          # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	callargs2 0x4, v1, v2                    # line: 18           # column: 0
+	tryldglobalbyname 0x6, print             # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldexternalmodulevar 0x0                  # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	throw.undefinedifholewithname m2         # line: 19           # column: 0
+	ldai 0x4                                 # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x7, v3, v2                    # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldai 0xc                                 # line: 19           # column: 0
+	stricteq 0x9, v1                         # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callargs2 0xa, v1, v2                    # line: 19           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any y3_export_list_default.#*#o2(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	div2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any y3_export_list_default.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, y3_export_list_default.#*#o2, 0x2 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 12
+.function any y3_import_list_default.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, print             # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldexternalmodulevar 0x0                  # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	throw.undefinedifholewithname p2         # line: 18           # column: 0
+	ldai 0x6                                 # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	ldai 0x3                                 # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	lda v1                                   # line: 18           # column: 0
+	callargs2 0x1, v2, v3                    # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	ldai 0x2                                 # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	lda v2                                   # line: 18           # column: 0
+	stricteq 0x3, v1                         # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	lda.str success                          # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	callargs2 0x4, v1, v3                    # line: 18           # column: 0
+	tryldglobalbyname 0x6, print             # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldexternalmodulevar 0x1                  # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	throw.undefinedifholewithname q2         # line: 19           # column: 0
+	ldai 0x8                                 # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x7, v3, v2                    # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldai 0x4                                 # line: 19           # column: 0
+	stricteq 0x9, v1                         # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callargs2 0xa, v1, v2                    # line: 19           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any y4_export_as.func_main_0(any a0, any a1, any a2) {
+	getmodulenamespace 0x1                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+11
+Error
+List is empty
+a1
+b
+c
+c2
+d
+e1
+e2
+export_obfuscation_1.#*#a
+export_obfuscation_1.#*#b
+export_obfuscation_1.#~@0=#c
+export_obfuscation_3.#*#e
+export_obfuscation_3.#~@0=#f
+export_struct_transform_class.#~@0=#ViewPU
+export_struct_transform_class.#~@1=#l
+export_struct_transform_class.#~@2=#j
+f1
+f2
+g
+h1
+hello
+i1
+import_obfuscation_1.#*#n
+import_obfuscation_1.#*#o
+import_obfuscation_2.#*#p
+import_obfuscation_2.#*#q
+j2
+k2
+l1
+m1
+m2
+n1
+n2
+name_as_export_api_1.#*#s
+name_as_export_api_1.#*#t
+name_as_export_api_1.#~@0=#b1
+name_as_export_api_1.#~@0>#static_initializer
+name_as_export_api_1.#~@1=#x
+name_as_export_api_1.#~@1>#static_initializer
+name_as_export_api_1.#~@2=#w
+name_as_export_api_1.#~@3=#v
+name_as_export_api_1.#~@4=#u
+name_as_import_api_1.#*#e1
+name_as_import_api_1.#*#f1
+name_as_import_api_1.#*#g1
+name_as_import_api_1.#*#p
+name_as_import_api_1.#*#q
+o1
+oh_modules/export_interface.#*#e1
+oh_modules/export_interface.#*#f1
+oh_modules/export_interface.#*#p
+oh_modules/export_interface.#*#q
+p1
+p2
+print
+prototype
+q
+q1
+q2
+r1
+s
+s1
+s2
+success
+t1
+t2
+u2
+v1
+w1
+whole_module_export_api_1.#&#o1
+whole_module_export_api_1.#&@0*#p1
+whole_module_export_api_1.#&@0~@1=#q1
+whole_module_export_api_1.#&@0~@2=#r1
+whole_module_export_api_2.#*#v1
+whole_module_export_api_2.#~@0=#x1
+whole_module_export_api_2.#~@1=#w1
+x1
+y
+y1
+y1_export_alias.#*#b2
+y1_export_alias.#*#c2
+y1_export_alias.#~@0=#d2
+y2_export_default_func.#*#l2
+y3_export_list_default.#*#o2
+z1

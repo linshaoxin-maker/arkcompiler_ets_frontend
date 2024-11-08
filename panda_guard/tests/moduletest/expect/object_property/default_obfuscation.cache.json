@@ -1,0 +1,21 @@
+{
+  "main": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "main"
+  },
+  "object_test1": {
+    "IdentifierCache": {
+      "#test_object_property_func:29:45": "test_object_property_func"
+    },
+    "MemberMethodCache": {},
+    "obfName": "object_test1"
+  },
+  "object_test2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "object_test2"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

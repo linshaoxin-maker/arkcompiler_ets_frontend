@@ -1,0 +1,24 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "enableRemoveLog": false,
+    "propertyObfuscation": {
+      "enable": false
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": ["func2"],
+      "universalReservedToplevelNames": [
+        "^a.*$",
+        "^.*shoul.keep.*$",
+        "^...$"
+      ]
+    },
+    "fileNameObfuscation": {
+      "enable": false
+    }
+  }
+}

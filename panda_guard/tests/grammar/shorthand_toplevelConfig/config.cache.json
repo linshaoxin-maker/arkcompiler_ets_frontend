@@ -1,0 +1,74 @@
+{
+  "exportsApi1_toplevel": {
+    "IdentifierCache": {
+      "#AbortError1": "AbortError1"
+    },
+    "MemberMethodCache": {
+      "AbortError1:23:26": "AbortError1"
+    },
+    "obfName": "exportsApi1_toplevel"
+  },
+  "exportsApi2_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportsApi2_toplevel"
+  },
+  "exportsApi3_toplevel": {
+    "IdentifierCache": {
+      "#addTest:16:18": "addTest",
+      "#subtractTest:20:22": "subtractTest"
+    },
+    "MemberMethodCache": {},
+    "obfName": "exportsApi3_toplevel"
+  },
+  "exportsApi4_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportsApi4_toplevel"
+  },
+  "requireApi1_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi1_toplevel"
+  },
+  "requireApi2_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi2_toplevel"
+  },
+  "requireApi3_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi3_toplevel"
+  },
+  "requireApi4_toplevel": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi4_toplevel"
+  },
+  "requireApi_worker_threads": {
+    "IdentifierCache": {
+      "#functionTest1:20:25": "b",
+      "#functionTest2:29:32": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "requireApi_worker_threads"
+  },
+  "someSimilarGrammars": {
+    "IdentifierCache": {
+      "#foo:42:44": "d",
+      "#funcLayer:25:30": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "someSimilarGrammars"
+  },
+  "someSimilarGrammars2": {
+    "IdentifierCache": {
+      "#foo:17:19": "d"
+    },
+    "MemberMethodCache": {},
+    "obfName": "someSimilarGrammars2"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

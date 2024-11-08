@@ -1,0 +1,52 @@
+{
+  "any_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "any_define"
+  },
+  "array_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_define"
+  },
+  "boolean_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "boolean_define"
+  },
+  "enum_define": {
+    "IdentifierCache": {
+      "#Color": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "enum_define"
+  },
+  "none_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "none_define"
+  },
+  "number_types": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_types"
+  },
+  "string_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_define"
+  },
+  "tuple_define": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "tuple_define"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "Color": "a",
+    "bule": "d",
+    "green": "c",
+    "red": "b"
+  }
+}

@@ -1,0 +1,1148 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+common/class_test_6973 { 8 [ tag_value:5, string:"class1", tag_value:5, string:"class2", tag_value:5, string:"class3", tag_value:5, string:"test_class_in_func", ]}
+
+common/class_test_6997 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"class1", string:"class1", string:"test_class_in_func", string:"test_class_in_func", i32:0, i32:0, ]}
+
+common/class_test_7041 { 8 [ tag_value:5, string:"add", tag_value:6, method:common/class_test.#*@3~@2>#add, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/class_test_7063 { 8 [ tag_value:5, string:"add", tag_value:6, method:common/class_test.#~@0>#add, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/class_test_7085 { 8 [ tag_value:5, string:"add", tag_value:6, method:common/class_test.#~@1>#add, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/function_test_7107 { 4 [ tag_value:5, string:"test_function_in_func", tag_value:5, string:"function_test3", ]}
+
+common/function_test_7121 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"function_test1", string:"function_test1", string:"test_function_in_func", string:"test_function_in_func", i32:0, i32:0, ]}
+
+common/method_test_7165 { 10 [ tag_value:5, string:"methodClass1", tag_value:5, string:"methodClass2", tag_value:5, string:"methodClass4", tag_value:5, string:"methodClass3", tag_value:5, string:"test_method_in_func", ]}
+
+common/method_test_7194 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"methodClass1", string:"methodClass1", string:"test_method_in_func", string:"test_method_in_func", i32:0, i32:0, ]}
+
+common/method_test_7238 { 8 [ tag_value:5, string:"methodAdd3", tag_value:6, method:common/method_test.#*@4~@3>#methodAdd3, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/method_test_7260 { 8 [ tag_value:5, string:"methodAdd1", tag_value:6, method:common/method_test.#~@0>#methodAdd1, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/method_test_7282 { 8 [ tag_value:5, string:"methodAdd2", tag_value:6, method:common/method_test.#~@1>#methodAdd2, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/method_test_7304 { 14 [ tag_value:5, string:"methodAdd4_1", tag_value:6, method:common/method_test.#~@2>#methodAdd4_1, tag_value:9, method_affiliate:0, tag_value:5, string:"methodAdd4_2", tag_value:6, method:common/method_test.#~@2<#methodAdd4_2, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+common/name_space_test1_7339 
+
+common/name_space_test1_7343 { 14 [ i32:0, i32:0, i32:0, i32:4, string:"name_space_test_func_2", string:"name_space_test_func_regular_redefine_export", string:"name_space_test_func_4", string:"name_space_test_func_4", string:"name_space_test_func_indirect_export", string:"name_space_test_func_indirect_export", string:"name_space_test_func_regular_export", string:"name_space_test_func_regular_export", i32:0, i32:0, ]}
+
+common/name_space_test2_7403 
+
+common/name_space_test2_7407 { 13 [ i32:1, string:"./name_space_test1", i32:0, i32:0, i32:0, i32:2, string:"name_space_test_func_indirect_export", string:"name_space_test_func_indirect_export", method_affiliate:0, string:"name_space_test_func_indirect_redefine_export", string:"name_space_test_func_4", method_affiliate:0, i32:0, ]}
+
+common/name_space_test3_7459 
+
+common/name_space_test3_7463 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"name_space_test_func_5", string:"name_space_test_func_5", string:"name_space_test_func_6", string:"name_space_test_func_6", i32:0, i32:0, ]}
+
+common/property_test_7507 { 8 [ tag_value:5, string:"propertyClass1", tag_value:5, string:"propertyClass2", tag_value:5, string:"propertyClass3", tag_value:5, string:"test_property_in_func", ]}
+
+common/property_test_7531 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"propertyClass1", string:"propertyClass1", string:"test_property_in_func", string:"test_property_in_func", i32:0, i32:0, ]}
+
+common/property_test_7575 { 2 [ tag_value:2, i32:0, ]}
+
+common/property_test_7584 { 2 [ tag_value:2, i32:0, ]}
+
+common/property_test_7593 { 2 [ tag_value:2, i32:0, ]}
+
+common/record_test_7602 
+
+common/record_test_7606 { 10 [ i32:0, i32:0, i32:0, i32:2, string:"recordObject1", string:"recordObject1", string:"test_record_in_func", string:"test_record_in_func", i32:0, i32:0, ]}
+
+common/record_test_7650 { 8 [ tag_value:5, string:"name3", tag_value:5, string:"c", tag_value:5, string:"age3", tag_value:2, i32:3, ]}
+
+common/record_test_7674 { 8 [ tag_value:5, string:"name1", tag_value:5, string:"a", tag_value:5, string:"age1", tag_value:2, i32:1, ]}
+
+common/record_test_7698 { 8 [ tag_value:5, string:"name2", tag_value:5, string:"b", tag_value:5, string:"age2", tag_value:2, i32:2, ]}
+
+main_7722 
+
+main_7726 { 58 [ i32:8, string:"./common/class_test", string:"./common/method_test", string:"./common/property_test", string:"./common/function_test", string:"./common/record_test", string:"./common/name_space_test1", string:"./common/name_space_test2", string:"./common/name_space_test3", i32:14, string:"class1", string:"class1", method_affiliate:0, string:"function_test1", string:"function_test1", method_affiliate:3, string:"methodClass1", string:"methodClass1", method_affiliate:1, string:"name_space_test_func_indirect_export", string:"name_space_test_func_indirect_export", method_affiliate:6, string:"name_space_test_func_indirect_redefine_export", string:"name_space_test_func_indirect_redefine_export", method_affiliate:6, string:"name_space_test_func_regular_export", string:"name_space_test_func_regular_export", method_affiliate:5, string:"name_space_test_func_regular_redefine_export", string:"name_space_test_func_regular_redefine_export", method_affiliate:5, string:"propertyClass1", string:"propertyClass1", method_affiliate:2, string:"recordObject1", string:"recordObject1", method_affiliate:4, string:"test_class_in_func", string:"test_class_in_func", method_affiliate:0, string:"test_function_in_func", string:"test_function_in_func", method_affiliate:3, string:"test_method_in_func", string:"test_method_in_func", method_affiliate:1, string:"test_property_in_func", string:"test_property_in_func", method_affiliate:2, string:"test_record_in_func", string:"test_record_in_func", method_affiliate:4, i32:1, string:"k", method_affiliate:7, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record common/class_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/class_test_6973
+	u32 moduleRecordIdx common/class_test_6997
+}
+.record.source_file 
+
+.record common/function_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/function_test_7107
+	u32 moduleRecordIdx common/function_test_7121
+}
+.record.source_file 
+
+.record common/method_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/method_test_7165
+	u32 moduleRecordIdx common/method_test_7194
+}
+.record.source_file 
+
+.record common/name_space_test1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/name_space_test1_7339
+	u32 moduleRecordIdx common/name_space_test1_7343
+}
+.record.source_file 
+
+.record common/name_space_test2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/name_space_test2_7403
+	u32 moduleRecordIdx common/name_space_test2_7407
+}
+.record.source_file 
+
+.record common/name_space_test3 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/name_space_test3_7459
+	u32 moduleRecordIdx common/name_space_test3_7463
+}
+.record.source_file 
+
+.record common/property_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/property_test_7507
+	u32 moduleRecordIdx common/property_test_7531
+}
+.record.source_file 
+
+.record common/record_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames common/record_test_7602
+	u32 moduleRecordIdx common/record_test_7606
+}
+.record.source_file 
+
+.record main {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames main_7722
+	u32 moduleRecordIdx main_7726
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 16
+.function any common/class_test.#*#test_class_in_func(any a0, any a1, any a2) {
+	ldhole                                   # line: 13           # column: 0
+	sta v0                                   # line: 13           # column: 0
+	defineclasswithbuffer 0x0, common/class_test.#*@3~@2=#b, common/class_test_7041, 0x0, v0 # line: 13           # column: 0
+	sta v0                                   # line: 13           # column: 0
+	ldobjbyname 0x1, prototype               # line: 13           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	throw.undefinedifholewithname a          # line: 19           # column: 0
+	mov v2, v1                               # line: 19           # column: 0
+	newobjrange 0x3, 0x1, v2                 # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	mov v2, v0                               # line: 19           # column: 0
+	newobjrange 0x5, 0x1, v2                 # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	ldobjbyname 0x7, add                     # line: 21           # column: 0
+	callthis0 0x9, v1                        # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	ldobjbyname 0xb, add                     # line: 21           # column: 0
+	callthis0 0xd, v0                        # line: 21           # column: 0
+	add2 0xf, v1                             # line: 21           # column: 0
+	return                                   # line: 22           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#*@3~@2=#b(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#*@3~@2>#add(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 16           # column: 0
+	return                                   # line: 16           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#~@0=#class1(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#~@0>#add(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 3           # column: 0
+	return                                   # line: 3           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#~@1=#a(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/class_test.#~@1>#add(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 9           # column: 0
+	return                                   # line: 9           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any common/class_test.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, common/class_test.#*#test_class_in_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x1, common/class_test.#~@0=#class1, common/class_test_7063, 0x0, v0 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x2, prototype               # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 6           # column: 0
+	sta v0                                   # line: 6           # column: 0
+	defineclasswithbuffer 0x4, common/class_test.#~@1=#a, common/class_test_7085, 0x0, v0 # line: 6           # column: 0
+	sta v0                                   # line: 6           # column: 0
+	ldobjbyname 0x5, prototype               # line: 6           # column: 0
+	lda v0                                   # line: 6           # column: 0
+	stlexvar 0x0, 0x0                        # line: 6           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/function_test.#*#e(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 6           # column: 0
+	return                                   # line: 6           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/function_test.#*#function_test1(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 2           # column: 0
+	return                                   # line: 2           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any common/function_test.#*#test_function_in_func(any a0, any a1, any a2) {
+	definefunc 0x0, common/function_test.#*@0*#c, 0x0 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 17           # column: 0
+	callarg0 0x1                             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	callarg0 0x3                             # line: 17           # column: 0
+	add2 0x5, v1                             # line: 17           # column: 0
+	return                                   # line: 18           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any common/function_test.#*@0*#c(any a0, any a1, any a2) {
+	definefunc 0x0, common/function_test.#*@0*@1*#d, 0x0 # line: 18446744073709551615           # column: 0
+	callarg0 0x1                             # line: 14           # column: 0
+	return                                   # line: 15           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/function_test.#*@0*@1*#d(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 12           # column: 0
+	return                                   # line: 12           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any common/function_test.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, common/function_test.#*#e, 0x0 # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18446744073709551615           # column: 0
+	definefunc 0x1, common/function_test.#*#function_test1, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	definefunc 0x2, common/function_test.#*#test_function_in_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 31
+.function any common/method_test.#*#test_method_in_func(any a0, any a1, any a2) {
+	ldhole                                   # line: 27           # column: 0
+	sta v0                                   # line: 27           # column: 0
+	defineclasswithbuffer 0x0, common/method_test.#*@4~@3=#h, common/method_test_7238, 0x0, v0 # line: 27           # column: 0
+	sta v0                                   # line: 27           # column: 0
+	ldobjbyname 0x1, prototype               # line: 27           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	throw.undefinedifholewithname g          # line: 33           # column: 0
+	mov v3, v1                               # line: 33           # column: 0
+	newobjrange 0x3, 0x1, v3                 # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	mov v3, v0                               # line: 33           # column: 0
+	newobjrange 0x5, 0x1, v3                 # line: 34           # column: 0
+	sta v0                                   # line: 34           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	throw.undefinedifholewithname f          # line: 35           # column: 0
+	mov v3, v2                               # line: 35           # column: 0
+	newobjrange 0x7, 0x1, v3                 # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	lda v1                                   # line: 36           # column: 0
+	ldobjbyname 0x9, methodAdd2              # line: 36           # column: 0
+	callthis0 0xb, v1                        # line: 36           # column: 0
+	sta v1                                   # line: 36           # column: 0
+	lda v0                                   # line: 36           # column: 0
+	ldobjbyname 0xd, methodAdd3              # line: 36           # column: 0
+	callthis0 0xf, v0                        # line: 36           # column: 0
+	add2 0x11, v1                            # line: 36           # column: 0
+	sta v0                                   # line: 36           # column: 0
+	lda v2                                   # line: 36           # column: 0
+	ldobjbyname 0x12, methodAdd4_1           # line: 36           # column: 0
+	callthis0 0x14, v2                       # line: 36           # column: 0
+	add2 0x16, v0                            # line: 36           # column: 0
+	sta v0                                   # line: 36           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 36           # column: 0
+	sta v1                                   # line: 36           # column: 0
+	throw.undefinedifholewithname f          # line: 36           # column: 0
+	lda v1                                   # line: 36           # column: 0
+	ldobjbyname 0x17, methodAdd4_2           # line: 36           # column: 0
+	callthis0 0x19, v1                       # line: 36           # column: 0
+	add2 0x1b, v0                            # line: 36           # column: 0
+	sta v0                                   # line: 36           # column: 0
+	lda v2                                   # line: 36           # column: 0
+	ldobjbyname 0x1c, methodAdd4_3           # line: 36           # column: 0
+	add2 0x1e, v0                            # line: 36           # column: 0
+	return                                   # line: 37           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#*@4~@3=#h(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#*@4~@3>#methodAdd3(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 30           # column: 0
+	return                                   # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@0=#methodClass1(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@0>#methodAdd1(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 3           # column: 0
+	return                                   # line: 3           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@1=#g(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@1>#methodAdd2(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 9           # column: 0
+	return                                   # line: 9           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@2<#methodAdd4_2(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 19           # column: 0
+	return                                   # line: 19           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@2=#f(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@2>#methodAdd4_1(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 15           # column: 0
+	return                                   # line: 15           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/method_test.#~@2>#methodAdd4_3(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 11
+.function any common/method_test.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x2                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, common/method_test.#*#test_method_in_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x1, common/method_test.#~@0=#methodClass1, common/method_test_7260, 0x0, v0 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x2, prototype               # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 6           # column: 0
+	sta v0                                   # line: 6           # column: 0
+	defineclasswithbuffer 0x4, common/method_test.#~@1=#g, common/method_test_7282, 0x0, v0 # line: 6           # column: 0
+	sta v0                                   # line: 6           # column: 0
+	ldobjbyname 0x5, prototype               # line: 6           # column: 0
+	lda v0                                   # line: 6           # column: 0
+	stlexvar 0x0, 0x0                        # line: 6           # column: 0
+	ldhole                                   # line: 12           # column: 0
+	sta v0                                   # line: 12           # column: 0
+	defineclasswithbuffer 0x7, common/method_test.#~@2=#f, common/method_test_7304, 0x0, v0 # line: 12           # column: 0
+	sta v0                                   # line: 12           # column: 0
+	ldobjbyname 0x8, prototype               # line: 12           # column: 0
+	sta v1                                   # line: 12           # column: 0
+	lda.str methodAdd4_3                     # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	ldundefined                              # line: 12           # column: 0
+	sta v3                                   # line: 12           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	definemethod 0xa, common/method_test.#~@2>#methodAdd4_3, 0x0 # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	ldfalse                                  # line: 12           # column: 0
+	definegettersetterbyvalue v1, v2, v4, v3 # line: 12           # column: 0
+	lda v0                                   # line: 12           # column: 0
+	stlexvar 0x0, 0x1                        # line: 12           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test1.#*#name_space_test_func_2(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 6           # column: 0
+	return                                   # line: 6           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test1.#*#name_space_test_func_4(any a0, any a1, any a2) {
+	ldai 0x4                                 # line: 16           # column: 0
+	return                                   # line: 16           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test1.#*#name_space_test_func_indirect_export(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 12           # column: 0
+	return                                   # line: 12           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test1.#*#name_space_test_func_regular_export(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 2           # column: 0
+	return                                   # line: 2           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any common/name_space_test1.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, common/name_space_test1.#*#name_space_test_func_2, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, common/name_space_test1.#*#name_space_test_func_regular_export, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x3                          # line: 18446744073709551615           # column: 0
+	definefunc 0x2, common/name_space_test1.#*#name_space_test_func_indirect_export, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x2                          # line: 18446744073709551615           # column: 0
+	definefunc 0x3, common/name_space_test1.#*#name_space_test_func_4, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test2.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test3.#*#name_space_test_func_5(any a0, any a1, any a2) {
+	ldai 0x5                                 # line: 2           # column: 0
+	return                                   # line: 2           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any common/name_space_test3.#*#name_space_test_func_6(any a0, any a1, any a2) {
+	ldai 0x6                                 # line: 6           # column: 0
+	return                                   # line: 6           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/name_space_test3.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, common/name_space_test3.#*#name_space_test_func_5, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	definefunc 0x1, common/name_space_test3.#*#name_space_test_func_6, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any common/property_test.#*#test_property_in_func(any a0, any a1, any a2) {
+	nop                                      # line: 11           # column: 0
+	newlexenv 0x1                            # line: 11           # column: 0
+	label@2: ldhole                          # line: 11           # column: 0
+	sta v1                                   # line: 11           # column: 0
+	defineclasswithbuffer 0x0, common/property_test.#*@3~@2=#j, common/property_test_7575, 0x0, v1 # line: 11           # column: 0
+	sta v1                                   # line: 11           # column: 0
+	ldobjbyname 0x1, prototype               # line: 11           # column: 0
+	definemethod 0x3, common/property_test.#*@3~@2>#instance_initializer, 0x0 # line: 11           # column: 0
+	stlexvar 0x0, 0x0                        # line: 11           # column: 0
+	lda v1                                   # line: 11           # column: 0
+	definemethod 0x4, common/property_test.#*@3~@2>#static_initializer, 0x0 # line: 11           # column: 0
+	callthis0 0x5, v1                        # line: 11           # column: 0
+	label@12: jmp label@17                   # line: 11           # column: 0
+	label@13: sta v0                         # line: 11           # column: 0
+	poplexenv                                # line: 11           # column: 0
+	lda v0                                   # line: 11           # column: 0
+	throw                                    # line: 11           # column: 0
+	label@17: poplexenv                      # line: 11           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 11           # column: 0
+	sta v0                                   # line: 11           # column: 0
+	throw.undefinedifholewithname i          # line: 11           # column: 0
+	mov v2, v0                               # line: 11           # column: 0
+	newobjrange 0x7, 0x1, v2                 # line: 11           # column: 0
+	ldobjbyname 0x9, field2                  # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	ldobjbyname 0xb, sField3                 # line: 17           # column: 0
+	add2 0xd, v0                             # line: 17           # column: 0
+	return                                   # line: 17           # column: 0
+.catchall :
+	try_begin_label : label@2
+	try_end_label : label@12
+	catch_begin_label : label@13
+	catch_end_label : label@13
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#*@3~@2=#j(any a0, any a1, any a2) {
+	ldlexvar 0x0, 0x0                        # line: 0           # column: 0
+	callruntime.callinit 0x0, a2             # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#*@3~@2>#instance_initializer(any a0, any a1, any a2) {
+	ldai 0x6                                 # line: 13           # column: 0
+	definepropertybyname 0x0, field3, a2     # line: 13           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#*@3~@2>#static_initializer(any a0, any a1, any a2) {
+	ldai 0x5                                 # line: 12           # column: 0
+	definepropertybyname 0x0, sField3, a2    # line: 12           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@0=#propertyClass1(any a0, any a1, any a2) {
+	ldlexvar 0x0, 0x0                        # line: 0           # column: 0
+	callruntime.callinit 0x0, a2             # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@0>#instance_initializer(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 2           # column: 0
+	definepropertybyname 0x0, field1, a2     # line: 2           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@0>#static_initializer(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 1           # column: 0
+	definepropertybyname 0x0, sField1, a2    # line: 1           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@1=#i(any a0, any a1, any a2) {
+	ldlexvar 0x0, 0x0                        # line: 0           # column: 0
+	callruntime.callinit 0x0, a2             # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@1>#instance_initializer(any a0, any a1, any a2) {
+	ldai 0x4                                 # line: 7           # column: 0
+	definepropertybyname 0x0, field2, a2     # line: 7           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any common/property_test.#~@1>#static_initializer(any a0, any a1, any a2) {
+	ldai 0x3                                 # line: 6           # column: 0
+	definepropertybyname 0x0, sField2, a2    # line: 6           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 15
+.function any common/property_test.func_main_0(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, common/property_test.#*#test_property_in_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	label@5: ldhole                          # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x1, common/property_test.#~@0=#propertyClass1, common/property_test_7584, 0x0, v1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x2, prototype               # line: 18446744073709551615           # column: 0
+	definemethod 0x4, common/property_test.#~@0>#instance_initializer, 0x0 # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 18446744073709551615           # column: 0
+	definemethod 0x5, common/property_test.#~@0>#static_initializer, 0x0 # line: 18446744073709551615           # column: 0
+	callthis0 0x6, v1                        # line: 18446744073709551615           # column: 0
+	label@15: jmp label@20                   # line: 18446744073709551615           # column: 0
+	label@16: sta v0                         # line: 18446744073709551615           # column: 0
+	poplexenv                                # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	throw                                    # line: 18446744073709551615           # column: 0
+	label@20: poplexenv                      # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	label@24: ldhole                         # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x8, common/property_test.#~@1=#i, common/property_test_7593, 0x0, v1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0x9, prototype               # line: 5           # column: 0
+	definemethod 0xb, common/property_test.#~@1>#instance_initializer, 0x0 # line: 5           # column: 0
+	stlexvar 0x0, 0x0                        # line: 5           # column: 0
+	lda v1                                   # line: 5           # column: 0
+	definemethod 0xc, common/property_test.#~@1>#static_initializer, 0x0 # line: 5           # column: 0
+	callthis0 0xd, v1                        # line: 5           # column: 0
+	label@34: jmp label@39                   # line: 5           # column: 0
+	label@35: sta v0                         # line: 5           # column: 0
+	poplexenv                                # line: 5           # column: 0
+	lda v0                                   # line: 5           # column: 0
+	throw                                    # line: 5           # column: 0
+	label@39: poplexenv                      # line: 5           # column: 0
+	lda v1                                   # line: 5           # column: 0
+	stlexvar 0x0, 0x0                        # line: 5           # column: 0
+	ldundefined                              # line: 5           # column: 0
+	returnundefined                          # line: 5           # column: 0
+.catchall :
+	try_begin_label : label@5
+	try_end_label : label@15
+	catch_begin_label : label@16
+	catch_end_label : label@16
+.catchall :
+	try_begin_label : label@24
+	try_end_label : label@34
+	catch_begin_label : label@35
+	catch_end_label : label@35
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any common/record_test.#*#test_record_in_func(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, common/record_test_7650 # line: 11           # column: 0
+	sta v0                                   # line: 11           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 16           # column: 0
+	sta v1                                   # line: 16           # column: 0
+	throw.undefinedifholewithname l          # line: 16           # column: 0
+	lda.str age2                             # line: 16           # column: 0
+	ldobjbyvalue 0x1, v1                     # line: 16           # column: 0
+	sta v1                                   # line: 16           # column: 0
+	lda v0                                   # line: 16           # column: 0
+	ldobjbyname 0x3, age3                    # line: 16           # column: 0
+	add2 0x5, v1                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any common/record_test.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, common/record_test.#*#test_record_in_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	createobjectwithbuffer 0x1, common/record_test_7674 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	createobjectwithbuffer 0x2, common/record_test_7698 # line: 5           # column: 0
+	stlexvar 0x0, 0x0                        # line: 5           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 116
+.function any main.func_main_0(any a0, any a1, any a2) {
+	getmodulenamespace 0x7                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldexternalmodulevar 0x0                  # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	throw.undefinedifholewithname class1     # line: 18           # column: 0
+	mov v4, v1                               # line: 18           # column: 0
+	newobjrange 0x0, 0x1, v4                 # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	tryldglobalbyname 0x2, print             # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str class1 :                         # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	ldobjbyname 0x3, add                     # line: 19           # column: 0
+	callthis0 0x5, v1                        # line: 19           # column: 0
+	add2 0x7, v3                             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda v2                                   # line: 19           # column: 0
+	callarg1 0x8, v1                         # line: 19           # column: 0
+	tryldglobalbyname 0xa, print             # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	lda.str test_class_in_func :             # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	ldexternalmodulevar 0x9                  # line: 20           # column: 0
+	sta v3                                   # line: 20           # column: 0
+	throw.undefinedifholewithname test_class_in_func # line: 20           # column: 0
+	lda v3                                   # line: 20           # column: 0
+	callarg0 0xb                             # line: 20           # column: 0
+	add2 0xd, v2                             # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	lda v1                                   # line: 20           # column: 0
+	callarg1 0xe, v2                         # line: 20           # column: 0
+	ldexternalmodulevar 0x2                  # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	throw.undefinedifholewithname methodClass1 # line: 25           # column: 0
+	mov v4, v1                               # line: 25           # column: 0
+	newobjrange 0x10, 0x1, v4                # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	tryldglobalbyname 0x12, print            # line: 26           # column: 0
+	sta v2                                   # line: 26           # column: 0
+	lda.str methodClass1 :                   # line: 26           # column: 0
+	sta v3                                   # line: 26           # column: 0
+	lda v1                                   # line: 26           # column: 0
+	ldobjbyname 0x13, methodAdd1             # line: 26           # column: 0
+	callthis0 0x15, v1                       # line: 26           # column: 0
+	add2 0x17, v3                            # line: 26           # column: 0
+	sta v1                                   # line: 26           # column: 0
+	lda v2                                   # line: 26           # column: 0
+	callarg1 0x18, v1                        # line: 26           # column: 0
+	tryldglobalbyname 0x1a, print            # line: 27           # column: 0
+	sta v1                                   # line: 27           # column: 0
+	lda.str test_method_in_func :            # line: 27           # column: 0
+	sta v2                                   # line: 27           # column: 0
+	ldexternalmodulevar 0xb                  # line: 27           # column: 0
+	sta v3                                   # line: 27           # column: 0
+	throw.undefinedifholewithname test_method_in_func # line: 27           # column: 0
+	lda v3                                   # line: 27           # column: 0
+	callarg0 0x1b                            # line: 27           # column: 0
+	add2 0x1d, v2                            # line: 27           # column: 0
+	sta v2                                   # line: 27           # column: 0
+	lda v1                                   # line: 27           # column: 0
+	callarg1 0x1e, v2                        # line: 27           # column: 0
+	ldexternalmodulevar 0x7                  # line: 32           # column: 0
+	sta v1                                   # line: 32           # column: 0
+	throw.undefinedifholewithname propertyClass1 # line: 32           # column: 0
+	mov v4, v1                               # line: 32           # column: 0
+	newobjrange 0x20, 0x1, v4                # line: 32           # column: 0
+	sta v1                                   # line: 32           # column: 0
+	tryldglobalbyname 0x22, print            # line: 33           # column: 0
+	sta v2                                   # line: 33           # column: 0
+	lda.str propertyClass1 :                 # line: 33           # column: 0
+	sta v3                                   # line: 33           # column: 0
+	lda v1                                   # line: 33           # column: 0
+	ldobjbyname 0x23, field1                 # line: 33           # column: 0
+	add2 0x25, v3                            # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	ldexternalmodulevar 0x7                  # line: 33           # column: 0
+	sta v3                                   # line: 33           # column: 0
+	throw.undefinedifholewithname propertyClass1 # line: 33           # column: 0
+	lda v3                                   # line: 33           # column: 0
+	ldobjbyname 0x26, sField1                # line: 33           # column: 0
+	add2 0x28, v1                            # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	lda v2                                   # line: 33           # column: 0
+	callarg1 0x29, v1                        # line: 33           # column: 0
+	tryldglobalbyname 0x2b, print            # line: 34           # column: 0
+	sta v1                                   # line: 34           # column: 0
+	lda.str test_property_in_func :          # line: 34           # column: 0
+	sta v2                                   # line: 34           # column: 0
+	ldexternalmodulevar 0xc                  # line: 34           # column: 0
+	sta v3                                   # line: 34           # column: 0
+	throw.undefinedifholewithname test_property_in_func # line: 34           # column: 0
+	lda v3                                   # line: 34           # column: 0
+	callarg0 0x2c                            # line: 34           # column: 0
+	add2 0x2e, v2                            # line: 34           # column: 0
+	sta v2                                   # line: 34           # column: 0
+	lda v1                                   # line: 34           # column: 0
+	callarg1 0x2f, v2                        # line: 34           # column: 0
+	tryldglobalbyname 0x31, print            # line: 39           # column: 0
+	sta v1                                   # line: 39           # column: 0
+	lda.str function_test1 :                 # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	ldexternalmodulevar 0x1                  # line: 39           # column: 0
+	sta v3                                   # line: 39           # column: 0
+	throw.undefinedifholewithname function_test1 # line: 39           # column: 0
+	lda v3                                   # line: 39           # column: 0
+	callarg0 0x32                            # line: 39           # column: 0
+	add2 0x34, v2                            # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	lda v1                                   # line: 39           # column: 0
+	callarg1 0x35, v2                        # line: 39           # column: 0
+	tryldglobalbyname 0x37, print            # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	lda.str test_function_in_func :          # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	ldexternalmodulevar 0xa                  # line: 40           # column: 0
+	sta v3                                   # line: 40           # column: 0
+	throw.undefinedifholewithname test_function_in_func # line: 40           # column: 0
+	lda v3                                   # line: 40           # column: 0
+	callarg0 0x38                            # line: 40           # column: 0
+	add2 0x3a, v2                            # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	lda v1                                   # line: 40           # column: 0
+	callarg1 0x3b, v2                        # line: 40           # column: 0
+	tryldglobalbyname 0x3d, print            # line: 45           # column: 0
+	sta v1                                   # line: 45           # column: 0
+	lda.str recordObject1 :                  # line: 45           # column: 0
+	sta v2                                   # line: 45           # column: 0
+	ldexternalmodulevar 0x8                  # line: 45           # column: 0
+	sta v3                                   # line: 45           # column: 0
+	throw.undefinedifholewithname recordObject1 # line: 45           # column: 0
+	lda.str age1                             # line: 45           # column: 0
+	ldobjbyvalue 0x3e, v3                    # line: 45           # column: 0
+	add2 0x40, v2                            # line: 45           # column: 0
+	sta v2                                   # line: 45           # column: 0
+	ldexternalmodulevar 0x8                  # line: 45           # column: 0
+	sta v3                                   # line: 45           # column: 0
+	throw.undefinedifholewithname recordObject1 # line: 45           # column: 0
+	lda v3                                   # line: 45           # column: 0
+	ldobjbyname 0x41, age1                   # line: 45           # column: 0
+	add2 0x43, v2                            # line: 45           # column: 0
+	sta v2                                   # line: 45           # column: 0
+	lda v1                                   # line: 45           # column: 0
+	callarg1 0x44, v2                        # line: 45           # column: 0
+	tryldglobalbyname 0x46, print            # line: 46           # column: 0
+	sta v1                                   # line: 46           # column: 0
+	lda.str test_record_in_func :            # line: 46           # column: 0
+	sta v2                                   # line: 46           # column: 0
+	ldexternalmodulevar 0xd                  # line: 46           # column: 0
+	sta v3                                   # line: 46           # column: 0
+	throw.undefinedifholewithname test_record_in_func # line: 46           # column: 0
+	lda v3                                   # line: 46           # column: 0
+	callarg0 0x47                            # line: 46           # column: 0
+	add2 0x49, v2                            # line: 46           # column: 0
+	sta v2                                   # line: 46           # column: 0
+	lda v1                                   # line: 46           # column: 0
+	callarg1 0x4a, v2                        # line: 46           # column: 0
+	tryldglobalbyname 0x4c, print            # line: 59           # column: 0
+	sta v1                                   # line: 59           # column: 0
+	lda.str name_space_test_func_regular_export : # line: 59           # column: 0
+	sta v2                                   # line: 59           # column: 0
+	ldexternalmodulevar 0x5                  # line: 59           # column: 0
+	sta v3                                   # line: 59           # column: 0
+	throw.undefinedifholewithname name_space_test_func_regular_export # line: 59           # column: 0
+	lda v3                                   # line: 59           # column: 0
+	callarg0 0x4d                            # line: 59           # column: 0
+	add2 0x4f, v2                            # line: 59           # column: 0
+	sta v2                                   # line: 59           # column: 0
+	lda v1                                   # line: 59           # column: 0
+	callarg1 0x50, v2                        # line: 59           # column: 0
+	tryldglobalbyname 0x52, print            # line: 60           # column: 0
+	sta v1                                   # line: 60           # column: 0
+	lda.str name_space_test_func_regular_redefine_export : # line: 60           # column: 0
+	sta v2                                   # line: 60           # column: 0
+	ldexternalmodulevar 0x6                  # line: 60           # column: 0
+	sta v3                                   # line: 60           # column: 0
+	throw.undefinedifholewithname name_space_test_func_regular_redefine_export # line: 60           # column: 0
+	lda v3                                   # line: 60           # column: 0
+	callarg0 0x53                            # line: 60           # column: 0
+	add2 0x55, v2                            # line: 60           # column: 0
+	sta v2                                   # line: 60           # column: 0
+	lda v1                                   # line: 60           # column: 0
+	callarg1 0x56, v2                        # line: 60           # column: 0
+	tryldglobalbyname 0x58, print            # line: 61           # column: 0
+	sta v1                                   # line: 61           # column: 0
+	lda.str name_space_test_func_indirect_export : # line: 61           # column: 0
+	sta v2                                   # line: 61           # column: 0
+	ldexternalmodulevar 0x3                  # line: 61           # column: 0
+	sta v3                                   # line: 61           # column: 0
+	throw.undefinedifholewithname name_space_test_func_indirect_export # line: 61           # column: 0
+	lda v3                                   # line: 61           # column: 0
+	callarg0 0x59                            # line: 61           # column: 0
+	add2 0x5b, v2                            # line: 61           # column: 0
+	sta v2                                   # line: 61           # column: 0
+	lda v1                                   # line: 61           # column: 0
+	callarg1 0x5c, v2                        # line: 61           # column: 0
+	tryldglobalbyname 0x5e, print            # line: 62           # column: 0
+	sta v1                                   # line: 62           # column: 0
+	lda.str name_space_test_func_indirect_redefine_export : # line: 62           # column: 0
+	sta v2                                   # line: 62           # column: 0
+	ldexternalmodulevar 0x4                  # line: 62           # column: 0
+	sta v3                                   # line: 62           # column: 0
+	throw.undefinedifholewithname name_space_test_func_indirect_redefine_export # line: 62           # column: 0
+	lda v3                                   # line: 62           # column: 0
+	callarg0 0x5f                            # line: 62           # column: 0
+	add2 0x61, v2                            # line: 62           # column: 0
+	sta v2                                   # line: 62           # column: 0
+	lda v1                                   # line: 62           # column: 0
+	callarg1 0x62, v2                        # line: 62           # column: 0
+	tryldglobalbyname 0x64, print            # line: 63           # column: 0
+	sta v1                                   # line: 63           # column: 0
+	lda.str name_space_test_func_5 :         # line: 63           # column: 0
+	sta v2                                   # line: 63           # column: 0
+	lda v0                                   # line: 63           # column: 0
+	ldobjbyname 0x65, name_space_test_func_5 # line: 63           # column: 0
+	callthis0 0x67, v0                       # line: 63           # column: 0
+	add2 0x69, v2                            # line: 63           # column: 0
+	sta v2                                   # line: 63           # column: 0
+	lda v1                                   # line: 63           # column: 0
+	callarg1 0x6a, v2                        # line: 63           # column: 0
+	tryldglobalbyname 0x6c, print            # line: 64           # column: 0
+	sta v1                                   # line: 64           # column: 0
+	lda.str name_space_test_func_6 :         # line: 64           # column: 0
+	sta v2                                   # line: 64           # column: 0
+	lda v0                                   # line: 64           # column: 0
+	ldobjbyname 0x6d, name_space_test_func_6 # line: 64           # column: 0
+	callthis0 0x6f, v0                       # line: 64           # column: 0
+	add2 0x71, v2                            # line: 64           # column: 0
+	sta v0                                   # line: 64           # column: 0
+	lda v1                                   # line: 64           # column: 0
+	callarg1 0x72, v0                        # line: 64           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+a
+add
+age1
+age2
+age3
+class1
+class1 :
+common/class_test.#*#test_class_in_func
+common/class_test.#*@3~@2=#b
+common/class_test.#~@0=#class1
+common/class_test.#~@1=#a
+common/function_test.#*#e
+common/function_test.#*#function_test1
+common/function_test.#*#test_function_in_func
+common/function_test.#*@0*#c
+common/function_test.#*@0*@1*#d
+common/method_test.#*#test_method_in_func
+common/method_test.#*@4~@3=#h
+common/method_test.#~@0=#methodClass1
+common/method_test.#~@1=#g
+common/method_test.#~@2=#f
+common/method_test.#~@2>#methodAdd4_3
+common/name_space_test1.#*#name_space_test_func_2
+common/name_space_test1.#*#name_space_test_func_4
+common/name_space_test1.#*#name_space_test_func_indirect_export
+common/name_space_test1.#*#name_space_test_func_regular_export
+common/name_space_test3.#*#name_space_test_func_5
+common/name_space_test3.#*#name_space_test_func_6
+common/property_test.#*#test_property_in_func
+common/property_test.#*@3~@2=#j
+common/property_test.#*@3~@2>#instance_initializer
+common/property_test.#*@3~@2>#static_initializer
+common/property_test.#~@0=#propertyClass1
+common/property_test.#~@0>#instance_initializer
+common/property_test.#~@0>#static_initializer
+common/property_test.#~@1=#i
+common/property_test.#~@1>#instance_initializer
+common/property_test.#~@1>#static_initializer
+common/record_test.#*#test_record_in_func
+f
+field1
+field2
+field3
+function_test1
+function_test1 :
+g
+i
+l
+methodAdd1
+methodAdd2
+methodAdd3
+methodAdd4_1
+methodAdd4_2
+methodAdd4_3
+methodClass1
+methodClass1 :
+name_space_test_func_5
+name_space_test_func_5 :
+name_space_test_func_6
+name_space_test_func_6 :
+name_space_test_func_indirect_export
+name_space_test_func_indirect_export :
+name_space_test_func_indirect_redefine_export
+name_space_test_func_indirect_redefine_export :
+name_space_test_func_regular_export
+name_space_test_func_regular_export :
+name_space_test_func_regular_redefine_export
+name_space_test_func_regular_redefine_export :
+print
+propertyClass1
+propertyClass1 :
+prototype
+recordObject1
+recordObject1 :
+sField1
+sField2
+sField3
+test_class_in_func
+test_class_in_func :
+test_function_in_func
+test_function_in_func :
+test_method_in_func
+test_method_in_func :
+test_property_in_func
+test_property_in_func :
+test_record_in_func
+test_record_in_func :

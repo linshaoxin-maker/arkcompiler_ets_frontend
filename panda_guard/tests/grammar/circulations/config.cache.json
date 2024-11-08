@@ -1,0 +1,15 @@
+{
+  "for_in": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "for_in"
+  },
+  "for_of": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "for_of"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

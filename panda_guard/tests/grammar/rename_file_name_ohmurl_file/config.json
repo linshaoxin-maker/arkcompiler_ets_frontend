@@ -1,0 +1,29 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "enableRemoveLog": false,
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": ["basename"],
+      "universalReservedProperties": []
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": ["assert"],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": true,
+      "reservedFileNames": [
+        "local",
+        "rename_file_name_ohmurl",
+        "ohmurl_file",
+        "ohmurl_file_normalized",
+        "ohmurl_test"],
+      "universalReservedFileNames": []
+    }
+  }
+}

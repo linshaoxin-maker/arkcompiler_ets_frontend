@@ -1,0 +1,268 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+json_validation_1578 
+
+json_validation_1582 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+number_validation_1610 
+
+number_validation_1614 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+type_conversion_1642 
+
+type_conversion_1646 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+type_exclude_1674 
+
+type_exclude_1678 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+type_omit_1706 
+
+type_omit_1710 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+type_omit_1738 { 8 [ tag_value:5, string:"a", tag_value:2, i32:18, tag_value:5, string:"b", tag_value:5, string:"xiaoming", ]}
+
+type_pick_1762 
+
+type_pick_1766 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+type_pick_1794 { 4 [ tag_value:5, string:"c", tag_value:5, string:"red", ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record json_validation {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames json_validation_1578
+	u32 moduleRecordIdx json_validation_1582
+}
+.record.source_file 
+
+.record number_validation {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames number_validation_1610
+	u32 moduleRecordIdx number_validation_1614
+}
+.record.source_file 
+
+.record type_conversion {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames type_conversion_1642
+	u32 moduleRecordIdx type_conversion_1646
+}
+.record.source_file 
+
+.record type_exclude {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames type_exclude_1674
+	u32 moduleRecordIdx type_exclude_1678
+}
+.record.source_file 
+
+.record type_omit {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames type_omit_1706
+	u32 moduleRecordIdx type_omit_1710
+}
+.record.source_file 
+
+.record type_pick {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames type_pick_1762
+	u32 moduleRecordIdx type_pick_1766
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any json_validation.func_main_0(any a0, any a1, any a2) {
+	lda.str [{"name":"小勇","age":18},{"name":"小刚","age":23},{"name":"大勇","age":25},{"name":"小花","age":13},{"name":"小黑","age":34},{"name":"小白","age":26}] # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, JSON              # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	ldobjbyname 0x1, parse                   # line: 17           # column: 0
+	callthis1 0x3, v1, v0                    # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	tryldglobalbyname 0x5, JSON              # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	ldobjbyname 0x6, stringify               # line: 19           # column: 0
+	callthis1 0x8, v2, v1                    # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	tryldglobalbyname 0xa, print             # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	stricteq 0xb, v0                         # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	callargs2 0xc, v0, v1                    # line: 21           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any number_validation.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, print             # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldai 0x7b                                # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	lda v1                                   # line: 18           # column: 0
+	stricteq 0x1, v1                         # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	lda.str success                          # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	callargs2 0x2, v1, v2                    # line: 18           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any type_conversion.func_main_0(any a0, any a1, any a2) {
+	lda.str 1234                             # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, Number            # line: 16           # column: 0
+	callarg1 0x1, v0                         # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	tryldglobalbyname 0x3, print             # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	ldai 0x4d2                               # line: 18           # column: 0
+	stricteq 0x4, v0                         # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	lda.str success                          # line: 18           # column: 0
+	sta v2                                   # line: 18           # column: 0
+	lda v1                                   # line: 18           # column: 0
+	callargs2 0x5, v0, v2                    # line: 18           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any type_exclude.func_main_0(any a0, any a1, any a2) {
+	lda.str a                                # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	tryldglobalbyname 0x0, print             # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda.str a                                # line: 21           # column: 0
+	stricteq 0x1, v0                         # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	callargs2 0x2, v0, v2                    # line: 21           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 13
+.function any type_omit.func_main_0(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, type_omit_1738 # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	tryldglobalbyname 0x1, print             # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	lda v0                                   # line: 28           # column: 0
+	ldobjbyname 0x2, a                       # line: 28           # column: 0
+	sta v2                                   # line: 28           # column: 0
+	ldai 0x12                                # line: 28           # column: 0
+	stricteq 0x4, v2                         # line: 28           # column: 0
+	sta v2                                   # line: 28           # column: 0
+	lda.str success                          # line: 28           # column: 0
+	sta v3                                   # line: 28           # column: 0
+	lda v1                                   # line: 28           # column: 0
+	callargs2 0x5, v2, v3                    # line: 28           # column: 0
+	tryldglobalbyname 0x7, print             # line: 30           # column: 0
+	sta v1                                   # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	ldobjbyname 0x8, b                       # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	lda.str xiaoming                         # line: 30           # column: 0
+	stricteq 0xa, v0                         # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	lda.str success                          # line: 30           # column: 0
+	sta v2                                   # line: 30           # column: 0
+	lda v1                                   # line: 30           # column: 0
+	callargs2 0xb, v0, v2                    # line: 30           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any type_pick.func_main_0(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, type_pick_1794 # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	tryldglobalbyname 0x1, print             # line: 24           # column: 0
+	sta v1                                   # line: 24           # column: 0
+	lda.str c                                # line: 24           # column: 0
+	sta v2                                   # line: 24           # column: 0
+	lda v0                                   # line: 24           # column: 0
+	isin 0x2, v2                             # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	lda.str success                          # line: 24           # column: 0
+	sta v2                                   # line: 24           # column: 0
+	lda v1                                   # line: 24           # column: 0
+	callargs2 0x3, v0, v2                    # line: 24           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+1234
+JSON
+Number
+[{"name":"小勇","age":18},{"name":"小刚","age":23},{"name":"大勇","age":25},{"name":"小花","age":13},{"name":"小黑","age":34},{"name":"小白","age":26}]
+a
+b
+c
+parse
+print
+stringify
+success
+xiaoming

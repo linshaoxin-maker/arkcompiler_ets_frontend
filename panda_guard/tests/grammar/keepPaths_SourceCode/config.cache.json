@@ -1,0 +1,114 @@
+{
+  "depency-file1": {
+    "IdentifierCache": {
+      "#DependencyClass": "b",
+      "#DependencyFunctionReduce:26:28": "a"
+    },
+    "MemberMethodCache": {
+      "DependencyClass:16:17": "b",
+      "depencyMethod1:21:23": "e"
+    },
+    "obfName": "depency-file1"
+  },
+  "keep-file1": {
+    "IdentifierCache": {
+      "#Animal": "i",
+      "#Cat": "h",
+      "#DependencyClass": "b",
+      "#Dog": "f"
+    },
+    "MemberMethodCache": {
+      "Animal:19:20": "i",
+      "Cat:0:0": "h",
+      "Dog:0:0": "f",
+      "makeSound:22:24": "g",
+      "makeSound:28:30": "g",
+      "makeSound:34:36": "g"
+    },
+    "obfName": "keep-file1"
+  },
+  "keep-file2": {
+    "IdentifierCache": {
+      "#Classroom": "k",
+      "#Student": "o"
+    },
+    "MemberMethodCache": {
+      "Classroom:36:39": "k",
+      "Student:21:25": "o",
+      "introduce:27:29": "r",
+      "listStudents:41:46": "n"
+    },
+    "obfName": "keep-file2"
+  },
+  "no-depency-file1": {
+    "IdentifierCache": {
+      "#NoDependencyClass": "t",
+      "#NoDependencyFunction:28:29": "s"
+    },
+    "MemberMethodCache": {
+      "NoDependencyClass:16:17": "t",
+      "noDepencyMethod1:21:23": "w"
+    },
+    "obfName": "no-depency-file1"
+  },
+  "obfuscate-file1": {
+    "IdentifierCache": {
+      "#DependencyClass": "b",
+      "#DependencyFunctionReduce": "a",
+      "#DependencyInterface": "f1",
+      "#NoDependencyClass": "t",
+      "#NoDependencyFunction": "s",
+      "#NoDependencyInterface": "g1",
+      "#TempCountry1": "c1",
+      "#TempCountry2": "z",
+      "#TempFoo1:51:53": "y",
+      "#TempFoo2:58:60": "x"
+    },
+    "MemberMethodCache": {
+      "TempCountry1:41:42": "c1",
+      "TempCountry2:46:47": "z"
+    },
+    "obfName": "obfuscate-file1"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "Animal": "i",
+    "Cat": "h",
+    "Classroom": "k",
+    "DependencyClass": "b",
+    "DependencyFunctionReduce": "a",
+    "DependencyInterface": "f1",
+    "Dog": "f",
+    "NoDependencyClass": "t",
+    "NoDependencyFunction": "s",
+    "NoDependencyInterface": "g1",
+    "Student": "o",
+    "TempCountry1": "c1",
+    "TempCountry2": "z",
+    "TempFoo1": "y",
+    "TempFoo2": "x",
+    "age": "p",
+    "className": "l",
+    "createTime1": "e1",
+    "createTime2": "b1",
+    "depencyMethod1": "e",
+    "depencyProp1": "c",
+    "depencyProp2": "d",
+    "depencyProp3": "j1",
+    "depencyProp4": "k1",
+    "grade": "q",
+    "introduce": "r",
+    "listStudents": "n",
+    "makeSound": "g",
+    "name": "j",
+    "noDepencyMethod1": "w",
+    "noDepencyProp1": "u",
+    "noDepencyProp2": "v",
+    "noDepencyProp3": "h1",
+    "noDepencyProp4": "i1",
+    "students": "m",
+    "tempPropety1": "d1",
+    "tempPropety2": "a1"
+  }
+}

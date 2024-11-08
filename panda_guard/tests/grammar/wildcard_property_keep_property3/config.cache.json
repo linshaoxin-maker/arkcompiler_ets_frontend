@@ -1,0 +1,15 @@
+{
+  "keep_all_property": {
+    "IdentifierCache": {
+      "#KeepProperty3": "KeepProperty3"
+    },
+    "MemberMethodCache": {
+      "KeepProperty3:17:24": "KeepProperty3",
+      "functionkeep:26:28": "functionkeep"
+    },
+    "obfName": "keep_all_property"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

@@ -1,0 +1,34 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "enableRemoveLog": false,
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [
+        "strictEqual",
+        "readFileSync"
+      ],
+      "universalReservedProperties": []
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [
+        "moduleName01",
+        "stringLiteralObj02",
+        "Interface11",
+        "class11",
+        "enum11",
+        "Object11"
+      ],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": false,
+      "reservedFileNames": [],
+      "universalReservedFileNames": []
+    }
+  }
+}

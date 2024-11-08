@@ -1,0 +1,1028 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+forawaitof_1_2454 { 2 [ tag_value:5, string:"TestClass", ]}
+
+forawaitof_1_2463 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+forawaitof_1_2491 { 8 [ tag_value:5, string:"d", tag_value:255, null_value:0, tag_value:5, string:"e", tag_value:255, null_value:0, ]}
+
+forawaitof_1_2509 { 2 [ tag_value:2, i32:0, ]}
+
+forawaitof_2_2518 { 2 [ tag_value:5, string:"TestClass", ]}
+
+forawaitof_2_2527 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+forawaitof_2_2555 { 2 [ tag_value:2, i32:0, ]}
+
+forawaitof_3_2564 { 2 [ tag_value:5, string:"TestClass", ]}
+
+forawaitof_3_2573 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+forawaitof_3_2601 { 8 [ tag_value:5, string:"d", tag_value:255, null_value:0, tag_value:5, string:"e", tag_value:255, null_value:0, ]}
+
+forawaitof_3_2619 { 2 [ tag_value:2, i32:0, ]}
+
+forawaitof_4_2628 
+
+forawaitof_4_2632 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+forawaitof_4_2660 { 8 [ tag_value:5, string:"h", tag_value:255, null_value:0, tag_value:5, string:"i", tag_value:255, null_value:0, ]}
+
+shorthandassignment_test_2678 { 2 [ tag_value:5, string:"Point", ]}
+
+shorthandassignment_test_2687 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+shorthandassignment_test_2715 { 2 [ tag_value:2, i32:0, ]}
+
+shorthandassignment_test_2724 { 8 [ tag_value:5, string:"k", tag_value:2, i32:1, tag_value:5, string:"l", tag_value:2, i32:2, ]}
+
+shorthandassignment_test_2748 { 8 [ tag_value:5, string:"k", tag_value:2, i32:3, tag_value:5, string:"l", tag_value:2, i32:4, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record forawaitof_1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames forawaitof_1_2454
+	u32 moduleRecordIdx forawaitof_1_2463
+}
+.record.source_file 
+
+.record forawaitof_2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames forawaitof_2_2518
+	u32 moduleRecordIdx forawaitof_2_2527
+}
+.record.source_file 
+
+.record forawaitof_3 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames forawaitof_3_2564
+	u32 moduleRecordIdx forawaitof_3_2573
+}
+.record.source_file 
+
+.record forawaitof_4 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames forawaitof_4_2628
+	u32 moduleRecordIdx forawaitof_4_2632
+}
+.record.source_file 
+
+.record shorthandassignment_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames shorthandassignment_test_2678
+	u32 moduleRecordIdx shorthandassignment_test_2687
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any forawaitof_1.#&#a(any a0, any a1, any a2, any a3) {
+	newlexenv 0x4                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, forawaitof_1.#&A*#b, 0x0 # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18           # column: 0
+	ldundefined                              # line: 18           # column: 0
+	stlexvar 0x0, 0x1                        # line: 18           # column: 0
+	ldai 0x0                                 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	stlexvar 0x0, 0x2                        # line: 19           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	stlexvar 0x0, 0x3                        # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::ASYNC_FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 41
+.function any forawaitof_1.#&A*#b(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	asyncfunctionenter                       # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@3: mov v1, v0                      # line: 18446744073709551615           # column: 0
+	createemptyarray 0x0                     # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	createobjectwithbuffer 0x1, forawaitof_1_2491 # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	lda v6                                   # line: 23           # column: 0
+	definepropertybyname 0x2, d, v5          # line: 23           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	throw.undefinedifholewithname e          # line: 23           # column: 0
+	lda v6                                   # line: 23           # column: 0
+	definepropertybyname 0x4, e, v5          # line: 23           # column: 0
+	lda v5                                   # line: 23           # column: 0
+	stownbyindex 0x6, v4, 0x0                # line: 23           # column: 0
+	label@20: jmp label@25                   # line: 23           # column: 0
+	label@21: sta v3                         # line: 23           # column: 0
+	mov v1, v0                               # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@25: ldai 0x1                       # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	lda v4                                   # line: 23           # column: 0
+	getasynciterator 0x8                     # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	ldobjbyname 0xa, m                       # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	ldfalse                                  # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	label@34: lda v5                         # line: 23           # column: 0
+	callthis0 0xc, v4                        # line: 23           # column: 0
+	asyncfunctionawaituncaught v0            # line: 23           # column: 0
+	suspendgenerator v0                      # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	resumegenerator                          # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	getresumemode                            # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	eq 0xe, v8                               # line: 23           # column: 0
+	jeqz label@49                            # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@49: throw.ifnotobject v7           # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	ldobjbyname 0xf, n                       # line: 23           # column: 0
+	callruntime.istrue 0x11                  # line: 23           # column: 0
+	jnez label@138                           # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	ldobjbyname 0x13, o                      # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	label@57: lda v7                         # line: 23           # column: 0
+	ldobjbyname 0x15, d                      # line: 23           # column: 0
+	sta v9                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	stricteq 0x17, v9                        # line: 23           # column: 0
+	jeqz label@66                            # line: 23           # column: 0
+	ldlexvar 0x0, 0x2                        # line: 23           # column: 0
+	sta v9                                   # line: 23           # column: 0
+	throw.undefinedifholewithname p          # line: 23           # column: 0
+	label@66: ldlexvar 0x0, 0x0              # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	lda v9                                   # line: 23           # column: 0
+	stlexvar 0x0, 0x0                        # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	ldobjbyname 0x18, e                      # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	stricteq 0x1a, v7                        # line: 23           # column: 0
+	jeqz label@79                            # line: 23           # column: 0
+	ldlexvar 0x0, 0x3                        # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	throw.undefinedifholewithname q          # line: 23           # column: 0
+	label@79: ldlexvar 0x0, 0x1              # line: 23           # column: 0
+	throw.undefinedifholewithname e          # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	stlexvar 0x0, 0x1                        # line: 23           # column: 0
+	tryldglobalbyname 0x1b, print            # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 23           # column: 0
+	sta v9                                   # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	ldlexvar 0x0, 0x2                        # line: 23           # column: 0
+	sta v10                                  # line: 23           # column: 0
+	throw.undefinedifholewithname p          # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	callargs2 0x1c, v9, v10                  # line: 23           # column: 0
+	tryldglobalbyname 0x1e, print            # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 24           # column: 0
+	sta v9                                   # line: 24           # column: 0
+	throw.undefinedifholewithname e          # line: 24           # column: 0
+	ldlexvar 0x0, 0x3                        # line: 24           # column: 0
+	sta v10                                  # line: 24           # column: 0
+	throw.undefinedifholewithname q          # line: 24           # column: 0
+	lda v7                                   # line: 24           # column: 0
+	callargs2 0x1f, v9, v10                  # line: 24           # column: 0
+	label@103: jmp label@34                  # line: 24           # column: 0
+	label@104: sta v8                        # line: 24           # column: 0
+	lda v6                                   # line: 25           # column: 0
+	callruntime.istrue 0x21                  # line: 25           # column: 0
+	jnez label@136                           # line: 25           # column: 0
+	ldtrue                                   # line: 25           # column: 0
+	ldundefined                              # line: 25           # column: 0
+	ldhole                                   # line: 25           # column: 0
+	label@111: lda v4                        # line: 23           # column: 0
+	ldobjbyname 0x23, r                      # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	eq 0x25, v5                              # line: 23           # column: 0
+	jnez label@136                           # line: 23           # column: 0
+	lda v5                                   # line: 23           # column: 0
+	callthis0 0x26, v4                       # line: 23           # column: 0
+	asyncfunctionawaituncaught v0            # line: 23           # column: 0
+	suspendgenerator v0                      # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	resumegenerator                          # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	getresumemode                            # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	eq 0x28, v5                              # line: 23           # column: 0
+	jeqz label@132                           # line: 23           # column: 0
+	lda v4                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@132: jmp label@133                 # line: 23           # column: 0
+	label@133: mov v1, v0                    # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@136: lda v8                        # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@138: ldundefined                   # line: 23           # column: 0
+	asyncfunctionresolve v0                  # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+	label@141: sta v2                        # line: 23           # column: 0
+	lda v2                                   # line: 23           # column: 0
+	asyncfunctionreject v1                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+.catchall :
+	try_begin_label : label@111
+	try_end_label : label@132
+	catch_begin_label : label@133
+	catch_end_label : label@133
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@20
+	catch_begin_label : label@21
+	catch_end_label : label@21
+.catchall :
+	try_begin_label : label@57
+	try_end_label : label@103
+	catch_begin_label : label@104
+	catch_end_label : label@104
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@141
+	catch_begin_label : label@141
+	catch_end_label : label@141
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any forawaitof_1.#~@0=#c(any a0, any a1, any a2) {
+	lda.str 123                              # line: 31           # column: 0
+	stobjbyname 0x0, d, a2                   # line: 31           # column: 0
+	lda a2                                   # line: 31           # column: 0
+	return                                   # line: 31           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any forawaitof_1.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, forawaitof_1.#&#a, 0x1   # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@9                             # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@9: lda v1                          # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v0                         # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x5, forawaitof_1.#~@0=#c, forawaitof_1_2509, 0x0, v0 # line: 30           # column: 0
+	ldobjbyname 0x6, prototype               # line: 30           # column: 0
+	ldundefined                              # line: 30           # column: 0
+	returnundefined                          # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::ASYNC_FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 34
+.function any forawaitof_2.#*#b(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	asyncfunctionenter                       # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@3: mov v1, v0                      # line: 18446744073709551615           # column: 0
+	createemptyarray 0x0                     # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	createemptyobject                        # line: 21           # column: 0
+	stownbyindex 0x1, v4, 0x0                # line: 21           # column: 0
+	label@8: jmp label@13                    # line: 21           # column: 0
+	label@9: sta v3                          # line: 21           # column: 0
+	mov v1, v0                               # line: 21           # column: 0
+	lda v3                                   # line: 21           # column: 0
+	throw                                    # line: 21           # column: 0
+	label@13: ldai 0x1                       # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v4                                   # line: 21           # column: 0
+	getasynciterator 0x3                     # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	ldobjbyname 0x5, m                       # line: 21           # column: 0
+	sta v5                                   # line: 21           # column: 0
+	ldfalse                                  # line: 21           # column: 0
+	sta v6                                   # line: 21           # column: 0
+	label@22: lda v5                         # line: 21           # column: 0
+	callthis0 0x7, v4                        # line: 21           # column: 0
+	asyncfunctionawaituncaught v0            # line: 21           # column: 0
+	suspendgenerator v0                      # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	resumegenerator                          # line: 21           # column: 0
+	sta v7                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	getresumemode                            # line: 21           # column: 0
+	sta v8                                   # line: 21           # column: 0
+	lda v3                                   # line: 21           # column: 0
+	eq 0x9, v8                               # line: 21           # column: 0
+	jeqz label@37                            # line: 21           # column: 0
+	lda v7                                   # line: 21           # column: 0
+	throw                                    # line: 21           # column: 0
+	label@37: throw.ifnotobject v7           # line: 21           # column: 0
+	lda v7                                   # line: 21           # column: 0
+	ldobjbyname 0xa, n                       # line: 21           # column: 0
+	callruntime.istrue 0xc                   # line: 21           # column: 0
+	jnez label@115                           # line: 21           # column: 0
+	lda v7                                   # line: 21           # column: 0
+	ldobjbyname 0xe, o                       # line: 21           # column: 0
+	sta v7                                   # line: 21           # column: 0
+	label@45: lda v7                         # line: 21           # column: 0
+	ldobjbyname 0x10, f                      # line: 21           # column: 0
+	sta v7                                   # line: 21           # column: 0
+	ldundefined                              # line: 21           # column: 0
+	stricteq 0x12, v7                        # line: 21           # column: 0
+	jeqz label@52                            # line: 21           # column: 0
+	mov v7, v3                               # line: 21           # column: 0
+	label@52: ldlexvar 0x0, 0x0              # line: 21           # column: 0
+	throw.undefinedifholewithname f          # line: 21           # column: 0
+	lda v7                                   # line: 21           # column: 0
+	stlexvar 0x0, 0x0                        # line: 21           # column: 0
+	tryldglobalbyname 0x13, print            # line: 21           # column: 0
+	sta v7                                   # line: 21           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 21           # column: 0
+	sta v9                                   # line: 21           # column: 0
+	throw.undefinedifholewithname f          # line: 21           # column: 0
+	lda v7                                   # line: 21           # column: 0
+	callargs2 0x14, v9, v3                   # line: 21           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 21           # column: 0
+	sta v7                                   # line: 21           # column: 0
+	throw.undefinedifholewithname s          # line: 22           # column: 0
+	lda v3                                   # line: 22           # column: 0
+	add2 0x16, v7                            # line: 22           # column: 0
+	sta v7                                   # line: 22           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 22           # column: 0
+	throw.undefinedifholewithname s          # line: 22           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	stlexvar 0x0, 0x1                        # line: 23           # column: 0
+	tryldglobalbyname 0x17, print            # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 23           # column: 0
+	sta v9                                   # line: 23           # column: 0
+	throw.undefinedifholewithname s          # line: 23           # column: 0
+	lda v7                                   # line: 23           # column: 0
+	callargs2 0x18, v9, v3                   # line: 23           # column: 0
+	label@80: jmp label@22                   # line: 23           # column: 0
+	label@81: sta v8                         # line: 24           # column: 0
+	lda v6                                   # line: 24           # column: 0
+	callruntime.istrue 0x1a                  # line: 24           # column: 0
+	jnez label@113                           # line: 24           # column: 0
+	ldtrue                                   # line: 24           # column: 0
+	ldundefined                              # line: 24           # column: 0
+	ldhole                                   # line: 24           # column: 0
+	label@88: lda v4                         # line: 21           # column: 0
+	ldobjbyname 0x1c, r                      # line: 21           # column: 0
+	sta v5                                   # line: 21           # column: 0
+	ldundefined                              # line: 21           # column: 0
+	eq 0x1e, v5                              # line: 21           # column: 0
+	jnez label@113                           # line: 21           # column: 0
+	lda v5                                   # line: 21           # column: 0
+	callthis0 0x1f, v4                       # line: 21           # column: 0
+	asyncfunctionawaituncaught v0            # line: 21           # column: 0
+	suspendgenerator v0                      # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	resumegenerator                          # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	getresumemode                            # line: 21           # column: 0
+	sta v5                                   # line: 21           # column: 0
+	lda v3                                   # line: 21           # column: 0
+	eq 0x21, v5                              # line: 21           # column: 0
+	jeqz label@109                           # line: 21           # column: 0
+	lda v4                                   # line: 21           # column: 0
+	throw                                    # line: 21           # column: 0
+	label@109: jmp label@110                 # line: 21           # column: 0
+	label@110: mov v1, v0                    # line: 21           # column: 0
+	lda v8                                   # line: 21           # column: 0
+	throw                                    # line: 21           # column: 0
+	label@113: lda v8                        # line: 21           # column: 0
+	throw                                    # line: 21           # column: 0
+	label@115: ldundefined                   # line: 21           # column: 0
+	asyncfunctionresolve v0                  # line: 21           # column: 0
+	return                                   # line: 21           # column: 0
+	label@118: sta v2                        # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	asyncfunctionreject v1                   # line: 21           # column: 0
+	return                                   # line: 21           # column: 0
+.catchall :
+	try_begin_label : label@88
+	try_end_label : label@109
+	catch_begin_label : label@110
+	catch_end_label : label@110
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@8
+	catch_begin_label : label@9
+	catch_end_label : label@9
+.catchall :
+	try_begin_label : label@45
+	try_end_label : label@80
+	catch_begin_label : label@81
+	catch_end_label : label@81
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@118
+	catch_begin_label : label@118
+	catch_end_label : label@118
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any forawaitof_2.#~@0=#c(any a0, any a1, any a2) {
+	ldlexvar 0x0, 0x0                        # line: 0           # column: 0
+	callruntime.callinit 0x0, a2             # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any forawaitof_2.#~@0>#instance_initializer(any a0, any a1, any a2) {
+	lda.str 100                              # line: 29           # column: 0
+	definepropertybyname 0x0, f, a2          # line: 29           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any forawaitof_2.func_main_0(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	newlexenv 0x2                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, forawaitof_2.#*#b, 0x0   # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 17           # column: 0
+	stlexvar 0x0, 0x0                        # line: 17           # column: 0
+	ldai 0x0                                 # line: 17           # column: 0
+	stlexvar 0x0, 0x1                        # line: 18           # column: 0
+	newlexenv 0x1                            # line: 28           # column: 0
+	label@8: ldhole                          # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	defineclasswithbuffer 0x1, forawaitof_2.#~@0=#c, forawaitof_2_2555, 0x0, v1 # line: 28           # column: 0
+	ldobjbyname 0x2, prototype               # line: 28           # column: 0
+	definemethod 0x4, forawaitof_2.#~@0>#instance_initializer, 0x0 # line: 28           # column: 0
+	stlexvar 0x0, 0x0                        # line: 28           # column: 0
+	label@14: jmp label@19                   # line: 28           # column: 0
+	label@15: sta v0                         # line: 28           # column: 0
+	poplexenv                                # line: 28           # column: 0
+	lda v0                                   # line: 28           # column: 0
+	throw                                    # line: 28           # column: 0
+	label@19: poplexenv                      # line: 28           # column: 0
+	ldundefined                              # line: 28           # column: 0
+	returnundefined                          # line: 28           # column: 0
+.catchall :
+	try_begin_label : label@8
+	try_end_label : label@14
+	catch_begin_label : label@15
+	catch_end_label : label@15
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any forawaitof_3.#&#a(any a0, any a1, any a2, any a3) {
+	newlexenv 0x4                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, forawaitof_3.#&A*#g, 0x0 # line: 18446744073709551615           # column: 0
+	ldai 0x1                                 # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18           # column: 0
+	ldai 0x2                                 # line: 18           # column: 0
+	stlexvar 0x0, 0x1                        # line: 18           # column: 0
+	ldai 0x0                                 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	stlexvar 0x0, 0x2                        # line: 19           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	stlexvar 0x0, 0x3                        # line: 20           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::ASYNC_FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 41
+.function any forawaitof_3.#&A*#g(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	asyncfunctionenter                       # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@3: mov v1, v0                      # line: 18446744073709551615           # column: 0
+	createemptyarray 0x0                     # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	createobjectwithbuffer 0x1, forawaitof_3_2601 # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	lda v6                                   # line: 23           # column: 0
+	definepropertybyname 0x2, d, v5          # line: 23           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	throw.undefinedifholewithname e          # line: 23           # column: 0
+	lda v6                                   # line: 23           # column: 0
+	definepropertybyname 0x4, e, v5          # line: 23           # column: 0
+	lda v5                                   # line: 23           # column: 0
+	stownbyindex 0x6, v4, 0x0                # line: 23           # column: 0
+	label@20: jmp label@25                   # line: 23           # column: 0
+	label@21: sta v3                         # line: 23           # column: 0
+	mov v1, v0                               # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@25: ldai 0x2                       # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	ldai 0x1                                 # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	lda v4                                   # line: 23           # column: 0
+	getasynciterator 0x8                     # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	ldobjbyname 0xa, m                       # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	ldfalse                                  # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	label@36: lda v6                         # line: 23           # column: 0
+	callthis0 0xc, v4                        # line: 23           # column: 0
+	asyncfunctionawaituncaught v0            # line: 23           # column: 0
+	suspendgenerator v0                      # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	resumegenerator                          # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	getresumemode                            # line: 23           # column: 0
+	sta v9                                   # line: 23           # column: 0
+	lda v5                                   # line: 23           # column: 0
+	eq 0xe, v9                               # line: 23           # column: 0
+	jeqz label@51                            # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@51: throw.ifnotobject v8           # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	ldobjbyname 0xf, n                       # line: 23           # column: 0
+	callruntime.istrue 0x11                  # line: 23           # column: 0
+	jnez label@134                           # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	ldobjbyname 0x13, o                      # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	label@59: lda v8                         # line: 23           # column: 0
+	ldobjbyname 0x15, d                      # line: 23           # column: 0
+	sta v10                                  # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	stricteq 0x17, v10                       # line: 23           # column: 0
+	jeqz label@68                            # line: 23           # column: 0
+	ldlexvar 0x0, 0x2                        # line: 23           # column: 0
+	sta v10                                  # line: 23           # column: 0
+	throw.undefinedifholewithname t          # line: 23           # column: 0
+	label@68: ldlexvar 0x0, 0x0              # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	lda v10                                  # line: 23           # column: 0
+	stlexvar 0x0, 0x0                        # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	ldobjbyname 0x18, e                      # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	stricteq 0x1a, v8                        # line: 23           # column: 0
+	jeqz label@81                            # line: 23           # column: 0
+	ldlexvar 0x0, 0x3                        # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	throw.undefinedifholewithname u          # line: 23           # column: 0
+	label@81: ldlexvar 0x0, 0x1              # line: 23           # column: 0
+	throw.undefinedifholewithname e          # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	stlexvar 0x0, 0x1                        # line: 23           # column: 0
+	tryldglobalbyname 0x1b, print            # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 23           # column: 0
+	sta v10                                  # line: 23           # column: 0
+	throw.undefinedifholewithname d          # line: 23           # column: 0
+	lda v8                                   # line: 23           # column: 0
+	callargs2 0x1c, v10, v5                  # line: 23           # column: 0
+	tryldglobalbyname 0x1e, print            # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 23           # column: 0
+	sta v10                                  # line: 23           # column: 0
+	throw.undefinedifholewithname e          # line: 24           # column: 0
+	lda v8                                   # line: 24           # column: 0
+	callargs2 0x1f, v10, v3                  # line: 24           # column: 0
+	label@99: jmp label@36                   # line: 24           # column: 0
+	label@100: sta v9                        # line: 24           # column: 0
+	lda v7                                   # line: 25           # column: 0
+	callruntime.istrue 0x21                  # line: 25           # column: 0
+	jnez label@132                           # line: 25           # column: 0
+	ldtrue                                   # line: 25           # column: 0
+	ldundefined                              # line: 25           # column: 0
+	ldhole                                   # line: 25           # column: 0
+	label@107: lda v4                        # line: 23           # column: 0
+	ldobjbyname 0x23, r                      # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	eq 0x25, v3                              # line: 23           # column: 0
+	jnez label@132                           # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	callthis0 0x26, v4                       # line: 23           # column: 0
+	asyncfunctionawaituncaught v0            # line: 23           # column: 0
+	suspendgenerator v0                      # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	resumegenerator                          # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	getresumemode                            # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	lda v5                                   # line: 23           # column: 0
+	eq 0x28, v4                              # line: 23           # column: 0
+	jeqz label@128                           # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@128: jmp label@129                 # line: 23           # column: 0
+	label@129: mov v1, v0                    # line: 23           # column: 0
+	lda v9                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@132: lda v9                        # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@134: ldundefined                   # line: 23           # column: 0
+	asyncfunctionresolve v0                  # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+	label@137: sta v2                        # line: 23           # column: 0
+	lda v2                                   # line: 23           # column: 0
+	asyncfunctionreject v1                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+.catchall :
+	try_begin_label : label@107
+	try_end_label : label@128
+	catch_begin_label : label@129
+	catch_end_label : label@129
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@20
+	catch_begin_label : label@21
+	catch_end_label : label@21
+.catchall :
+	try_begin_label : label@59
+	try_end_label : label@99
+	catch_begin_label : label@100
+	catch_end_label : label@100
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@137
+	catch_begin_label : label@137
+	catch_end_label : label@137
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any forawaitof_3.#~@0=#c(any a0, any a1, any a2) {
+	lda.str 123                              # line: 31           # column: 0
+	stobjbyname 0x0, d, a2                   # line: 31           # column: 0
+	lda a2                                   # line: 31           # column: 0
+	return                                   # line: 31           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any forawaitof_3.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, forawaitof_3.#&#a, 0x1   # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@9                             # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@9: lda v1                          # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v0                         # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	defineclasswithbuffer 0x5, forawaitof_3.#~@0=#c, forawaitof_3_2619, 0x0, v0 # line: 30           # column: 0
+	ldobjbyname 0x6, prototype               # line: 30           # column: 0
+	ldundefined                              # line: 30           # column: 0
+	returnundefined                          # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 39
+.function any forawaitof_4.func_main_0(any a0, any a1, any a2) {
+	nop                                      # line: 17           # column: 0
+	ldnull                                   # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldundefined                              # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	label@5: createemptyarray 0x0            # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	createobjectwithbuffer 0x1, forawaitof_4_2660 # line: 20           # column: 0
+	sta v4                                   # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	definepropertybyname 0x2, h, v4          # line: 20           # column: 0
+	lda v1                                   # line: 20           # column: 0
+	definepropertybyname 0x4, i, v4          # line: 20           # column: 0
+	lda v4                                   # line: 20           # column: 0
+	stownbyindex 0x6, v3, 0x0                # line: 20           # column: 0
+	label@15: jmp label@19                   # line: 20           # column: 0
+	label@16: sta v2                         # line: 18           # column: 0
+	lda v2                                   # line: 18           # column: 0
+	throw                                    # line: 18           # column: 0
+	label@19: ldai 0x2                       # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldai 0x1                                 # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	lda v3                                   # line: 20           # column: 0
+	getiterator 0x8                          # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	ldobjbyname 0xa, m                       # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	ldfalse                                  # line: 20           # column: 0
+	sta v4                                   # line: 20           # column: 0
+	label@30: lda v3                         # line: 20           # column: 0
+	callthis0 0xc, v2                        # line: 20           # column: 0
+	sta v5                                   # line: 20           # column: 0
+	throw.ifnotobject v5                     # line: 20           # column: 0
+	ldobjbyname 0xe, n                       # line: 20           # column: 0
+	callruntime.istrue 0x10                  # line: 20           # column: 0
+	jnez label@83                            # line: 20           # column: 0
+	lda v5                                   # line: 20           # column: 0
+	ldobjbyname 0x12, o                      # line: 20           # column: 0
+	sta v5                                   # line: 20           # column: 0
+	label@40: lda v5                         # line: 20           # column: 0
+	ldobjbyname 0x14, h                      # line: 20           # column: 0
+	sta v7                                   # line: 20           # column: 0
+	ldundefined                              # line: 20           # column: 0
+	stricteq 0x16, v7                        # line: 20           # column: 0
+	jeqz label@47                            # line: 20           # column: 0
+	mov v7, v1                               # line: 20           # column: 0
+	label@47: lda v5                         # line: 20           # column: 0
+	ldobjbyname 0x17, i                      # line: 20           # column: 0
+	sta v5                                   # line: 20           # column: 0
+	ldundefined                              # line: 20           # column: 0
+	stricteq 0x19, v5                        # line: 20           # column: 0
+	jeqz label@54                            # line: 20           # column: 0
+	mov v5, v0                               # line: 20           # column: 0
+	label@54: tryldglobalbyname 0x1a, print  # line: 20           # column: 0
+	sta v8                                   # line: 20           # column: 0
+	ldnull                                   # line: 20           # column: 0
+	sta v9                                   # line: 20           # column: 0
+	lda v8                                   # line: 20           # column: 0
+	callargs2 0x1b, v7, v9                   # line: 20           # column: 0
+	tryldglobalbyname 0x1d, print            # line: 20           # column: 0
+	callargs2 0x1e, v5, v0                   # line: 21           # column: 0
+	label@62: jmp label@30                   # line: 21           # column: 0
+	label@63: sta v6                         # line: 21           # column: 0
+	lda v4                                   # line: 22           # column: 0
+	callruntime.istrue 0x20                  # line: 22           # column: 0
+	jnez label@81                            # line: 22           # column: 0
+	ldtrue                                   # line: 22           # column: 0
+	ldundefined                              # line: 22           # column: 0
+	ldhole                                   # line: 22           # column: 0
+	label@70: lda v2                         # line: 20           # column: 0
+	ldobjbyname 0x22, r                      # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	ldundefined                              # line: 20           # column: 0
+	eq 0x24, v0                              # line: 20           # column: 0
+	jnez label@81                            # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	callthis0 0x25, v2                       # line: 20           # column: 0
+	label@78: jmp label@79                   # line: 20           # column: 0
+	label@79: lda v6                         # line: 20           # column: 0
+	throw                                    # line: 20           # column: 0
+	label@81: lda v6                         # line: 20           # column: 0
+	throw                                    # line: 20           # column: 0
+	label@83: ldundefined                    # line: 20           # column: 0
+	returnundefined                          # line: 20           # column: 0
+.catchall :
+	try_begin_label : label@70
+	try_end_label : label@78
+	catch_begin_label : label@79
+	catch_end_label : label@79
+.catchall :
+	try_begin_label : label@5
+	try_end_label : label@15
+	catch_begin_label : label@16
+	catch_end_label : label@16
+.catchall :
+	try_begin_label : label@40
+	try_end_label : label@62
+	catch_begin_label : label@63
+	catch_end_label : label@63
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 28
+.function any shorthandassignment_test.#*#g(any a0, any a1, any a2) {
+	nop                                      # line: 23           # column: 0
+	label@1: ldlexvar 0x0, 0x0               # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	throw.undefinedifholewithname v          # line: 23           # column: 0
+	label@4: jmp label@8                     # line: 23           # column: 0
+	label@5: sta v0                          # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@8: lda v1                          # line: 23           # column: 0
+	getiterator 0x0                          # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	ldobjbyname 0x2, m                       # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	ldfalse                                  # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	label@15: lda v1                         # line: 23           # column: 0
+	callthis0 0x4, v0                        # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	throw.ifnotobject v3                     # line: 23           # column: 0
+	ldobjbyname 0x6, n                       # line: 23           # column: 0
+	callruntime.istrue 0x8                   # line: 23           # column: 0
+	jnez label@67                            # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	ldobjbyname 0xa, o                       # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	label@25: lda v3                         # line: 23           # column: 0
+	ldobjbyname 0xc, k                       # line: 23           # column: 0
+	sta v5                                   # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	ldobjbyname 0xe, l                       # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	tryldglobalbyname 0x10, console          # line: 23           # column: 0
+	sta v6                                   # line: 23           # column: 0
+	ldobjbyname 0x11, w                      # line: 23           # column: 0
+	sta v7                                   # line: 23           # column: 0
+	lda.str x =                              # line: 23           # column: 0
+	sta v8                                   # line: 23           # column: 0
+	lda.str y =                              # line: 24           # column: 0
+	sta v9                                   # line: 24           # column: 0
+	mov v10, v6                              # line: 24           # column: 0
+	mov v11, v8                              # line: 24           # column: 0
+	mov v12, v5                              # line: 24           # column: 0
+	mov v13, v9                              # line: 24           # column: 0
+	mov v14, v3                              # line: 24           # column: 0
+	lda v7                                   # line: 24           # column: 0
+	callthisrange 0x13, 0x4, v10             # line: 24           # column: 0
+	label@46: jmp label@15                   # line: 24           # column: 0
+	label@47: sta v4                         # line: 24           # column: 0
+	lda v2                                   # line: 24           # column: 0
+	callruntime.istrue 0x15                  # line: 24           # column: 0
+	jnez label@65                            # line: 24           # column: 0
+	ldtrue                                   # line: 24           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	ldhole                                   # line: 23           # column: 0
+	label@54: lda v0                         # line: 23           # column: 0
+	ldobjbyname 0x17, r                      # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	ldundefined                              # line: 23           # column: 0
+	eq 0x19, v1                              # line: 23           # column: 0
+	jnez label@65                            # line: 23           # column: 0
+	lda v1                                   # line: 23           # column: 0
+	callthis0 0x1a, v0                       # line: 23           # column: 0
+	label@62: jmp label@63                   # line: 23           # column: 0
+	label@63: lda v4                         # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@65: lda v4                         # line: 23           # column: 0
+	throw                                    # line: 23           # column: 0
+	label@67: ldundefined                    # line: 23           # column: 0
+	returnundefined                          # line: 23           # column: 0
+.catchall :
+	try_begin_label : label@54
+	try_end_label : label@62
+	catch_begin_label : label@63
+	catch_end_label : label@63
+.catchall :
+	try_begin_label : label@1
+	try_end_label : label@4
+	catch_begin_label : label@5
+	catch_end_label : label@5
+.catchall :
+	try_begin_label : label@25
+	try_end_label : label@46
+	catch_begin_label : label@47
+	catch_end_label : label@47
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any shorthandassignment_test.#~@0=#j(any a0, any a1, any a2) {
+	ldai 0x0                                 # line: 0           # column: 0
+	sta v0                                   # line: 0           # column: 0
+	lda v0                                   # line: 0           # column: 0
+	stobjbyname 0x0, k, a2                   # line: 0           # column: 0
+	lda v0                                   # line: 0           # column: 0
+	stobjbyname 0x2, l, a2                   # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 13
+.function any shorthandassignment_test.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, shorthandassignment_test.#*#g, 0x0 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldhole                                   # line: 15           # column: 0
+	sta v1                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x1, shorthandassignment_test.#~@0=#j, shorthandassignment_test_2715, 0x0, v1 # line: 15           # column: 0
+	ldobjbyname 0x2, prototype               # line: 15           # column: 0
+	createemptyarray 0x4                     # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	createobjectwithbuffer 0x5, shorthandassignment_test_2724 # line: 20           # column: 0
+	stownbyindex 0x6, v1, 0x0                # line: 20           # column: 0
+	createobjectwithbuffer 0x8, shorthandassignment_test_2748 # line: 20           # column: 0
+	stownbyindex 0x9, v1, 0x1                # line: 20           # column: 0
+	lda v1                                   # line: 20           # column: 0
+	stlexvar 0x0, 0x0                        # line: 20           # column: 0
+	lda v0                                   # line: 28           # column: 0
+	callarg0 0xb                             # line: 28           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+100
+123
+console
+d
+e
+f
+forawaitof_1.#&#a
+forawaitof_1.#&A*#b
+forawaitof_1.#~@0=#c
+forawaitof_2.#*#b
+forawaitof_2.#~@0=#c
+forawaitof_2.#~@0>#instance_initializer
+forawaitof_3.#&#a
+forawaitof_3.#&A*#g
+forawaitof_3.#~@0=#c
+h
+i
+k
+l
+m
+n
+o
+p
+print
+prototype
+q
+r
+s
+shorthandassignment_test.#*#g
+shorthandassignment_test.#~@0=#j
+t
+u
+v
+w
+x = 
+y = 

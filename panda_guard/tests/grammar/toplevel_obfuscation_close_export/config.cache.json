@@ -1,0 +1,41 @@
+{
+  "exportApi1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportApi1"
+  },
+  "exportApi2": {
+    "IdentifierCache": {
+      "#greet:18:20": "greet"
+    },
+    "MemberMethodCache": {
+      "Circle:25:27": "Circle",
+      "area:29:31": "area"
+    },
+    "obfName": "exportApi2"
+  },
+  "exportDefault1": {
+    "IdentifierCache": {
+      "#=ens0": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "exportDefault1"
+  },
+  "exportDefault2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportDefault2"
+  },
+  "importApi1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "importApi1"
+  },
+  "importApi2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "importApi2"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

@@ -1,0 +1,19 @@
+{
+  "main": {
+    "IdentifierCache": {
+      "#ClassA": "a"
+    },
+    "MemberMethodCache": {
+      "ClassA:19:22": "a",
+      "ClassA:29:30": "a",
+      "add:33:34": "b"
+    },
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "ClassA": "a",
+    "add": "b"
+  }
+}

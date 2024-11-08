@@ -1,0 +1,518 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+constructor_property_2330 { 2 [ tag_value:5, string:"obj", ]}
+
+constructor_property_2339 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+constructor_property_2367 { 12 [ tag_value:5, string:"h", tag_value:6, method:constructor_property.#&ts~A>@0*#h, tag_value:9, method_affiliate:1, tag_value:5, string:"j", tag_value:6, method:constructor_property.#&ts~A>@0*#j, tag_value:9, method_affiliate:2, ]}
+
+constructor_property_2397 { 14 [ tag_value:5, string:"h", tag_value:6, method:constructor_property.#&ts~A>#h, tag_value:9, method_affiliate:0, tag_value:5, string:"i", tag_value:6, method:constructor_property.#&ts~A>#i, tag_value:9, method_affiliate:0, tag_value:2, i32:2, ]}
+
+constructor_property_2432 { 2 [ tag_value:2, i32:0, ]}
+
+constructor_var_property_2441 
+
+constructor_var_property_2445 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+constructor_var_property_2473 { 8 [ tag_value:5, string:"o", tag_value:6, method:constructor_var_property.#&ts~X>#o, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+constructor_var_property_2495 { 2 [ tag_value:2, i32:0, ]}
+
+constructor_variables_2504 { 2 [ tag_value:5, string:"obj", ]}
+
+constructor_variables_2513 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+constructor_variables_2541 { 12 [ tag_value:5, string:"h", tag_value:6, method:constructor_variables.#&ts~A1>@0*#h, tag_value:9, method_affiliate:1, tag_value:5, string:"j", tag_value:6, method:constructor_variables.#&ts~A1>@0*#j, tag_value:9, method_affiliate:2, ]}
+
+constructor_variables_2571 { 14 [ tag_value:5, string:"h", tag_value:6, method:constructor_variables.#&ts~A1>#h, tag_value:9, method_affiliate:0, tag_value:5, string:"i", tag_value:6, method:constructor_variables.#&ts~A1>#i, tag_value:9, method_affiliate:0, tag_value:2, i32:2, ]}
+
+constructor_variables_2606 { 2 [ tag_value:2, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record constructor_property {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames constructor_property_2330
+	u32 moduleRecordIdx constructor_property_2339
+}
+.record.source_file 
+
+.record constructor_var_property {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames constructor_var_property_2441
+	u32 moduleRecordIdx constructor_var_property_2445
+}
+.record.source_file 
+
+.record constructor_variables {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames constructor_variables_2504
+	u32 moduleRecordIdx constructor_variables_2513
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 18
+.function any constructor_property.#&#ts(any a0, any a1, any a2, any a3) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 16           # column: 0
+	stlexvar 0x0, 0x0                        # line: 16           # column: 0
+	ldhole                                   # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	defineclasswithbuffer 0x0, constructor_property.#&ts~A=#f, constructor_property_2397, 0x1, v0 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldobjbyname 0x1, prototype               # line: 18           # column: 0
+	ldhole                                   # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	defineclasswithbuffer 0x3, constructor_property.#&ts~B=#a, constructor_property_2432, 0x4, v1 # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	ldobjbyname 0x4, prototype               # line: 41           # column: 0
+	ldai 0x29                                # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	mov v3, v0                               # line: 41           # column: 0
+	mov v4, v2                               # line: 41           # column: 0
+	newobjrange 0x6, 0x2, v3                 # line: 48           # column: 0
+	sta v0                                   # line: 48           # column: 0
+	ldobjbyname 0x8, i                       # line: 49           # column: 0
+	callthis0 0xa, v0                        # line: 49           # column: 0
+	mov v3, v1                               # line: 49           # column: 0
+	mov v4, v0                               # line: 49           # column: 0
+	newobjrange 0xc, 0x2, v3                 # line: 50           # column: 0
+	lda v0                                   # line: 51           # column: 0
+	ldobjbyname 0xe, h                       # line: 51           # column: 0
+	callthis0 0x10, v0                       # line: 51           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_property.#&ts~A=#f(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 22           # column: 0
+	stobjbyname 0x0, g, a2                   # line: 22           # column: 0
+	lda a2                                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_property.#&ts~A>#h(any a0, any a1, any a2) {
+	lda a2                                   # line: 26           # column: 0
+	ldobjbyname 0x0, g                       # line: 26           # column: 0
+	return                                   # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any constructor_property.#&ts~A>#i(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, constructor_property_2367 # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 30           # column: 0
+	throw.undefinedifholewithname r          # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	stlexvar 0x0, 0x0                        # line: 30           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 38           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_property.#&ts~A>@0*#h(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 32           # column: 0
+	ldobjbyname 0x0, g                       # line: 32           # column: 0
+	return                                   # line: 33           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_property.#&ts~A>@0*#j(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 35           # column: 0
+	stobjbyname 0x0, g, a3                   # line: 35           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 36           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 20
+.function any constructor_property.#&ts~B=#a(any a0, any a1, any a2, any a3, any a4, any a5, any a6) {
+	ldai 0x1                                 # line: 42           # column: 0
+	sta v0                                   # line: 42           # column: 0
+	ldundefined                              # line: 42           # column: 0
+	stricteq 0x0, a4                         # line: 42           # column: 0
+	jeqz label@6                             # line: 42           # column: 0
+	mov a4, v0                               # line: 42           # column: 0
+	label@6: ldundefined                     # line: 42           # column: 0
+	stricteq 0x1, a5                         # line: 42           # column: 0
+	jeqz label@11                            # line: 42           # column: 0
+	lda.str                                  # line: 42           # column: 0
+	sta a5                                   # line: 42           # column: 0
+	label@11: ldai 0x2                       # line: 42           # column: 0
+	sta v1                                   # line: 42           # column: 0
+	ldundefined                              # line: 42           # column: 0
+	stricteq 0x2, a6                         # line: 42           # column: 0
+	jeqz label@17                            # line: 42           # column: 0
+	mov a6, v1                               # line: 42           # column: 0
+	label@17: lda a3                         # line: 42           # column: 0
+	stobjbyname 0x3, b, a2                   # line: 42           # column: 0
+	lda a4                                   # line: 42           # column: 0
+	stobjbyname 0x5, c, a2                   # line: 42           # column: 0
+	lda a5                                   # line: 42           # column: 0
+	stobjbyname 0x7, d, a2                   # line: 42           # column: 0
+	lda a6                                   # line: 42           # column: 0
+	stobjbyname 0x9, e, a2                   # line: 42           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 42           # column: 0
+	sta v1                                   # line: 42           # column: 0
+	throw.undefinedifholewithname r          # line: 42           # column: 0
+	lda v1                                   # line: 43           # column: 0
+	ldobjbyname 0xb, h                       # line: 43           # column: 0
+	callthis1 0xd, v1, a3                    # line: 43           # column: 0
+	sta v1                                   # line: 43           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 43           # column: 0
+	sta v2                                   # line: 43           # column: 0
+	throw.undefinedifholewithname r          # line: 43           # column: 0
+	lda v2                                   # line: 44           # column: 0
+	ldobjbyname 0xf, j                       # line: 44           # column: 0
+	sta v3                                   # line: 44           # column: 0
+	lda v0                                   # line: 44           # column: 0
+	add2 0x11, v1                            # line: 44           # column: 0
+	sta v0                                   # line: 44           # column: 0
+	lda v3                                   # line: 44           # column: 0
+	callthis2 0x12, v2, a3, v0               # line: 44           # column: 0
+	lda a2                                   # line: 44           # column: 0
+	return                                   # line: 44           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any constructor_property.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, constructor_property.#&#ts, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@9                             # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@9: lda v1                          # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v0                         # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 26
+.function any constructor_var_property.#&#ts(any a0, any a1, any a2, any a3) {
+	ldhole                                   # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	defineclasswithbuffer 0x0, constructor_var_property.#&ts~X=#m, constructor_var_property_2473, 0x1, v0 # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	ldobjbyname 0x1, prototype               # line: 16           # column: 0
+	lda.str global                           # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	mov v5, v0                               # line: 28           # column: 0
+	mov v6, v1                               # line: 28           # column: 0
+	newobjrange 0x3, 0x2, v5                 # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	ldhole                                   # line: 30           # column: 0
+	sta v2                                   # line: 30           # column: 0
+	defineclasswithbuffer 0x5, constructor_var_property.#&ts~A=#f, constructor_var_property_2495, 0x2, v2 # line: 30           # column: 0
+	sta v2                                   # line: 30           # column: 0
+	ldobjbyname 0x6, prototype               # line: 30           # column: 0
+	lda.str aa                               # line: 38           # column: 0
+	sta v3                                   # line: 38           # column: 0
+	lda.str param                            # line: 38           # column: 0
+	sta v4                                   # line: 38           # column: 0
+	mov v5, v0                               # line: 38           # column: 0
+	mov v6, v4                               # line: 38           # column: 0
+	newobjrange 0x8, 0x2, v5                 # line: 38           # column: 0
+	sta v0                                   # line: 38           # column: 0
+	mov v5, v2                               # line: 38           # column: 0
+	mov v6, v3                               # line: 38           # column: 0
+	mov v7, v0                               # line: 38           # column: 0
+	newobjrange 0xa, 0x3, v5                 # line: 38           # column: 0
+	sta v0                                   # line: 38           # column: 0
+	tryldglobalbyname 0xc, print             # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	lda v0                                   # line: 39           # column: 0
+	ldobjbyname 0xd, k                       # line: 39           # column: 0
+	ldobjbyname 0xf, n                       # line: 39           # column: 0
+	sta v0                                   # line: 39           # column: 0
+	lda.str param                            # line: 39           # column: 0
+	stricteq 0x11, v0                        # line: 39           # column: 0
+	sta v0                                   # line: 39           # column: 0
+	lda.str success                          # line: 39           # column: 0
+	sta v3                                   # line: 39           # column: 0
+	lda v2                                   # line: 39           # column: 0
+	callargs2 0x12, v0, v3                   # line: 39           # column: 0
+	tryldglobalbyname 0x14, print            # line: 40           # column: 0
+	sta v0                                   # line: 40           # column: 0
+	lda v1                                   # line: 40           # column: 0
+	ldobjbyname 0x15, n                      # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	lda.str global                           # line: 40           # column: 0
+	stricteq 0x17, v1                        # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	lda.str success                          # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	lda v0                                   # line: 40           # column: 0
+	callargs2 0x18, v1, v2                   # line: 40           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any constructor_var_property.#&ts~A=#f(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 31           # column: 0
+	stobjbyname 0x0, k, a2                   # line: 31           # column: 0
+	lda.str                                  # line: 31           # column: 0
+	stobjbyname 0x2, l, a2                   # line: 31           # column: 0
+	lda a4                                   # line: 34           # column: 0
+	ldobjbyname 0x4, o                       # line: 34           # column: 0
+	callthis0 0x6, a4                        # line: 34           # column: 0
+	lda a2                                   # line: 35           # column: 0
+	return                                   # line: 35           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any constructor_var_property.#&ts~X=#m(any a0, any a1, any a2, any a3) {
+	lda.str                                  # line: 17           # column: 0
+	stobjbyname 0x0, n, a2                   # line: 17           # column: 0
+	lda a3                                   # line: 20           # column: 0
+	stobjbyname 0x2, n, a2                   # line: 20           # column: 0
+	lda a2                                   # line: 21           # column: 0
+	return                                   # line: 21           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_var_property.#&ts~X>#o(any a0, any a1, any a2) {
+	lda a2                                   # line: 24           # column: 0
+	ldobjbyname 0x0, n                       # line: 24           # column: 0
+	return                                   # line: 25           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any constructor_var_property.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, constructor_var_property.#&#ts, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@9                             # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@9: lda v1                          # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v0                         # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 18
+.function any constructor_variables.#&#ts(any a0, any a1, any a2, any a3) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 16           # column: 0
+	stlexvar 0x0, 0x0                        # line: 16           # column: 0
+	ldhole                                   # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	defineclasswithbuffer 0x0, constructor_variables.#&ts~A1=#q, constructor_variables_2571, 0x1, v0 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldobjbyname 0x1, prototype               # line: 18           # column: 0
+	ldhole                                   # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	defineclasswithbuffer 0x3, constructor_variables.#&ts~B1=#p, constructor_variables_2606, 0x1, v1 # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	ldobjbyname 0x4, prototype               # line: 41           # column: 0
+	ldai 0x29                                # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	mov v3, v0                               # line: 41           # column: 0
+	mov v4, v2                               # line: 41           # column: 0
+	newobjrange 0x6, 0x2, v3                 # line: 48           # column: 0
+	sta v0                                   # line: 48           # column: 0
+	ldobjbyname 0x8, i                       # line: 49           # column: 0
+	callthis0 0xa, v0                        # line: 49           # column: 0
+	mov v3, v1                               # line: 49           # column: 0
+	mov v4, v0                               # line: 49           # column: 0
+	newobjrange 0xc, 0x2, v3                 # line: 50           # column: 0
+	lda v0                                   # line: 51           # column: 0
+	ldobjbyname 0xe, h                       # line: 51           # column: 0
+	callthis0 0x10, v0                       # line: 51           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_variables.#&ts~A1=#q(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 22           # column: 0
+	stobjbyname 0x0, g, a2                   # line: 22           # column: 0
+	lda a2                                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_variables.#&ts~A1>#h(any a0, any a1, any a2) {
+	lda a2                                   # line: 26           # column: 0
+	ldobjbyname 0x0, g                       # line: 26           # column: 0
+	return                                   # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any constructor_variables.#&ts~A1>#i(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, constructor_variables_2541 # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 30           # column: 0
+	throw.undefinedifholewithname s          # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	stlexvar 0x0, 0x0                        # line: 30           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 38           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_variables.#&ts~A1>@0*#h(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 32           # column: 0
+	ldobjbyname 0x0, g                       # line: 32           # column: 0
+	return                                   # line: 33           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructor_variables.#&ts~A1>@0*#j(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 35           # column: 0
+	stobjbyname 0x0, g, a3                   # line: 35           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 36           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 9
+.function any constructor_variables.#&ts~B1=#p(any a0, any a1, any a2, any a3) {
+	ldlexvar 0x0, 0x0                        # line: 43           # column: 0
+	sta v0                                   # line: 43           # column: 0
+	throw.undefinedifholewithname s          # line: 43           # column: 0
+	lda v0                                   # line: 43           # column: 0
+	ldobjbyname 0x0, h                       # line: 43           # column: 0
+	callthis1 0x2, v0, a3                    # line: 43           # column: 0
+	sta v0                                   # line: 43           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 44           # column: 0
+	sta v1                                   # line: 44           # column: 0
+	throw.undefinedifholewithname s          # line: 44           # column: 0
+	lda v1                                   # line: 44           # column: 0
+	ldobjbyname 0x4, j                       # line: 44           # column: 0
+	sta v2                                   # line: 44           # column: 0
+	ldai 0x1                                 # line: 44           # column: 0
+	add2 0x6, v0                             # line: 44           # column: 0
+	sta v0                                   # line: 44           # column: 0
+	lda v2                                   # line: 44           # column: 0
+	callthis2 0x7, v1, a3, v0                # line: 44           # column: 0
+	lda a2                                   # line: 45           # column: 0
+	return                                   # line: 45           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any constructor_variables.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, constructor_variables.#&#ts, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@9                             # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@9: lda v1                          # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v0                         # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+
+aa
+b
+c
+constructor_property.#&#ts
+constructor_property.#&ts~A=#f
+constructor_property.#&ts~B=#a
+constructor_var_property.#&#ts
+constructor_var_property.#&ts~A=#f
+constructor_var_property.#&ts~X=#m
+constructor_variables.#&#ts
+constructor_variables.#&ts~A1=#q
+constructor_variables.#&ts~B1=#p
+d
+e
+g
+global
+h
+i
+j
+k
+l
+n
+o
+param
+print
+prototype
+r
+s
+success

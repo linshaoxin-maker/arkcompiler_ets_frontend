@@ -1,0 +1,89 @@
+{
+  "exportsApi1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {
+      "AbortError:23:26": "AbortError"
+    },
+    "obfName": "exportsApi1"
+  },
+  "exportsApi2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportsApi2"
+  },
+  "exportsApi3": {
+    "IdentifierCache": {
+      "#addTest1:16:18": "addTest1",
+      "#subtractTest1:20:22": "subtractTest1"
+    },
+    "MemberMethodCache": {},
+    "obfName": "exportsApi3"
+  },
+  "exportsApi4": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportsApi4"
+  },
+  "requireApi1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi1"
+  },
+  "requireApi2": {
+    "IdentifierCache": {
+      "#functionRequireTest:19:26": "functionRequireTest"
+    },
+    "MemberMethodCache": {},
+    "obfName": "requireApi2"
+  },
+  "requireApi3": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi3"
+  },
+  "requireApi4": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "requireApi4"
+  },
+  "requireApi_worker_threads": {
+    "IdentifierCache": {
+      "#functionTest1:29:32": "functionTest1",
+      "#functionTest:20:25": "functionTest"
+    },
+    "MemberMethodCache": {},
+    "obfName": "requireApi_worker_threads"
+  },
+  "someSimilarGrammars1": {
+    "IdentifierCache": {
+      "#foo:44:46": "foo",
+      "#funcLayer:25:32": "funcLayer"
+    },
+    "MemberMethodCache": {},
+    "obfName": "someSimilarGrammars1"
+  },
+  "someSimilarGrammars2": {
+    "IdentifierCache": {
+      "#foo:16:18": "foo"
+    },
+    "MemberMethodCache": {},
+    "obfName": "someSimilarGrammars2"
+  },
+  "workercustomModule": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "workercustomModule"
+  },
+  "workercustomModule_decl.d": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "workercustomModule_decl.d"
+  },
+  "workercustomModule_requireApi": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "workercustomModule_requireApi"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

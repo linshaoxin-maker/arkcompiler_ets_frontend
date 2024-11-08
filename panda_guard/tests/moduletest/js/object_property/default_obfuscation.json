@@ -1,0 +1,8 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "defaultNameCachePath": "",
+  "obfuscationRules": {
+    "reservedNames": ["prototype"]
+  }
+}

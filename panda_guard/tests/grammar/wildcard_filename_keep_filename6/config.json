@@ -1,0 +1,29 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "enableRemoveLog": false,
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [
+        "basename"
+      ],
+      "universalReservedProperties": []
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": true,
+      "reservedFileNames": [
+        "./keep_filename6/keep_filename7.ts"
+      ],
+      "universalReservedFileNames": [
+      ]
+    }
+  }
+}

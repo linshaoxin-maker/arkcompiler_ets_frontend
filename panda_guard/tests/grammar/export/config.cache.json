@@ -1,0 +1,67 @@
+{
+  "y1_export_alias": {
+    "IdentifierCache": {
+      "#fooOriginal2:16:18": "fooOriginal2",
+      "#fooOrignal22:29:30": "fooOrignal22"
+    },
+    "MemberMethodCache": {
+      "ClassOrinal2:0:1": "ClassOrinal2"
+    },
+    "obfName": "y1_export_alias"
+  },
+  "y1_export_default_value": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "y1_export_default_value"
+  },
+  "y1_import_alias": {
+    "IdentifierCache": {
+      "#=ens0": "a",
+      "#CDE22": "b"
+    },
+    "MemberMethodCache": {},
+    "obfName": "y1_import_alias"
+  },
+  "y1_import_export_indrect": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "y1_import_export_indrect"
+  },
+  "y2_export_default_func": {
+    "IdentifierCache": {
+      "#fooY22:16:18": "fooY22"
+    },
+    "MemberMethodCache": {},
+    "obfName": "y2_export_default_func"
+  },
+  "y2_import_default": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "y2_import_default"
+  },
+  "y3_export_list_default": {
+    "IdentifierCache": {
+      "#fooDivision2:16:18": "fooDivision2"
+    },
+    "MemberMethodCache": {},
+    "obfName": "y3_export_list_default"
+  },
+  "y3_import_list_default": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "y3_import_list_default"
+  },
+  "y4_export_as": {
+    "IdentifierCache": {
+      "#=ens0": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "y4_export_as"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "=ens0": "a",
+    "CDE22": "b"
+  }
+}

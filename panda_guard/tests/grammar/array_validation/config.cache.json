@@ -1,0 +1,150 @@
+{
+  "array_at": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_at"
+  },
+  "array_copywithin": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_copywithin"
+  },
+  "array_entries": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_entries"
+  },
+  "array_every": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_every"
+  },
+  "array_expanding": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_expanding"
+  },
+  "array_fill": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_fill"
+  },
+  "array_flat": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_flat"
+  },
+  "array_forEach": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_forEach"
+  },
+  "array_includes": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_includes"
+  },
+  "array_index": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_index"
+  },
+  "array_is": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_is"
+  },
+  "array_join": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_join"
+  },
+  "array_keys": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_keys"
+  },
+  "array_lastindex": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_lastindex"
+  },
+  "array_length": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_length"
+  },
+  "array_map": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_map"
+  },
+  "array_pop": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_pop"
+  },
+  "array_push": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_push"
+  },
+  "array_reduce": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_reduce"
+  },
+  "array_reverse": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_reverse"
+  },
+  "array_shift": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_shift"
+  },
+  "array_slice": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_slice"
+  },
+  "array_some": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_some"
+  },
+  "array_sort": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_sort"
+  },
+  "array_toLocaleString": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_toLocaleString"
+  },
+  "array_toString": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_toString"
+  },
+  "array_unshift": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_unshift"
+  },
+  "array_values": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "array_values"
+  },
+  "readonly_array": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "readonly_array"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

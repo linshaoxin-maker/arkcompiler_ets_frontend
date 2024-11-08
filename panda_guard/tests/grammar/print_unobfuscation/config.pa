@@ -1,0 +1,180 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+a_1229 { 6 [ tag_value:5, string:"MyExport", tag_value:5, string:"MyString", tag_value:5, string:"MyClass", ]}
+
+a_1248 { 12 [ i32:0, i32:0, i32:0, i32:3, string:"k", string:"k", string:"l", string:"l", string:"m", string:"m", i32:0, i32:0, ]}
+
+a_1300 { 2 [ tag_value:2, i32:0, ]}
+
+a_1309 { 2 [ tag_value:2, i32:0, ]}
+
+a_1318 { 8 [ tag_value:5, string:"abcde", tag_value:6, method:a.#~@2>#abcde, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record a {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames a_1229
+	u32 moduleRecordIdx a_1248
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any a.#*#a(any a0, any a1, any a2) {
+	ldai 0x2                                 # line: 38           # column: 0
+	return                                   # line: 38           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any a.#*#b(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 54           # column: 0
+	add2 0x0, a3                             # line: 54           # column: 0
+	return                                   # line: 55           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any a.#*#c(any a0, any a1, any a2, any a3) {
+	ldai 0x1                                 # line: 58           # column: 0
+	add2 0x0, a3                             # line: 58           # column: 0
+	return                                   # line: 59           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any a.#*#toplevel1(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 34           # column: 0
+	return                                   # line: 34           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any a.#~@0=#k(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 0           # column: 0
+	stobjbyname 0x0, e, a2                   # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any a.#~@1=#h(any a0, any a1, any a2) {
+	lda.str g                                # line: 0           # column: 0
+	sta v0                                   # line: 0           # column: 0
+	ldai 0x1                                 # line: 0           # column: 0
+	stobjbyvalue 0x0, a2, v0                 # line: 0           # column: 0
+	lda.str i                                # line: 0           # column: 0
+	sta v0                                   # line: 0           # column: 0
+	ldai 0x2                                 # line: 0           # column: 0
+	stobjbyvalue 0x2, a2, v0                 # line: 0           # column: 0
+	lda.str j                                # line: 0           # column: 0
+	sta v0                                   # line: 0           # column: 0
+	ldai 0x3                                 # line: 0           # column: 0
+	stobjbyvalue 0x4, a2, v0                 # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any a.#~@2=#d(any a0, any a1, any a2) {
+	ldai 0x1                                 # line: 47           # column: 0
+	sta v0                                   # line: 47           # column: 0
+	lda v0                                   # line: 47           # column: 0
+	stobjbyname 0x0, property1, a2           # line: 47           # column: 0
+	lda v0                                   # line: 47           # column: 0
+	stobjbyname 0x2, e, a2                   # line: 47           # column: 0
+	ldai 0x2                                 # line: 47           # column: 0
+	stobjbyname 0x4, f, a2                   # line: 47           # column: 0
+	lda.str 1                                # line: 47           # column: 0
+	stobjbyname 0x6, g, a2                   # line: 47           # column: 0
+	lda a2                                   # line: 47           # column: 0
+	return                                   # line: 47           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any a.#~@2>#abcde(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 46           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 13
+.function any a.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, a.#*#b, 0x2              # line: 18446744073709551615           # column: 0
+	definefunc 0x1, a.#*#toplevel1, 0x0      # line: 18446744073709551615           # column: 0
+	definefunc 0x2, a.#*#c, 0x1              # line: 18446744073709551615           # column: 0
+	definefunc 0x3, a.#*#a, 0x0              # line: 18446744073709551615           # column: 0
+	ldai 0x1                                 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 16           # column: 0
+	ldhole                                   # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	defineclasswithbuffer 0x4, a.#~@0=#k, a_1300, 0x0, v0 # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldobjbyname 0x5, prototype               # line: 18           # column: 0
+	lda v0                                   # line: 18           # column: 0
+	stmodulevar 0x0                          # line: 18           # column: 0
+	ldai 0x3                                 # line: 18           # column: 0
+	stmodulevar 0x2                          # line: 22           # column: 0
+	ldhole                                   # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	defineclasswithbuffer 0x7, a.#~@1=#h, a_1309, 0x0, v0 # line: 25           # column: 0
+	ldobjbyname 0x8, prototype               # line: 25           # column: 0
+	ldhole                                   # line: 41           # column: 0
+	sta v0                                   # line: 41           # column: 0
+	defineclasswithbuffer 0xa, a.#~@2=#d, a_1318, 0x0, v0 # line: 41           # column: 0
+	ldobjbyname 0xb, prototype               # line: 41           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+1
+a.#*#a
+a.#*#b
+a.#*#c
+a.#*#toplevel1
+a.#~@0=#k
+a.#~@1=#h
+a.#~@2=#d
+e
+f
+g
+i
+j
+property1
+prototype

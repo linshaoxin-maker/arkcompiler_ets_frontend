@@ -1,0 +1,244 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+main_1175 
+
+main_1179 { 10 [ i32:1, string:"./object_test1", i32:1, string:"test_object_property_func", string:"test_object_property_func", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+object_test1_1221 
+
+object_test1_1225 { 14 [ i32:1, string:"./object_test2", i32:1, string:"obj4", string:"obj4", method_affiliate:0, i32:0, i32:2, string:"obj1", string:"obj1", string:"test_object_property_func", string:"test_object_property_func", i32:0, i32:0, ]}
+
+object_test1_1283 { 4 [ tag_value:5, string:"obj_field7", tag_value:2, i32:7, ]}
+
+object_test1_1297 { 4 [ tag_value:5, string:"obj_field1", tag_value:2, i32:1, ]}
+
+object_test1_1311 { 4 [ tag_value:5, string:"obj_field4", tag_value:2, i32:4, ]}
+
+object_test2_1325 
+
+object_test2_1329 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"obj4", string:"obj4", i32:0, i32:0, ]}
+
+object_test2_1365 { 4 [ tag_value:5, string:"obj_field10", tag_value:2, i32:10, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record main {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames main_1175
+	u32 moduleRecordIdx main_1179
+}
+.record.source_file 
+
+.record object_test1 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames object_test1_1221
+	u32 moduleRecordIdx object_test1_1225
+}
+.record.source_file 
+
+.record object_test2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames object_test2_1325
+	u32 moduleRecordIdx object_test2_1329
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any main.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str test_object_property_func :      # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	ldexternalmodulevar 0x0                  # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	throw.undefinedifholewithname test_object_property_func # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callarg0 0x1                             # line: 17           # column: 0
+	add2 0x3, v1                             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	callarg1 0x4, v1                         # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 43
+.function any object_test1.#*#test_object_property_func(any a0, any a1, any a2) {
+	ldlocalmodulevar 0x0                     # line: 29           # column: 0
+	sta v0                                   # line: 29           # column: 0
+	throw.undefinedifholewithname obj1       # line: 29           # column: 0
+	ldai 0x3                                 # line: 29           # column: 0
+	stobjbyname 0x0, obj_field3, v0          # line: 29           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	throw.undefinedifholewithname a          # line: 30           # column: 0
+	ldai 0x6                                 # line: 30           # column: 0
+	stobjbyname 0x2, obj_field6, v0          # line: 30           # column: 0
+	createobjectwithbuffer 0x4, object_test1_1283 # line: 32           # column: 0
+	sta v0                                   # line: 32           # column: 0
+	ldai 0x8                                 # line: 32           # column: 0
+	stobjbyname 0x5, obj_field8, v0          # line: 35           # column: 0
+	lda.str obj_field9                       # line: 36           # column: 0
+	sta v1                                   # line: 36           # column: 0
+	ldai 0x9                                 # line: 36           # column: 0
+	stobjbyvalue 0x7, v0, v1                 # line: 36           # column: 0
+	ldexternalmodulevar 0x0                  # line: 38           # column: 0
+	sta v1                                   # line: 38           # column: 0
+	throw.undefinedifholewithname obj4       # line: 38           # column: 0
+	ldai 0xb                                 # line: 38           # column: 0
+	stobjbyname 0x9, obj_field11, v1         # line: 38           # column: 0
+	ldlocalmodulevar 0x0                     # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	throw.undefinedifholewithname obj1       # line: 40           # column: 0
+	lda v1                                   # line: 40           # column: 0
+	ldobjbyname 0xb, obj_field1              # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	ldlocalmodulevar 0x0                     # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	throw.undefinedifholewithname obj1       # line: 40           # column: 0
+	lda v2                                   # line: 40           # column: 0
+	ldobjbyname 0xd, obj_field2              # line: 40           # column: 0
+	add2 0xf, v1                             # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	ldlocalmodulevar 0x0                     # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	throw.undefinedifholewithname obj1       # line: 40           # column: 0
+	lda v2                                   # line: 40           # column: 0
+	ldobjbyname 0x10, obj_field3             # line: 40           # column: 0
+	add2 0x12, v1                            # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	throw.undefinedifholewithname a          # line: 41           # column: 0
+	lda v2                                   # line: 41           # column: 0
+	ldobjbyname 0x13, obj_field4             # line: 41           # column: 0
+	add2 0x15, v1                            # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	throw.undefinedifholewithname a          # line: 41           # column: 0
+	lda v2                                   # line: 41           # column: 0
+	ldobjbyname 0x16, obj_field5             # line: 41           # column: 0
+	add2 0x18, v1                            # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	throw.undefinedifholewithname a          # line: 41           # column: 0
+	lda v2                                   # line: 41           # column: 0
+	ldobjbyname 0x19, obj_field6             # line: 41           # column: 0
+	add2 0x1b, v1                            # line: 41           # column: 0
+	sta v1                                   # line: 41           # column: 0
+	lda v0                                   # line: 42           # column: 0
+	ldobjbyname 0x1c, obj_field7             # line: 42           # column: 0
+	add2 0x1e, v1                            # line: 42           # column: 0
+	sta v1                                   # line: 42           # column: 0
+	lda v0                                   # line: 42           # column: 0
+	ldobjbyname 0x1f, obj_field8             # line: 42           # column: 0
+	add2 0x21, v1                            # line: 42           # column: 0
+	sta v1                                   # line: 42           # column: 0
+	lda.str obj_field9                       # line: 42           # column: 0
+	ldobjbyvalue 0x22, v0                    # line: 42           # column: 0
+	add2 0x24, v1                            # line: 42           # column: 0
+	sta v0                                   # line: 42           # column: 0
+	ldexternalmodulevar 0x0                  # line: 43           # column: 0
+	sta v1                                   # line: 43           # column: 0
+	throw.undefinedifholewithname obj4       # line: 43           # column: 0
+	lda v1                                   # line: 43           # column: 0
+	ldobjbyname 0x25, obj_field10            # line: 43           # column: 0
+	add2 0x27, v0                            # line: 43           # column: 0
+	sta v0                                   # line: 43           # column: 0
+	ldexternalmodulevar 0x0                  # line: 43           # column: 0
+	sta v1                                   # line: 43           # column: 0
+	throw.undefinedifholewithname obj4       # line: 43           # column: 0
+	lda v1                                   # line: 43           # column: 0
+	ldobjbyname 0x28, obj_field11            # line: 43           # column: 0
+	add2 0x2a, v0                            # line: 43           # column: 0
+	return                                   # line: 44           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any object_test1.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, object_test1.#*#test_object_property_func, 0x0 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x1                          # line: 18446744073709551615           # column: 0
+	createobjectwithbuffer 0x1, object_test1_1297 # line: 17           # column: 0
+	stmodulevar 0x0                          # line: 17           # column: 0
+	ldlocalmodulevar 0x0                     # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	throw.undefinedifholewithname obj1       # line: 20           # column: 0
+	ldai 0x2                                 # line: 20           # column: 0
+	stobjbyname 0x2, obj_field2, v0          # line: 20           # column: 0
+	createobjectwithbuffer 0x4, object_test1_1311 # line: 22           # column: 0
+	stlexvar 0x0, 0x0                        # line: 22           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	throw.undefinedifholewithname a          # line: 26           # column: 0
+	ldai 0x5                                 # line: 26           # column: 0
+	stobjbyname 0x5, obj_field5, v0          # line: 26           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any object_test2.func_main_0(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, object_test2_1365 # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 15           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+a
+obj1
+obj4
+obj_field1
+obj_field10
+obj_field11
+obj_field2
+obj_field3
+obj_field4
+obj_field5
+obj_field6
+obj_field7
+obj_field8
+obj_field9
+object_test1.#*#test_object_property_func
+print
+test_object_property_func
+test_object_property_func :

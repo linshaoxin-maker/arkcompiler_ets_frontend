@@ -1,0 +1,22 @@
+{
+  "constructorTest2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {
+      "__BaseClass:19:21": "__BaseClass",
+      "__CustomTest:37:41": "__CustomTest",
+      "__PersonDetails:29:33": "__PersonDetails"
+    },
+    "obfName": "constructorTest2"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "__first": "d",
+    "__identifier": "g",
+    "__last": "e",
+    "__privateValue": "b",
+    "__protectedValue": "c",
+    "__publicValue": "a",
+    "__years": "f"
+  }
+}

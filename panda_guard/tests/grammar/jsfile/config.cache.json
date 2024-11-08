@@ -1,0 +1,25 @@
+{
+  "script1": {
+    "IdentifierCache": {
+      "#addNumbers:16:18": "b",
+      "#findMax:29:31": "d",
+      "#greet:24:26": "c",
+      "#isPalindrome:39:43": "e",
+      "#multiplyTable:54:55": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "script1"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "addNumbers": "b",
+    "age": "h",
+    "findMax": "d",
+    "firstName": "f",
+    "greet": "c",
+    "isPalindrome": "e",
+    "lastName": "g",
+    "multiplyTable": "a"
+  }
+}

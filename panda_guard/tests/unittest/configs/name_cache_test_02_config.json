@@ -1,0 +1,37 @@
+{
+  "abcFilePath": "xxx",
+  "obfAbcFilePath": "xxx",
+  "compileSdkVersion": "5.0.0.2",
+  "entryPackageInfo": "entry|2.0.1",
+  "defaultNameCachePath": "xxx",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": true,
+    "enableRemoveLog": true,
+    "printNameCache": "./clang_x64/obj/arkcompiler/ets_frontend/panda_guard/tests/configs/new_name_cache_test.json",
+    "applyNameCache": "",
+    "reservedNames": [],
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [],
+      "universalReservedProperties": []
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": true,
+      "reservedFileNames": [],
+      "universalReservedFileNames": []
+    },
+    "keepOptions": {
+      "enable": true,
+      "keepPaths": [],
+      "universalKeepPaths": [],
+      "excludePaths": [],
+      "universalExcludePaths": []
+    }
+  }
+}

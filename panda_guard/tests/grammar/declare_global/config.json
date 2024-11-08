@@ -1,0 +1,17 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "propertyObfuscation": {
+      "enable": false
+    },
+    "toplevelObfuscation": {
+      "enable": true
+    },
+    "fileNameObfuscation": {
+      "enable": false
+    }
+  }
+}

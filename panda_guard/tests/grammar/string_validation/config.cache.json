@@ -1,0 +1,150 @@
+{
+  "str_toLocaleLowerCase": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "str_toLocaleLowerCase"
+  },
+  "string_at": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_at"
+  },
+  "string_charAt": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_charAt"
+  },
+  "string_charCodeAt": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_charCodeAt"
+  },
+  "string_codePointAt": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_codePointAt"
+  },
+  "string_concat": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_concat"
+  },
+  "string_endsWith": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_endsWith"
+  },
+  "string_includes": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_includes"
+  },
+  "string_index": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_index"
+  },
+  "string_indexOf": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_indexOf"
+  },
+  "string_lastIndexOf": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_lastIndexOf"
+  },
+  "string_length": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_length"
+  },
+  "string_padEnd": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_padEnd"
+  },
+  "string_padStart": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_padStart"
+  },
+  "string_repeat": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_repeat"
+  },
+  "string_slice": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_slice"
+  },
+  "string_startsWith": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_startsWith"
+  },
+  "string_substr": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_substr"
+  },
+  "string_substring": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_substring"
+  },
+  "string_toLocaleUpperCase": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_toLocaleUpperCase"
+  },
+  "string_toLowerCase": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_toLowerCase"
+  },
+  "string_toString": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_toString"
+  },
+  "string_toUpperCase": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_toUpperCase"
+  },
+  "string_trim": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_trim"
+  },
+  "string_trimEnd": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_trimEnd"
+  },
+  "string_trimLeft": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_trimLeft"
+  },
+  "string_trimRight": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_trimRight"
+  },
+  "string_trimStart": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_trimStart"
+  },
+  "string_valueOf": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "string_valueOf"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

@@ -1,0 +1,798 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+anonymous_function_3213 
+
+anonymous_function_3217 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_default_parameter_3245 
+
+function_default_parameter_3249 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_optional_parameter_3277 
+
+function_optional_parameter_3281 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_outer_variable_3309 
+
+function_outer_variable_3313 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_overload_3341 
+
+function_overload_3345 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_overload_3373 { 8 [ tag_value:5, string:"f", tag_value:255, null_value:0, tag_value:5, string:"g", tag_value:255, null_value:0, ]}
+
+function_overload_3391 { 8 [ tag_value:5, string:"hearts", tag_value:5, string:"spades", tag_value:5, string:"clubs", tag_value:5, string:"diamonds", ]}
+
+function_overload_3415 { 8 [ tag_value:5, string:"f", tag_value:5, string:"diamonds", tag_value:5, string:"g", tag_value:2, i32:2, ]}
+
+function_overload_3439 { 8 [ tag_value:5, string:"f", tag_value:5, string:"spades", tag_value:5, string:"g", tag_value:2, i32:10, ]}
+
+function_overload_3463 { 8 [ tag_value:5, string:"f", tag_value:5, string:"hearts", tag_value:5, string:"g", tag_value:2, i32:4, ]}
+
+function_remaining_parameter_3487 
+
+function_remaining_parameter_3491 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_this_3519 { 2 [ tag_value:5, string:"createCardPicker", ]}
+
+function_this_3528 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+function_this_3556 { 8 [ tag_value:5, string:"f", tag_value:255, null_value:0, tag_value:5, string:"g", tag_value:255, null_value:0, ]}
+
+function_this_3574 { 8 [ tag_value:5, string:"i", tag_value:255, null_value:0, tag_value:5, string:"h", tag_value:255, null_value:0, ]}
+
+function_this_3592 { 8 [ tag_value:5, string:"hearts", tag_value:5, string:"spades", tag_value:5, string:"clubs", tag_value:5, string:"diamonds", ]}
+
+function_types_3616 
+
+function_types_3620 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record anonymous_function {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames anonymous_function_3213
+	u32 moduleRecordIdx anonymous_function_3217
+}
+.record.source_file 
+
+.record function_default_parameter {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_default_parameter_3245
+	u32 moduleRecordIdx function_default_parameter_3249
+}
+.record.source_file 
+
+.record function_optional_parameter {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_optional_parameter_3277
+	u32 moduleRecordIdx function_optional_parameter_3281
+}
+.record.source_file 
+
+.record function_outer_variable {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_outer_variable_3309
+	u32 moduleRecordIdx function_outer_variable_3313
+}
+.record.source_file 
+
+.record function_overload {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_overload_3341
+	u32 moduleRecordIdx function_overload_3345
+}
+.record.source_file 
+
+.record function_remaining_parameter {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_remaining_parameter_3487
+	u32 moduleRecordIdx function_remaining_parameter_3491
+}
+.record.source_file 
+
+.record function_this {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_this_3519
+	u32 moduleRecordIdx function_this_3528
+}
+.record.source_file 
+
+.record function_types {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames function_types_3616
+	u32 moduleRecordIdx function_types_3620
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any anonymous_function.#*#a(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 22           # column: 0
+	add2 0x0, a3                             # line: 22           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any anonymous_function.#*#b(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	add2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any anonymous_function.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, anonymous_function.#*#b, 0x2 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x1, print             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldai 0x2                                 # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	ldai 0x3                                 # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callargs2 0x2, v2, v3                    # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldai 0x5                                 # line: 19           # column: 0
+	stricteq 0x4, v0                         # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x5, v0, v2                    # line: 19           # column: 0
+	definefunc 0x7, anonymous_function.#*#a, 0x2 # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	tryldglobalbyname 0x8, print             # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	ldai 0x4                                 # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	callargs2 0x9, v3, v2                    # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	ldai 0x7                                 # line: 25           # column: 0
+	stricteq 0xb, v0                         # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda.str success                          # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda v1                                   # line: 25           # column: 0
+	callargs2 0xc, v0, v2                    # line: 25           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any function_default_parameter.#*#c(any a0, any a1, any a2, any a3, any a4) {
+	ldundefined                              # line: 15           # column: 0
+	stricteq 0x0, a4                         # line: 15           # column: 0
+	jeqz label@5                             # line: 15           # column: 0
+	lda.str Smith                            # line: 15           # column: 0
+	sta a4                                   # line: 15           # column: 0
+	label@5: lda.str                         # line: 16           # column: 0
+	add2 0x1, a3                             # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	lda a4                                   # line: 16           # column: 0
+	add2 0x2, v0                             # line: 16           # column: 0
+	return                                   # line: 16           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 19
+.function any function_default_parameter.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, function_default_parameter.#*#c, 0x1 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x1, print             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda.str Bob                              # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callarg1 0x2, v2                         # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str Bob Smith                        # line: 19           # column: 0
+	stricteq 0x4, v2                         # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x5, v2, v3                    # line: 19           # column: 0
+	tryldglobalbyname 0x7, print             # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda.str Bob                              # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	ldundefined                              # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	callargs2 0x8, v2, v3                    # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str Bob Smith                        # line: 21           # column: 0
+	stricteq 0xa, v2                         # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	callargs2 0xb, v2, v3                    # line: 21           # column: 0
+	tryldglobalbyname 0xd, print             # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	lda.str Bob                              # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda.str Adams                            # line: 23           # column: 0
+	sta v3                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	callargs2 0xe, v2, v3                    # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	lda.str Bob Adams                        # line: 23           # column: 0
+	stricteq 0x10, v0                        # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	lda.str success                          # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda v1                                   # line: 23           # column: 0
+	callargs2 0x11, v0, v2                   # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any function_optional_parameter.#*#c(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	callruntime.isfalse 0x0                  # line: 16           # column: 0
+	jnez label@9                             # line: 16           # column: 0
+	lda.str                                  # line: 17           # column: 0
+	add2 0x2, a3                             # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda a4                                   # line: 17           # column: 0
+	add2 0x3, v0                             # line: 17           # column: 0
+	return                                   # line: 20           # column: 0
+	label@9: lda a3                          # line: 19           # column: 0
+	return                                   # line: 19           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 13
+.function any function_optional_parameter.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, function_optional_parameter.#*#c, 0x2 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x1, print             # line: 22           # column: 0
+	sta v1                                   # line: 22           # column: 0
+	lda.str Bob                              # line: 22           # column: 0
+	sta v2                                   # line: 22           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	callarg1 0x2, v2                         # line: 22           # column: 0
+	sta v2                                   # line: 22           # column: 0
+	lda.str Bob                              # line: 22           # column: 0
+	stricteq 0x4, v2                         # line: 22           # column: 0
+	sta v2                                   # line: 22           # column: 0
+	lda.str success                          # line: 22           # column: 0
+	sta v3                                   # line: 22           # column: 0
+	lda v1                                   # line: 22           # column: 0
+	callargs2 0x5, v2, v3                    # line: 22           # column: 0
+	tryldglobalbyname 0x7, print             # line: 24           # column: 0
+	sta v1                                   # line: 24           # column: 0
+	lda.str Bob                              # line: 24           # column: 0
+	sta v2                                   # line: 24           # column: 0
+	lda.str Adams                            # line: 24           # column: 0
+	sta v3                                   # line: 24           # column: 0
+	lda v0                                   # line: 24           # column: 0
+	callargs2 0x8, v2, v3                    # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	lda.str Bob Adams                        # line: 24           # column: 0
+	stricteq 0xa, v0                         # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	lda.str success                          # line: 24           # column: 0
+	sta v2                                   # line: 24           # column: 0
+	lda v1                                   # line: 24           # column: 0
+	callargs2 0xb, v0, v2                    # line: 24           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any function_outer_variable.#*#d(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 18           # column: 0
+	add2 0x0, a3                             # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	throw.undefinedifholewithname k          # line: 18           # column: 0
+	lda v1                                   # line: 18           # column: 0
+	add2 0x1, v0                             # line: 18           # column: 0
+	return                                   # line: 19           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any function_outer_variable.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, function_outer_variable.#*#d, 0x2 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldai 0x64                                # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 15           # column: 0
+	stlexvar 0x0, 0x0                        # line: 15           # column: 0
+	tryldglobalbyname 0x1, print             # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	ldai 0xc8                                # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	callargs2 0x2, v1, v3                    # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	ldai 0x190                               # line: 21           # column: 0
+	stricteq 0x4, v0                         # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	callargs2 0x5, v0, v1                    # line: 21           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 28
+.function any function_overload.#*#e(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 20           # column: 0
+	typeof 0x0                               # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	lda.str object                           # line: 20           # column: 0
+	stricteq 0x2, v0                         # line: 20           # column: 0
+	jeqz label@19                            # line: 20           # column: 0
+	tryldglobalbyname 0x3, Math              # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	ldobjbyname 0x4, floor                   # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	fldai 5.000000e-01                       # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda a3                                   # line: 21           # column: 0
+	ldobjbyname 0x6, length                  # line: 21           # column: 0
+	mul2 0x8, v2                             # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	callthis1 0x9, v0, v2                    # line: 21           # column: 0
+	return                                   # line: 28           # column: 0
+	label@19: lda a3                         # line: 24           # column: 0
+	typeof 0xb                               # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	lda.str number                           # line: 24           # column: 0
+	stricteq 0xd, v0                         # line: 24           # column: 0
+	jeqz label@50                            # line: 24           # column: 0
+	tryldglobalbyname 0xe, Math              # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	ldobjbyname 0xf, floor                   # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	ldai 0xd                                 # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda v2                                   # line: 25           # column: 0
+	div2 0x11, a3                            # line: 25           # column: 0
+	sta v3                                   # line: 25           # column: 0
+	lda v1                                   # line: 25           # column: 0
+	callthis1 0x12, v0, v3                   # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	createobjectwithbuffer 0x14, function_overload_3373 # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 26           # column: 0
+	sta v3                                   # line: 26           # column: 0
+	throw.undefinedifholewithname i          # line: 26           # column: 0
+	lda v0                                   # line: 26           # column: 0
+	ldobjbyvalue 0x15, v3                    # line: 26           # column: 0
+	definepropertybyname 0x17, f, v1         # line: 26           # column: 0
+	lda v2                                   # line: 26           # column: 0
+	mod2 0x19, a3                            # line: 26           # column: 0
+	definepropertybyname 0x1a, g, v1         # line: 26           # column: 0
+	lda v1                                   # line: 26           # column: 0
+	return                                   # line: 26           # column: 0
+	label@50: ldundefined                    # line: 28           # column: 0
+	returnundefined                          # line: 20           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 42
+.function any function_overload.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	definefunc 0x0, function_overload.#*#e, 0x1 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	createarraywithbuffer 0x1, function_overload_3391 # line: 15           # column: 0
+	stlexvar 0x0, 0x0                        # line: 15           # column: 0
+	createemptyarray 0x2                     # line: 30           # column: 0
+	sta v1                                   # line: 30           # column: 0
+	createobjectwithbuffer 0x3, function_overload_3415 # line: 30           # column: 0
+	stownbyindex 0x4, v1, 0x0                # line: 30           # column: 0
+	createobjectwithbuffer 0x6, function_overload_3439 # line: 30           # column: 0
+	stownbyindex 0x7, v1, 0x1                # line: 30           # column: 0
+	createobjectwithbuffer 0x9, function_overload_3463 # line: 30           # column: 0
+	stownbyindex 0xa, v1, 0x2                # line: 30           # column: 0
+	lda v0                                   # line: 31           # column: 0
+	callarg1 0xc, v1                         # line: 31           # column: 0
+	ldobjbyvalue 0xe, v1                     # line: 31           # column: 0
+	sta v1                                   # line: 31           # column: 0
+	tryldglobalbyname 0x10, print            # line: 33           # column: 0
+	sta v2                                   # line: 33           # column: 0
+	lda v1                                   # line: 33           # column: 0
+	ldobjbyname 0x11, g                      # line: 33           # column: 0
+	sta v3                                   # line: 33           # column: 0
+	ldai 0xa                                 # line: 33           # column: 0
+	stricteq 0x13, v3                        # line: 33           # column: 0
+	sta v3                                   # line: 33           # column: 0
+	lda.str success                          # line: 33           # column: 0
+	sta v4                                   # line: 33           # column: 0
+	lda v2                                   # line: 33           # column: 0
+	callargs2 0x14, v3, v4                   # line: 33           # column: 0
+	tryldglobalbyname 0x16, print            # line: 34           # column: 0
+	sta v2                                   # line: 34           # column: 0
+	lda v1                                   # line: 34           # column: 0
+	ldobjbyname 0x17, f                      # line: 34           # column: 0
+	sta v1                                   # line: 34           # column: 0
+	lda.str spades                           # line: 34           # column: 0
+	stricteq 0x19, v1                        # line: 34           # column: 0
+	sta v1                                   # line: 34           # column: 0
+	lda.str success                          # line: 34           # column: 0
+	sta v3                                   # line: 34           # column: 0
+	lda v2                                   # line: 34           # column: 0
+	callargs2 0x1a, v1, v3                   # line: 34           # column: 0
+	ldai 0xf                                 # line: 34           # column: 0
+	sta v1                                   # line: 34           # column: 0
+	lda v0                                   # line: 36           # column: 0
+	callarg1 0x1c, v1                        # line: 36           # column: 0
+	sta v0                                   # line: 36           # column: 0
+	tryldglobalbyname 0x1e, print            # line: 39           # column: 0
+	sta v1                                   # line: 39           # column: 0
+	lda v0                                   # line: 39           # column: 0
+	ldobjbyname 0x1f, g                      # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	ldai 0x2                                 # line: 39           # column: 0
+	stricteq 0x21, v2                        # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	lda.str success                          # line: 39           # column: 0
+	sta v3                                   # line: 39           # column: 0
+	lda v1                                   # line: 39           # column: 0
+	callargs2 0x22, v2, v3                   # line: 39           # column: 0
+	tryldglobalbyname 0x24, print            # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	lda v0                                   # line: 40           # column: 0
+	ldobjbyname 0x25, f                      # line: 40           # column: 0
+	sta v0                                   # line: 40           # column: 0
+	lda.str spades                           # line: 40           # column: 0
+	stricteq 0x27, v0                        # line: 40           # column: 0
+	sta v0                                   # line: 40           # column: 0
+	lda.str success                          # line: 40           # column: 0
+	sta v2                                   # line: 40           # column: 0
+	lda v1                                   # line: 40           # column: 0
+	callargs2 0x28, v0, v2                   # line: 40           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any function_remaining_parameter.#*#c(any a0, any a1, any a2, any a3, any a4) {
+	copyrestargs 0x1                         # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	lda.str                                  # line: 16           # column: 0
+	add2 0x0, a3                             # line: 16           # column: 0
+	sta v1                                   # line: 16           # column: 0
+	lda v0                                   # line: 16           # column: 0
+	ldobjbyname 0x1, join                    # line: 16           # column: 0
+	sta v2                                   # line: 16           # column: 0
+	lda.str                                  # line: 16           # column: 0
+	sta v3                                   # line: 16           # column: 0
+	lda v2                                   # line: 16           # column: 0
+	callthis1 0x3, v0, v3                    # line: 16           # column: 0
+	add2 0x5, v1                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 13
+.function any function_remaining_parameter.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, function_remaining_parameter.#*#c, 0x1 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	lda.str Joseph                           # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda.str Samuel                           # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str Lucas                            # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda.str MacKinzie                        # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	mov v5, v1                               # line: 19           # column: 0
+	mov v6, v2                               # line: 19           # column: 0
+	mov v7, v3                               # line: 19           # column: 0
+	mov v8, v4                               # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callrange 0x1, 0x4, v5                   # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	tryldglobalbyname 0x3, print             # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str Joseph Samuel Lucas MacKinzie    # line: 21           # column: 0
+	stricteq 0x4, v1                         # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	callargs2 0x5, v1, v3                    # line: 21           # column: 0
+	tryldglobalbyname 0x7, print             # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	lda.str Joseph                           # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda.str Samuel                           # line: 25           # column: 0
+	sta v3                                   # line: 25           # column: 0
+	lda.str Lucas                            # line: 25           # column: 0
+	sta v4                                   # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	callargs3 0x8, v2, v3, v4                # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda.str Joseph Samuel Lucas              # line: 25           # column: 0
+	stricteq 0xa, v0                         # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda.str success                          # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda v1                                   # line: 25           # column: 0
+	callargs2 0xb, v0, v2                    # line: 25           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any function_this.#*#h(any a0, any a1, any a2) {
+	newlexenv 0x2                            # line: 18446744073709551615           # column: 0
+	lda a1                                   # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18446744073709551615           # column: 0
+	lda a2                                   # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x1                        # line: 18446744073709551615           # column: 0
+	definefunc 0x0, function_this.#*@0*#, 0x0 # line: 18           # column: 0
+	return                                   # line: 24           # column: 0
+}
+
+.function_kind FunctionKind::NC_FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 11
+.function any function_this.#*@0*#(any a0, any a1, any a2) {
+	ldai 0x2a                                # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	ldai 0xe                                 # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	lda v1                                   # line: 20           # column: 0
+	div2 0x0, v0                             # line: 20           # column: 0
+	sta v2                                   # line: 20           # column: 0
+	createobjectwithbuffer 0x1, function_this_3556 # line: 22           # column: 0
+	sta v3                                   # line: 22           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 22           # column: 0
+	ldobjbyname 0x2, i                       # line: 22           # column: 0
+	sta v4                                   # line: 22           # column: 0
+	lda v2                                   # line: 22           # column: 0
+	ldobjbyvalue 0x4, v4                     # line: 22           # column: 0
+	definepropertybyname 0x6, f, v3          # line: 22           # column: 0
+	lda v1                                   # line: 22           # column: 0
+	div2 0x8, v0                             # line: 22           # column: 0
+	definepropertybyname 0x9, g, v3          # line: 22           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 25
+.function any function_this.func_main_0(any a0, any a1, any a2) {
+	createobjectwithbuffer 0x0, function_this_3574 # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	createarraywithbuffer 0x1, function_this_3592 # line: 16           # column: 0
+	definepropertybyname 0x2, i, v0          # line: 15           # column: 0
+	definefunc 0x4, function_this.#*#h, 0x0  # line: 17           # column: 0
+	definepropertybyname 0x5, h, v0          # line: 15           # column: 0
+	lda v0                                   # line: 27           # column: 0
+	ldobjbyname 0x7, h                       # line: 27           # column: 0
+	callthis0 0x9, v0                        # line: 27           # column: 0
+	callarg0 0xb                             # line: 28           # column: 0
+	sta v0                                   # line: 28           # column: 0
+	tryldglobalbyname 0xd, print             # line: 30           # column: 0
+	sta v1                                   # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	ldobjbyname 0xe, g                       # line: 30           # column: 0
+	sta v2                                   # line: 30           # column: 0
+	ldai 0x3                                 # line: 30           # column: 0
+	stricteq 0x10, v2                        # line: 30           # column: 0
+	sta v2                                   # line: 30           # column: 0
+	lda.str success                          # line: 30           # column: 0
+	sta v3                                   # line: 30           # column: 0
+	lda v1                                   # line: 30           # column: 0
+	callargs2 0x11, v2, v3                   # line: 30           # column: 0
+	tryldglobalbyname 0x13, print            # line: 32           # column: 0
+	sta v1                                   # line: 32           # column: 0
+	lda v0                                   # line: 32           # column: 0
+	ldobjbyname 0x14, f                      # line: 32           # column: 0
+	sta v0                                   # line: 32           # column: 0
+	lda.str diamonds                         # line: 32           # column: 0
+	stricteq 0x16, v0                        # line: 32           # column: 0
+	sta v0                                   # line: 32           # column: 0
+	lda.str success                          # line: 32           # column: 0
+	sta v2                                   # line: 32           # column: 0
+	lda v1                                   # line: 32           # column: 0
+	callargs2 0x17, v0, v2                   # line: 32           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any function_types.#*#a(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 29           # column: 0
+	add2 0x0, a3                             # line: 29           # column: 0
+	return                                   # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any function_types.#*#b(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 16           # column: 0
+	add2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 17           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any function_types.#*#j(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 22           # column: 0
+	add2 0x0, a3                             # line: 22           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 21
+.function any function_types.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, function_types.#*#b, 0x2 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x1, print             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	ldai 0x2                                 # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	ldai 0x3                                 # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	callargs2 0x2, v2, v3                    # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	ldai 0x5                                 # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda v4                                   # line: 19           # column: 0
+	stricteq 0x4, v0                         # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v5                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0x5, v0, v5                    # line: 19           # column: 0
+	definefunc 0x7, function_types.#*#j, 0x2 # line: 21           # column: 0
+	sta v0                                   # line: 21           # column: 0
+	tryldglobalbyname 0x8, print             # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	callargs2 0x9, v2, v3                    # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda v4                                   # line: 25           # column: 0
+	stricteq 0xb, v0                         # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda.str success                          # line: 25           # column: 0
+	sta v5                                   # line: 25           # column: 0
+	lda v1                                   # line: 25           # column: 0
+	callargs2 0xc, v0, v5                    # line: 25           # column: 0
+	definefunc 0xe, function_types.#*#a, 0x2 # line: 28           # column: 0
+	sta v0                                   # line: 28           # column: 0
+	tryldglobalbyname 0xf, print             # line: 32           # column: 0
+	sta v1                                   # line: 32           # column: 0
+	lda v0                                   # line: 32           # column: 0
+	callargs2 0x10, v2, v3                   # line: 32           # column: 0
+	sta v0                                   # line: 32           # column: 0
+	lda v4                                   # line: 32           # column: 0
+	stricteq 0x12, v0                        # line: 32           # column: 0
+	sta v0                                   # line: 32           # column: 0
+	lda.str success                          # line: 32           # column: 0
+	sta v2                                   # line: 32           # column: 0
+	lda v1                                   # line: 32           # column: 0
+	callargs2 0x13, v0, v2                   # line: 32           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+ 
+Adams
+Bob
+Bob Adams
+Bob Smith
+Joseph
+Joseph Samuel Lucas
+Joseph Samuel Lucas MacKinzie
+Lucas
+MacKinzie
+Math
+Samuel
+Smith
+anonymous_function.#*#a
+anonymous_function.#*#b
+diamonds
+f
+floor
+function_default_parameter.#*#c
+function_optional_parameter.#*#c
+function_outer_variable.#*#d
+function_overload.#*#e
+function_remaining_parameter.#*#c
+function_this.#*#h
+function_this.#*@0*#
+function_types.#*#a
+function_types.#*#b
+function_types.#*#j
+g
+h
+i
+join
+k
+length
+number
+object
+print
+spades
+success

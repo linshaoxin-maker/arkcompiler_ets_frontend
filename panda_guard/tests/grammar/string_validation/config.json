@@ -1,0 +1,61 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": false,
+    "enableRemoveLog": false,
+    "printNameCache": "",
+    "applyNameCache": "",
+    "reservedNames": [
+      "prototype",
+      "toLocaleLowerCase",
+      "charAt",
+      "charCodeAt",
+      "codePointAt",
+      "endsWith",
+      "includes",
+      "indexOf",
+      "lastIndexOf",
+      "length",
+      "padEnd",
+      "padStart",
+      "repeat",
+      "slice",
+      "startsWith",
+      "substr",
+      "substring",
+      "toLocaleUpperCase",
+      "toLowerCase",
+      "toString",
+      "toUpperCase",
+      "trim",
+      "trimEnd",
+      "trimLeft",
+      "trimRight",
+      "valueOf"
+    ],
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [],
+      "universalReservedProperties": []
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": false,
+      "reservedFileNames": [],
+      "universalReservedFileNames": []
+    },
+    "keepOptions": {
+      "enable": false,
+      "keepPaths": [],
+      "universalKeepPaths": [],
+      "excludePaths": [],
+      "universalExcludePaths": []
+    }
+  }
+}

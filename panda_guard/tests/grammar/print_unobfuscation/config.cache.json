@@ -1,0 +1,42 @@
+{
+  "unobfudcation_source": {
+    "IdentifierCache": {
+      "#MyClass": "d",
+      "#MyExport": "k",
+      "#MyString": "h",
+      "#add:54:56": "b",
+      "#export1": "l",
+      "#myfunc:58:60": "c",
+      "#toplevel1:34:35": "toplevel1",
+      "#toplevel2:38:39": "a",
+      "#usb": "m"
+    },
+    "MemberMethodCache": {
+      "MyClass:47:48": "d",
+      "MyExport:0:1": "k",
+      "MyString:0:1": "h",
+      "abcde:46:47": "abcde"
+    },
+    "obfName": "a"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "MyClass": "d",
+    "MyExport": "k",
+    "MyString": "h",
+    "a": "f",
+    "add": "b",
+    "export1": "l",
+    "exportedProp": "e",
+    "myfunc": "c",
+    "string1": "g",
+    "string2": "i",
+    "toplevel2": "a",
+    "unit": "j",
+    "usb": "m"
+  },
+  "FileNameCache": {
+    "unobfudcation_source": "a"
+  }
+}

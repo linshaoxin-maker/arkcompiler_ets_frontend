@@ -1,0 +1,78 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+keep_property4_711 { 2 [ tag_value:5, string:"KeepProperty4", ]}
+
+keep_property4_720 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+keep_property4_748 { 8 [ tag_value:5, string:"d", tag_value:6, method:keep_property4.#~@0>#d, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record keep_property4 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames keep_property4_711
+	u32 moduleRecordIdx keep_property4_720
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any keep_property4.#~@0=#a(any a0, any a1, any a2) {
+	lda.str 1                                # line: 16           # column: 0
+	stobjbyname 0x0, b, a2                   # line: 16           # column: 0
+	ldai 0x1                                 # line: 16           # column: 0
+	stobjbyname 0x2, c, a2                   # line: 16           # column: 0
+	lda a2                                   # line: 16           # column: 0
+	return                                   # line: 16           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any keep_property4.#~@0>#d(any a0, any a1, any a2) {
+	lda.str function name should be obfuscated. # line: 20           # column: 0
+	return                                   # line: 21           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any keep_property4.func_main_0(any a0, any a1, any a2) {
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x0, keep_property4.#~@0=#a, keep_property4_748, 0x0, v0 # line: 15           # column: 0
+	ldobjbyname 0x1, prototype               # line: 15           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+1
+b
+c
+function name should be obfuscated.
+keep_property4.#~@0=#a
+prototype

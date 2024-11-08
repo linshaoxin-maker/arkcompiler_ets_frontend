@@ -1,0 +1,65 @@
+{
+  "forawaitof_1": {
+    "IdentifierCache": {
+      "#A:18:21": "a",
+      "#TestClass": "c",
+      "A#fn:23:24": "b"
+    },
+    "MemberMethodCache": {
+      "TestClass:31:32": "c"
+    },
+    "obfName": "forawaitof_1"
+  },
+  "forawaitof_2": {
+    "IdentifierCache": {
+      "#TestClass": "c",
+      "#fn:21:22": "b"
+    },
+    "MemberMethodCache": {
+      "TestClass:0:1": "c"
+    },
+    "obfName": "forawaitof_2"
+  },
+  "forawaitof_3": {
+    "IdentifierCache": {
+      "#A:18:21": "a",
+      "#TestClass": "c",
+      "A#foo:23:24": "g"
+    },
+    "MemberMethodCache": {
+      "TestClass:31:32": "c"
+    },
+    "obfName": "forawaitof_3"
+  },
+  "forawaitof_4": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "forawaitof_4"
+  },
+  "shorthandassignment_test": {
+    "IdentifierCache": {
+      "#Point": "j",
+      "#foo:23:24": "g"
+    },
+    "MemberMethodCache": {
+      "Point:0:1": "j"
+    },
+    "obfName": "shorthandassignment_test"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "A": "a",
+    "Point": "j",
+    "TestClass": "c",
+    "fn": "b",
+    "fnexp": "e",
+    "foo": "g",
+    "para1": "h",
+    "para2": "i",
+    "testprop": "f",
+    "xFnexp": "d",
+    "xValue": "k",
+    "yValue": "l"
+  }
+}

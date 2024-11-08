@@ -1,0 +1,243 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+a/b_1202 { 2 [ tag_value:5, string:"Dynamic", ]}
+
+a/b_1211 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"a", string:"a", i32:0, i32:0, ]}
+
+a/b_1247 { 2 [ tag_value:2, i32:0, ]}
+
+c_1256 
+
+c_1260 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record a/b {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames a/b_1202
+	u32 moduleRecordIdx a/b_1211
+}
+.record.source_file 
+
+.record c {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames c_1256
+	u32 moduleRecordIdx c_1260
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any a/b.#~@0=#a(any a0, any a1, any a2) {
+	ldlexvar 0x0, 0x0                        # line: 0           # column: 0
+	callruntime.callinit 0x0, a2             # line: 0           # column: 0
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any a/b.#~@0>#b(any a0, any a1, any a2) {
+	lda.str memAStr                          # line: 17           # column: 0
+	return                                   # line: 18           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any a/b.#~@0>#c(any a0, any a1, any a2) {
+	lda.str memBStr                          # line: 21           # column: 0
+	return                                   # line: 22           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any a/b.#~@0>#instance_initializer(any a0, any a1, any a2) {
+	lda.str                                  # line: 24           # column: 0
+	definepropertybyname 0x0, d, a2          # line: 24           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any a/b.func_main_0(any a0, any a1, any a2) {
+	nop                                      # line: 15           # column: 0
+	newlexenv 0x1                            # line: 15           # column: 0
+	label@2: ldhole                          # line: 15           # column: 0
+	sta v1                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x0, a/b.#~@0=#a, a/b_1247, 0x0, v1 # line: 15           # column: 0
+	sta v1                                   # line: 15           # column: 0
+	ldobjbyname 0x1, prototype               # line: 15           # column: 0
+	sta v2                                   # line: 15           # column: 0
+	lda.str b                                # line: 15           # column: 0
+	sta v3                                   # line: 15           # column: 0
+	ldundefined                              # line: 16           # column: 0
+	sta v4                                   # line: 16           # column: 0
+	lda v2                                   # line: 15           # column: 0
+	definemethod 0x3, a/b.#~@0>#b, 0x0       # line: 15           # column: 0
+	sta v5                                   # line: 15           # column: 0
+	ldfalse                                  # line: 16           # column: 0
+	definegettersetterbyvalue v2, v3, v5, v4 # line: 15           # column: 0
+	lda v2                                   # line: 15           # column: 0
+	definemethod 0x4, a/b.#~@0>#c, 0x0       # line: 15           # column: 0
+	sta v3                                   # line: 15           # column: 0
+	stownbyname 0x5, c, v2                   # line: 20           # column: 0
+	lda v3                                   # line: 15           # column: 0
+	definemethod 0x7, a/b.#~@0>#instance_initializer, 0x0 # line: 15           # column: 0
+	stlexvar 0x0, 0x0                        # line: 15           # column: 0
+	label@24: jmp label@29                   # line: 15           # column: 0
+	label@25: sta v0                         # line: 15           # column: 0
+	poplexenv                                # line: 15           # column: 0
+	lda v0                                   # line: 15           # column: 0
+	throw                                    # line: 15           # column: 0
+	label@29: poplexenv                      # line: 15           # column: 0
+	lda v1                                   # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 15           # column: 0
+	ldundefined                              # line: 15           # column: 0
+	returnundefined                          # line: 15           # column: 0
+.catchall :
+	try_begin_label : label@2
+	try_end_label : label@24
+	catch_begin_label : label@25
+	catch_end_label : label@25
+}
+
+.function_kind FunctionKind::ASYNC_FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 24
+.function any c.#*#e(any a0, any a1, any a2) {
+	nop                                      # line: 18446744073709551615           # column: 0
+	asyncfunctionenter                       # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	label@3: lda.str ./common/dyn            # line: 16           # column: 0
+	dynamicimport                            # line: 16           # column: 0
+	asyncfunctionawaituncaught v0            # line: 16           # column: 0
+	suspendgenerator v0                      # line: 16           # column: 0
+	lda v0                                   # line: 16           # column: 0
+	resumegenerator                          # line: 16           # column: 0
+	sta v2                                   # line: 16           # column: 0
+	lda v0                                   # line: 16           # column: 0
+	getresumemode                            # line: 16           # column: 0
+	sta v3                                   # line: 16           # column: 0
+	ldai 0x1                                 # line: 16           # column: 0
+	eq 0x0, v3                               # line: 16           # column: 0
+	jeqz label@18                            # line: 16           # column: 0
+	lda v2                                   # line: 16           # column: 0
+	throw                                    # line: 16           # column: 0
+	label@18: lda v2                         # line: 17           # column: 0
+	ldobjbyname 0x1, a                       # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	mov v5, v2                               # line: 17           # column: 0
+	newobjrange 0x3, 0x1, v5                 # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str d                                # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	lda.str memCStr                          # line: 18           # column: 0
+	stobjbyvalue 0x5, v2, v3                 # line: 18           # column: 0
+	tryldglobalbyname 0x7, print             # line: 18           # column: 0
+	sta v3                                   # line: 18           # column: 0
+	lda.str ret                              # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda.str b                                # line: 19           # column: 0
+	ldobjbyvalue 0x8, v2                     # line: 19           # column: 0
+	add2 0xa, v4                             # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda.str ,                                # line: 19           # column: 0
+	add2 0xb, v4                             # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda v2                                   # line: 19           # column: 0
+	ldobjbyname 0xc, c                       # line: 19           # column: 0
+	add2 0xe, v4                             # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda.str ,                                # line: 19           # column: 0
+	add2 0xf, v4                             # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda v2                                   # line: 19           # column: 0
+	ldobjbyname 0x10, d                      # line: 19           # column: 0
+	add2 0x12, v4                            # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda.str                                  # line: 19           # column: 0
+	add2 0x13, v4                            # line: 19           # column: 0
+	sta v4                                   # line: 19           # column: 0
+	lda v3                                   # line: 19           # column: 0
+	callarg1 0x14, v4                        # line: 19           # column: 0
+	lda.str accVal                           # line: 20           # column: 0
+	sta v3                                   # line: 20           # column: 0
+	ldai 0x0                                 # line: 20           # column: 0
+	sta v4                                   # line: 20           # column: 0
+	lda v3                                   # line: 20           # column: 0
+	stobjbyvalue 0x16, v2, v4                # line: 20           # column: 0
+	ldundefined                              # line: 20           # column: 0
+	asyncfunctionresolve v0                  # line: 20           # column: 0
+	return                                   # line: 18446744073709551615           # column: 0
+	label@64: sta v1                         # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	asyncfunctionreject v0                   # line: 21           # column: 0
+	return                                   # line: 16           # column: 0
+.catchall :
+	try_begin_label : label@3
+	try_end_label : label@64
+	catch_begin_label : label@64
+	catch_end_label : label@64
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any c.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, c.#*#e, 0x0              # line: 18446744073709551615           # column: 0
+	callarg0 0x1                             # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+
+, 
+./common/dyn
+a
+a/b.#~@0=#a
+a/b.#~@0>#b
+a/b.#~@0>#c
+a/b.#~@0>#instance_initializer
+accVal
+b
+c
+c.#*#e
+d
+memAStr
+memBStr
+memCStr
+print
+prototype
+ret 

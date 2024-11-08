@@ -1,0 +1,25 @@
+{
+  "function_usages": {
+    "IdentifierCache": {
+      "#fun1:16:18": "b",
+      "#fun2:21:22": "a",
+      "#fun3:25:27": "d",
+      "#fun4:31:39": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_usages"
+  },
+  "symbol_definition": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "symbol_definition"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "fun1": "b",
+    "fun2": "a",
+    "fun3": "d",
+    "fun4": "c"
+  }
+}

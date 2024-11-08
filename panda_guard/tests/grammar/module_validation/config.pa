@@ -1,0 +1,727 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+default_export_2961 
+
+default_export_2965 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"*default*", string:"default", i32:0, i32:0, ]}
+
+default_export_test_3001 
+
+default_export_test_3005 { 10 [ i32:1, string:"./default_export", i32:1, string:"s", string:"default", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+export_validation_test_3047 
+
+export_validation_test_3051 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+import_tests_3079 { 2 [ tag_value:5, string:"ZipCodeValidator", ]}
+
+import_tests_3088 { 14 [ i32:1, string:"./export_validation_test", i32:1, string:"StringValidator", string:"StringValidator", method_affiliate:0, i32:0, i32:2, string:"ZipCodeValidator", string:"ZipCodeValidator", string:"numberRegexp", string:"numberRegexp", i32:0, i32:0, ]}
+
+import_tests_3146 { 8 [ tag_value:5, string:"isAcceptable", tag_value:6, method:import_tests.#~@0>#isAcceptable, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+name_space_3168 { 4 [ tag_value:5, string:"LettersOnlyValidator", tag_value:5, string:"ZipCodeValidator", ]}
+
+name_space_3182 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+name_space_3210 { 8 [ tag_value:5, string:"isAcceptable", tag_value:6, method:name_space.#~@0>#isAcceptable, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+name_space_3232 { 8 [ tag_value:5, string:"isAcceptable", tag_value:6, method:name_space.#~@1>#isAcceptable, tag_value:9, method_affiliate:1, tag_value:2, i32:1, ]}
+
+name_space_3254 { 6 [ tag_value:5, string:"Hello", tag_value:5, string:"98052", tag_value:5, string:"101", ]}
+
+namespace_extend_enum_3273 { 2 [ tag_value:5, string:"Color", ]}
+
+namespace_extend_enum_3282 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+namespace_merge_3310 { 6 [ tag_value:5, string:"Zebra", tag_value:5, string:"Animals", tag_value:5, string:"Dog", ]}
+
+namespace_merge_3329 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+namespace_merge_3357 { 2 [ tag_value:2, i32:0, ]}
+
+namespace_merge_3366 { 2 [ tag_value:2, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record default_export {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames default_export_2961
+	u32 moduleRecordIdx default_export_2965
+}
+.record.source_file 
+
+.record default_export_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames default_export_test_3001
+	u32 moduleRecordIdx default_export_test_3005
+}
+.record.source_file 
+
+.record export_validation_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_validation_test_3047
+	u32 moduleRecordIdx export_validation_test_3051
+}
+.record.source_file 
+
+.record import_tests {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames import_tests_3079
+	u32 moduleRecordIdx import_tests_3088
+}
+.record.source_file 
+
+.record name_space {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames name_space_3168
+	u32 moduleRecordIdx name_space_3182
+}
+.record.source_file 
+
+.record namespace_extend_enum {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames namespace_extend_enum_3273
+	u32 moduleRecordIdx namespace_extend_enum_3282
+}
+.record.source_file 
+
+.record namespace_merge {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames namespace_merge_3310
+	u32 moduleRecordIdx namespace_merge_3329
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any default_export.func_main_0(any a0, any a1, any a2) {
+	lda.str huawei                           # line: 15           # column: 0
+	stmodulevar 0x0                          # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any default_export_test.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldexternalmodulevar 0x0                  # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	throw.undefinedifholewithname s          # line: 17           # column: 0
+	lda.str huawei                           # line: 17           # column: 0
+	stricteq 0x1, v1                         # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	callargs2 0x2, v1, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any export_validation_test.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any import_tests.#~@0=#ZipCodeValidator(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 9
+.function any import_tests.#~@0>#isAcceptable(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 22           # column: 0
+	ldobjbyname 0x0, length                  # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	ldai 0x5                                 # line: 22           # column: 0
+	stricteq 0x2, v0                         # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	callruntime.isfalse 0x3                  # line: 22           # column: 0
+	jnez label@15                            # line: 22           # column: 0
+	ldlocalmodulevar 0x1                     # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	throw.undefinedifholewithname numberRegexp # line: 22           # column: 0
+	lda v0                                   # line: 22           # column: 0
+	ldobjbyname 0x5, test                    # line: 22           # column: 0
+	callthis1 0x7, v0, a3                    # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	label@15: lda v0                         # line: 22           # column: 0
+	return                                   # line: 22           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 15
+.function any import_tests.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, RegExp            # line: 18           # column: 0
+	sta v0                                   # line: 18           # column: 0
+	lda.str ^[0-9]+$                         # line: 18           # column: 0
+	sta v1                                   # line: 18           # column: 0
+	mov v4, v0                               # line: 18           # column: 0
+	mov v5, v1                               # line: 18           # column: 0
+	newobjrange 0x1, 0x2, v4                 # line: 18           # column: 0
+	stmodulevar 0x1                          # line: 18           # column: 0
+	ldhole                                   # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	defineclasswithbuffer 0x3, import_tests.#~@0=#ZipCodeValidator, import_tests_3146, 0x0, v0 # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	ldobjbyname 0x4, prototype               # line: 20           # column: 0
+	lda v0                                   # line: 20           # column: 0
+	stmodulevar 0x0                          # line: 20           # column: 0
+	ldlocalmodulevar 0x0                     # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	throw.undefinedifholewithname ZipCodeValidator # line: 26           # column: 0
+	mov v4, v0                               # line: 26           # column: 0
+	newobjrange 0x6, 0x1, v4                 # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	tryldglobalbyname 0x8, print             # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	lda v0                                   # line: 28           # column: 0
+	ldobjbyname 0x9, isAcceptable            # line: 28           # column: 0
+	sta v2                                   # line: 28           # column: 0
+	lda.str 12345                            # line: 28           # column: 0
+	sta v3                                   # line: 28           # column: 0
+	lda v2                                   # line: 28           # column: 0
+	callthis1 0xb, v0, v3                    # line: 28           # column: 0
+	sta v0                                   # line: 28           # column: 0
+	lda.str success                          # line: 28           # column: 0
+	sta v2                                   # line: 28           # column: 0
+	lda v1                                   # line: 28           # column: 0
+	callargs2 0xd, v0, v2                    # line: 28           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_space.#~@0=#a(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 4
+.function any name_space.#~@0>#isAcceptable(any a0, any a1, any a2, any a3) {
+	ldlexvar 0x0, 0x0                        # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	throw.undefinedifholewithname l          # line: 24           # column: 0
+	lda v0                                   # line: 24           # column: 0
+	ldobjbyname 0x0, test                    # line: 24           # column: 0
+	callthis1 0x2, v0, a3                    # line: 24           # column: 0
+	return                                   # line: 25           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any name_space.#~@1=#ZipCodeValidator(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 9
+.function any name_space.#~@1>#isAcceptable(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 30           # column: 0
+	ldobjbyname 0x0, length                  # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	ldai 0x5                                 # line: 30           # column: 0
+	stricteq 0x2, v0                         # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	callruntime.isfalse 0x3                  # line: 30           # column: 0
+	jnez label@15                            # line: 30           # column: 0
+	ldlexvar 0x0, 0x1                        # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	throw.undefinedifholewithname numberRegexp # line: 30           # column: 0
+	lda v0                                   # line: 30           # column: 0
+	ldobjbyname 0x5, test                    # line: 30           # column: 0
+	callthis1 0x7, v0, a3                    # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	label@15: lda v0                         # line: 30           # column: 0
+	return                                   # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 43
+.function any name_space.func_main_0(any a0, any a1, any a2) {
+	newlexenv 0x2                            # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x0, RegExp            # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	lda.str ^[A-Za-z]+$                      # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	mov v6, v0                               # line: 19           # column: 0
+	mov v7, v1                               # line: 19           # column: 0
+	newobjrange 0x1, 0x2, v6                 # line: 19           # column: 0
+	stlexvar 0x0, 0x0                        # line: 19           # column: 0
+	tryldglobalbyname 0x3, RegExp            # line: 20           # column: 0
+	sta v0                                   # line: 20           # column: 0
+	lda.str ^[0-9]+$                         # line: 20           # column: 0
+	sta v1                                   # line: 20           # column: 0
+	mov v6, v0                               # line: 20           # column: 0
+	mov v7, v1                               # line: 20           # column: 0
+	newobjrange 0x4, 0x2, v6                 # line: 20           # column: 0
+	stlexvar 0x0, 0x1                        # line: 20           # column: 0
+	ldhole                                   # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	defineclasswithbuffer 0x6, name_space.#~@0=#a, name_space_3210, 0x0, v0 # line: 22           # column: 0
+	sta v0                                   # line: 22           # column: 0
+	ldobjbyname 0x7, prototype               # line: 22           # column: 0
+	ldhole                                   # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	defineclasswithbuffer 0x9, name_space.#~@1=#ZipCodeValidator, name_space_3232, 0x0, v1 # line: 28           # column: 0
+	sta v1                                   # line: 28           # column: 0
+	ldobjbyname 0xa, prototype               # line: 28           # column: 0
+	createarraywithbuffer 0xc, name_space_3254 # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	createemptyobject                        # line: 38           # column: 0
+	sta v3                                   # line: 38           # column: 0
+	lda.str j                                # line: 39           # column: 0
+	sta v4                                   # line: 39           # column: 0
+	mov v6, v1                               # line: 39           # column: 0
+	newobjrange 0xd, 0x1, v6                 # line: 39           # column: 0
+	stobjbyvalue 0xf, v3, v4                 # line: 39           # column: 0
+	lda.str k                                # line: 40           # column: 0
+	sta v1                                   # line: 40           # column: 0
+	mov v6, v0                               # line: 40           # column: 0
+	newobjrange 0x11, 0x1, v6                # line: 40           # column: 0
+	stobjbyvalue 0x13, v3, v1                # line: 40           # column: 0
+	tryldglobalbyname 0x15, print            # line: 43           # column: 0
+	sta v0                                   # line: 43           # column: 0
+	lda.str k                                # line: 43           # column: 0
+	ldobjbyvalue 0x16, v3                    # line: 43           # column: 0
+	sta v1                                   # line: 43           # column: 0
+	ldobjbyname 0x18, isAcceptable           # line: 43           # column: 0
+	sta v4                                   # line: 43           # column: 0
+	ldai 0x0                                 # line: 43           # column: 0
+	ldobjbyvalue 0x1a, v2                    # line: 43           # column: 0
+	sta v5                                   # line: 43           # column: 0
+	lda v4                                   # line: 43           # column: 0
+	callthis1 0x1c, v1, v5                   # line: 43           # column: 0
+	sta v1                                   # line: 43           # column: 0
+	lda.str success                          # line: 43           # column: 0
+	sta v4                                   # line: 43           # column: 0
+	lda v0                                   # line: 43           # column: 0
+	callargs2 0x1e, v1, v4                   # line: 43           # column: 0
+	tryldglobalbyname 0x20, print            # line: 44           # column: 0
+	sta v0                                   # line: 44           # column: 0
+	lda.str j                                # line: 44           # column: 0
+	ldobjbyvalue 0x21, v3                    # line: 44           # column: 0
+	sta v1                                   # line: 44           # column: 0
+	ldobjbyname 0x23, isAcceptable           # line: 44           # column: 0
+	sta v3                                   # line: 44           # column: 0
+	ldai 0x1                                 # line: 44           # column: 0
+	ldobjbyvalue 0x25, v2                    # line: 44           # column: 0
+	sta v2                                   # line: 44           # column: 0
+	lda v3                                   # line: 44           # column: 0
+	callthis1 0x27, v1, v2                   # line: 44           # column: 0
+	sta v1                                   # line: 44           # column: 0
+	lda.str success                          # line: 44           # column: 0
+	sta v2                                   # line: 44           # column: 0
+	lda v0                                   # line: 44           # column: 0
+	callargs2 0x29, v1, v2                   # line: 44           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 12
+.function any namespace_extend_enum.#%#b(any a0, any a1, any a2, any a3) {
+	lda.str d                                # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldai 0x1                                 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0x0, a3, v0                 # line: 18446744073709551615           # column: 0
+	lda.str d                                # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0x2, a3, v1                 # line: 18446744073709551615           # column: 0
+	lda.str e                                # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldai 0x2                                 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0x4, a3, v0                 # line: 18446744073709551615           # column: 0
+	lda.str e                                # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0x6, a3, v1                 # line: 18446744073709551615           # column: 0
+	lda.str f                                # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldai 0x4                                 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v1                                   # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0x8, a3, v0                 # line: 18446744073709551615           # column: 0
+	lda.str f                                # line: 18446744073709551615           # column: 0
+	stobjbyvalue 0xa, a3, v1                 # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any namespace_extend_enum.#&#b(any a0, any a1, any a2, any a3) {
+	newlexenv 0x1                            # line: 18446744073709551615           # column: 0
+	lda a3                                   # line: 18446744073709551615           # column: 0
+	stlexvar 0x0, 0x0                        # line: 18446744073709551615           # column: 0
+	definefunc 0x0, namespace_extend_enum.#&@0*#c, 0x1 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	stobjbyname 0x1, c, v1                   # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 27
+.function any namespace_extend_enum.#&@0*#c(any a0, any a1, any a2, any a3) {
+	lda.str yellow                           # line: 23           # column: 0
+	stricteq 0x0, a3                         # line: 23           # column: 0
+	jeqz label@10                            # line: 23           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 24           # column: 0
+	ldobjbyname 0x1, d                       # line: 24           # column: 0
+	sta v0                                   # line: 24           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 24           # column: 0
+	ldobjbyname 0x3, e                       # line: 24           # column: 0
+	add2 0x5, v0                             # line: 24           # column: 0
+	return                                   # line: 32           # column: 0
+	label@10: lda.str white                  # line: 25           # column: 0
+	stricteq 0x6, a3                         # line: 25           # column: 0
+	jeqz label@24                            # line: 25           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 25           # column: 0
+	ldobjbyname 0x7, d                       # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 26           # column: 0
+	ldobjbyname 0x9, e                       # line: 26           # column: 0
+	add2 0xb, v0                             # line: 26           # column: 0
+	sta v0                                   # line: 26           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 26           # column: 0
+	ldobjbyname 0xc, f                       # line: 26           # column: 0
+	add2 0xe, v0                             # line: 26           # column: 0
+	return                                   # line: 26           # column: 0
+	label@24: lda.str magenta                # line: 27           # column: 0
+	stricteq 0xf, a3                         # line: 27           # column: 0
+	jeqz label@34                            # line: 27           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 27           # column: 0
+	ldobjbyname 0x10, d                      # line: 28           # column: 0
+	sta v0                                   # line: 28           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 28           # column: 0
+	ldobjbyname 0x12, f                      # line: 28           # column: 0
+	add2 0x14, v0                            # line: 28           # column: 0
+	return                                   # line: 28           # column: 0
+	label@34: lda.str cyan                   # line: 23           # column: 0
+	stricteq 0x15, a3                        # line: 29           # column: 0
+	jeqz label@44                            # line: 29           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 29           # column: 0
+	ldobjbyname 0x16, e                      # line: 30           # column: 0
+	sta v0                                   # line: 30           # column: 0
+	ldlexvar 0x0, 0x0                        # line: 30           # column: 0
+	ldobjbyname 0x18, f                      # line: 30           # column: 0
+	add2 0x1a, v0                            # line: 30           # column: 0
+	return                                   # line: 30           # column: 0
+	label@44: ldundefined                    # line: 30           # column: 0
+	returnundefined                          # line: 30           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 42
+.function any namespace_extend_enum.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, namespace_extend_enum.#%#b, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@11                            # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	mov v2, v0                               # line: 18446744073709551615           # column: 0
+	jmp label@12                             # line: 18446744073709551615           # column: 0
+	label@11: mov v2, v0                     # line: 18446744073709551615           # column: 0
+	label@12: lda v1                         # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v2                         # line: 18446744073709551615           # column: 0
+	definefunc 0x5, namespace_extend_enum.#&#b, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x6                   # line: 18446744073709551615           # column: 0
+	jnez label@23                            # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	mov v2, v0                               # line: 18446744073709551615           # column: 0
+	jmp label@24                             # line: 18446744073709551615           # column: 0
+	label@23: mov v2, v0                     # line: 18446744073709551615           # column: 0
+	label@24: lda v1                         # line: 18446744073709551615           # column: 0
+	callarg1 0x8, v2                         # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0xa, print             # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 35           # column: 0
+	ldobjbyname 0xb, c                       # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	lda.str yellow                           # line: 35           # column: 0
+	sta v3                                   # line: 35           # column: 0
+	lda v2                                   # line: 35           # column: 0
+	callthis1 0xd, v0, v3                    # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	ldai 0x3                                 # line: 35           # column: 0
+	stricteq 0xf, v2                         # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	lda.str success                          # line: 35           # column: 0
+	sta v3                                   # line: 35           # column: 0
+	lda v1                                   # line: 35           # column: 0
+	callargs2 0x10, v2, v3                   # line: 35           # column: 0
+	tryldglobalbyname 0x12, print            # line: 35           # column: 0
+	sta v1                                   # line: 35           # column: 0
+	lda v0                                   # line: 37           # column: 0
+	ldobjbyname 0x13, c                      # line: 37           # column: 0
+	sta v2                                   # line: 37           # column: 0
+	lda.str white                            # line: 37           # column: 0
+	sta v3                                   # line: 37           # column: 0
+	lda v2                                   # line: 37           # column: 0
+	callthis1 0x15, v0, v3                   # line: 37           # column: 0
+	sta v2                                   # line: 37           # column: 0
+	ldai 0x7                                 # line: 37           # column: 0
+	stricteq 0x17, v2                        # line: 37           # column: 0
+	sta v2                                   # line: 37           # column: 0
+	lda.str success                          # line: 37           # column: 0
+	sta v3                                   # line: 37           # column: 0
+	lda v1                                   # line: 37           # column: 0
+	callargs2 0x18, v2, v3                   # line: 37           # column: 0
+	tryldglobalbyname 0x1a, print            # line: 37           # column: 0
+	sta v1                                   # line: 37           # column: 0
+	lda v0                                   # line: 39           # column: 0
+	ldobjbyname 0x1b, c                      # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	lda.str magenta                          # line: 39           # column: 0
+	sta v3                                   # line: 39           # column: 0
+	lda v2                                   # line: 39           # column: 0
+	callthis1 0x1d, v0, v3                   # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	ldai 0x5                                 # line: 39           # column: 0
+	stricteq 0x1f, v2                        # line: 39           # column: 0
+	sta v2                                   # line: 39           # column: 0
+	lda.str success                          # line: 39           # column: 0
+	sta v3                                   # line: 39           # column: 0
+	lda v1                                   # line: 39           # column: 0
+	callargs2 0x20, v2, v3                   # line: 39           # column: 0
+	tryldglobalbyname 0x22, print            # line: 39           # column: 0
+	sta v1                                   # line: 39           # column: 0
+	lda v0                                   # line: 41           # column: 0
+	ldobjbyname 0x23, c                      # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	lda.str cyan                             # line: 41           # column: 0
+	sta v3                                   # line: 41           # column: 0
+	lda v2                                   # line: 41           # column: 0
+	callthis1 0x25, v0, v3                   # line: 41           # column: 0
+	sta v0                                   # line: 41           # column: 0
+	ldai 0x6                                 # line: 41           # column: 0
+	stricteq 0x27, v0                        # line: 41           # column: 0
+	sta v0                                   # line: 41           # column: 0
+	lda.str success                          # line: 41           # column: 0
+	sta v2                                   # line: 41           # column: 0
+	lda v1                                   # line: 41           # column: 0
+	callargs2 0x28, v0, v2                   # line: 41           # column: 0
+	ldundefined                              # line: 41           # column: 0
+	returnundefined                          # line: 41           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any namespace_merge.#&#Animals^1(any a0, any a1, any a2, any a3) {
+	ldhole                                   # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	defineclasswithbuffer 0x0, namespace_merge.#&@1^1~@2=#g, namespace_merge_3357, 0x0, v0 # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	ldobjbyname 0x1, prototype               # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	stobjbyname 0x3, g, a3                   # line: 25           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 5
+.function any namespace_merge.#&#h(any a0, any a1, any a2, any a3) {
+	ldhole                                   # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	defineclasswithbuffer 0x0, namespace_merge.#&@1~@0=#i, namespace_merge_3366, 0x0, v0 # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	ldobjbyname 0x1, prototype               # line: 16           # column: 0
+	lda v0                                   # line: 16           # column: 0
+	stobjbyname 0x3, i, a3                   # line: 16           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any namespace_merge.#&@1^1~@2=#g(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any namespace_merge.#&@1~@0=#i(any a0, any a1, any a2) {
+	lda a2                                   # line: 0           # column: 0
+	return                                   # line: 0           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 22
+.function any namespace_merge.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	definefunc 0x0, namespace_merge.#&#h, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x1                   # line: 18446744073709551615           # column: 0
+	jnez label@13                            # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	mov v2, v0                               # line: 18446744073709551615           # column: 0
+	jmp label@14                             # line: 18446744073709551615           # column: 0
+	label@13: mov v2, v0                     # line: 18446744073709551615           # column: 0
+	label@14: lda v1                         # line: 18446744073709551615           # column: 0
+	callarg1 0x3, v2                         # line: 18446744073709551615           # column: 0
+	definefunc 0x5, namespace_merge.#&#Animals^1, 0x1 # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	callruntime.istrue 0x6                   # line: 18446744073709551615           # column: 0
+	jnez label@25                            # line: 18446744073709551615           # column: 0
+	createemptyobject                        # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	mov v2, v0                               # line: 18446744073709551615           # column: 0
+	jmp label@26                             # line: 18446744073709551615           # column: 0
+	label@25: mov v2, v0                     # line: 18446744073709551615           # column: 0
+	label@26: lda v1                         # line: 18446744073709551615           # column: 0
+	callarg1 0x8, v2                         # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0xa, i                       # line: 18446744073709551615           # column: 0
+	sta v1                                   # line: 18446744073709551615           # column: 0
+	lda v0                                   # line: 18446744073709551615           # column: 0
+	ldobjbyname 0xc, g                       # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0xe, print             # line: 18446744073709551615           # column: 0
+	sta v2                                   # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 33           # column: 0
+	noteq 0xf, v1                            # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	lda.str success                          # line: 33           # column: 0
+	sta v3                                   # line: 33           # column: 0
+	lda v2                                   # line: 33           # column: 0
+	callargs2 0x10, v1, v3                   # line: 33           # column: 0
+	tryldglobalbyname 0x12, print            # line: 33           # column: 0
+	sta v1                                   # line: 33           # column: 0
+	ldundefined                              # line: 35           # column: 0
+	noteq 0x13, v0                           # line: 35           # column: 0
+	sta v0                                   # line: 35           # column: 0
+	lda.str success                          # line: 35           # column: 0
+	sta v2                                   # line: 35           # column: 0
+	lda v1                                   # line: 35           # column: 0
+	callargs2 0x14, v0, v2                   # line: 35           # column: 0
+	ldundefined                              # line: 35           # column: 0
+	returnundefined                          # line: 35           # column: 0
+}
+
+# ====================
+# STRING
+12345
+RegExp
+ZipCodeValidator
+^[0-9]+$
+^[A-Za-z]+$
+c
+cyan
+d
+e
+f
+g
+huawei
+i
+import_tests.#~@0=#ZipCodeValidator
+isAcceptable
+j
+k
+l
+length
+magenta
+name_space.#~@0=#a
+name_space.#~@1=#ZipCodeValidator
+namespace_extend_enum.#%#b
+namespace_extend_enum.#&#b
+namespace_extend_enum.#&@0*#c
+namespace_merge.#&#Animals^1
+namespace_merge.#&#h
+namespace_merge.#&@1^1~@2=#g
+namespace_merge.#&@1~@0=#i
+numberRegexp
+print
+prototype
+s
+success
+test
+white
+yellow

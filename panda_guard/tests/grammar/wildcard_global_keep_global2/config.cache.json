@@ -1,0 +1,15 @@
+{
+  "keep_all_global": {
+    "IdentifierCache": {
+      "#KeepGlobal2": "KeepGlobal2",
+      "#shouldkeepfunc:22:24": "shouldkeepfunc"
+    },
+    "MemberMethodCache": {
+      "KeepGlobal2:0:1": "KeepGlobal2"
+    },
+    "obfName": "keep_all_global"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

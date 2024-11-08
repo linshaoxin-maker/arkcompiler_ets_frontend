@@ -1,0 +1,30 @@
+{
+  "keep_filename5.ts": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "a"
+  },
+  "keep_test.ts": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "b"
+  },
+  "no_keep_filename.ts": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "c"
+  },
+  "other_name.ts": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "other_name.ts"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {},
+  "FileNameCache": {
+    "keep_filename5.ts": "a",
+    "keep_test.ts": "b",
+    "no_keep_filename.ts": "c"
+  }
+}

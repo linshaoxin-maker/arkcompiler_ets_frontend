@@ -1,0 +1,11 @@
+{
+  "global": {
+    "IdentifierCache": {
+      "#myGlobalFunction:24:26": "myGlobalFunction"
+    },
+    "MemberMethodCache": {},
+    "obfName": "global"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

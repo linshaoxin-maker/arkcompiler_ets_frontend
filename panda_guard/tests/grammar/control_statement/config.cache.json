@@ -1,0 +1,15 @@
+{
+  "condition_type": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "condition_type"
+  },
+  "if_validation": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "if_validation"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

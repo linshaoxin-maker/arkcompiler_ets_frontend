@@ -1,0 +1,75 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+date_tojson_531 
+
+date_tojson_535 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record date_tojson {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames date_tojson_531
+	u32 moduleRecordIdx date_tojson_535
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 17
+.function any date_tojson.func_main_0(any a0, any a1, any a2) {
+	tryldglobalbyname 0x0, Date              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	mov v4, v0                               # line: 15           # column: 0
+	newobjrange 0x1, 0x1, v4                 # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	ldobjbyname 0x3, toJSON                  # line: 17           # column: 0
+	callthis0 0x5, v0                        # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x7, toISOString             # line: 19           # column: 0
+	callthis0 0x9, v0                        # line: 19           # column: 0
+	sta v0                                   # line: 19           # column: 0
+	tryldglobalbyname 0xb, print             # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	callargs2 0xc, v1, v3                    # line: 21           # column: 0
+	tryldglobalbyname 0xe, print             # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	lda.str success                          # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda v1                                   # line: 23           # column: 0
+	callargs2 0xf, v0, v2                    # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+Date
+print
+success
+toISOString
+toJSON

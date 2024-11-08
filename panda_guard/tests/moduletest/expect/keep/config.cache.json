@@ -1,0 +1,74 @@
+{
+  "common/common_test": {
+    "IdentifierCache": {
+      "#func_a:2:3": "func_a",
+      "#func_b:6:7": "c",
+      "#func_c:10:11": "b",
+      "#func_d:14:15": "e",
+      "#func_e:18:19": "a",
+      "#func_f:22:23": "f",
+      "#func_g:26:27": "d",
+      "#function_export_common:29:31": "g"
+    },
+    "MemberMethodCache": {},
+    "obfName": "common/common_test"
+  },
+  "common/ddd/ddd": {
+    "IdentifierCache": {
+      "#func_d:2:3": "e",
+      "#function_export_d:5:7": "h"
+    },
+    "MemberMethodCache": {},
+    "obfName": "common/ddd/ddd"
+  },
+  "common/eee/eee": {
+    "IdentifierCache": {
+      "#func_e:2:3": "a",
+      "#function_export_e:5:7": "i"
+    },
+    "MemberMethodCache": {},
+    "obfName": "common/eee/eee"
+  },
+  "common/fff/fff": {
+    "IdentifierCache": {
+      "#func_f:2:3": "f",
+      "#function_export_f:5:7": "j"
+    },
+    "MemberMethodCache": {},
+    "obfName": "common/fff/fff"
+  },
+  "common/ggg/ggg": {
+    "IdentifierCache": {
+      "#func_g:2:3": "d",
+      "#function_export_g:5:7": "k"
+    },
+    "MemberMethodCache": {},
+    "obfName": "common/ggg/ggg"
+  },
+  "main": {
+    "IdentifierCache": {
+      "#function_export_common": "g",
+      "#function_export_d": "h",
+      "#function_export_e": "i",
+      "#function_export_f": "j",
+      "#function_export_g": "k"
+    },
+    "MemberMethodCache": {},
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "func_b": "c",
+    "func_c": "b",
+    "func_d": "e",
+    "func_e": "a",
+    "func_f": "f",
+    "func_g": "d",
+    "function_export_common": "g",
+    "function_export_d": "h",
+    "function_export_e": "i",
+    "function_export_f": "j",
+    "function_export_g": "k"
+  }
+}

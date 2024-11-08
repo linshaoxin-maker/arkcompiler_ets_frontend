@@ -1,0 +1,122 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+constructorTest2_920 { 2 [ tag_value:2, i32:0, ]}
+
+constructorTest2_929 { 2 [ tag_value:2, i32:0, ]}
+
+constructorTest2_938 { 2 [ tag_value:2, i32:0, ]}
+
+constructorTest2_947 { 6 [ tag_value:5, string:"__BaseClass", tag_value:5, string:"__PersonDetails", tag_value:5, string:"__CustomTest", ]}
+
+constructorTest2_966 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record constructorTest2 {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames constructorTest2_947
+	u32 moduleRecordIdx constructorTest2_966
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 2
+.function any constructorTest2.#~@0=#__BaseClass(any a0, any a1, any a2, any a3) {
+	lda a3                                   # line: 19           # column: 0
+	stobjbyname 0x0, g, a2                   # line: 19           # column: 0
+	lda a2                                   # line: 20           # column: 0
+	return                                   # line: 20           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any constructorTest2.#~@1=#__PersonDetails(any a0, any a1, any a2, any a3, any a4, any a5) {
+	lda a3                                   # line: 29           # column: 0
+	stobjbyname 0x0, d, a2                   # line: 29           # column: 0
+	lda a4                                   # line: 30           # column: 0
+	stobjbyname 0x2, e, a2                   # line: 30           # column: 0
+	lda a5                                   # line: 31           # column: 0
+	stobjbyname 0x4, f, a2                   # line: 31           # column: 0
+	lda a2                                   # line: 32           # column: 0
+	return                                   # line: 32           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 12
+.function any constructorTest2.#~@2=#__CustomTest(any a0, any a1, any a2, any a3, any a4, any a5) {
+	lda a3                                   # line: 37           # column: 0
+	stobjbyname 0x0, a, a2                   # line: 37           # column: 0
+	lda a4                                   # line: 37           # column: 0
+	stobjbyname 0x2, b, a2                   # line: 37           # column: 0
+	lda a5                                   # line: 37           # column: 0
+	stobjbyname 0x4, c, a2                   # line: 37           # column: 0
+	ldai 0x1                                 # line: 37           # column: 0
+	sta v0                                   # line: 37           # column: 0
+	lda v0                                   # line: 37           # column: 0
+	stobjbyname 0x6, a, a2                   # line: 37           # column: 0
+	lda.str 123                              # line: 38           # column: 0
+	stobjbyname 0x8, b, a2                   # line: 38           # column: 0
+	lda v0                                   # line: 39           # column: 0
+	stobjbyname 0xa, c, a2                   # line: 39           # column: 0
+	lda a2                                   # line: 40           # column: 0
+	return                                   # line: 40           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 9
+.function any constructorTest2.func_main_0(any a0, any a1, any a2) {
+	ldhole                                   # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	defineclasswithbuffer 0x0, constructorTest2.#~@0=#__BaseClass, constructorTest2_920, 0x1, v0 # line: 15           # column: 0
+	ldobjbyname 0x1, prototype               # line: 15           # column: 0
+	ldhole                                   # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	defineclasswithbuffer 0x3, constructorTest2.#~@1=#__PersonDetails, constructorTest2_929, 0x3, v0 # line: 23           # column: 0
+	ldobjbyname 0x4, prototype               # line: 23           # column: 0
+	ldhole                                   # line: 35           # column: 0
+	sta v0                                   # line: 35           # column: 0
+	defineclasswithbuffer 0x6, constructorTest2.#~@2=#__CustomTest, constructorTest2_938, 0x3, v0 # line: 35           # column: 0
+	ldobjbyname 0x7, prototype               # line: 35           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+123
+a
+b
+c
+constructorTest2.#~@0=#__BaseClass
+constructorTest2.#~@1=#__PersonDetails
+constructorTest2.#~@2=#__CustomTest
+d
+e
+f
+g
+prototype

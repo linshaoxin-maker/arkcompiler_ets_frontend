@@ -1,0 +1,230 @@
+{
+  "export_default_test1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "a"
+  },
+  "export_default_test10": {
+    "IdentifierCache": {
+      "#=ens0": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "b"
+  },
+  "export_default_test10_import": {
+    "IdentifierCache": {
+      "#reExportDefaultAll": "b"
+    },
+    "MemberMethodCache": {},
+    "obfName": "c"
+  },
+  "export_default_test11": {
+    "IdentifierCache": {
+      "#ComplexTest": "c"
+    },
+    "MemberMethodCache": {
+      "ComplexTest:0:1": "c",
+      "complexFunc:18:19": "d"
+    },
+    "obfName": "d"
+  },
+  "export_default_test11_import": {
+    "IdentifierCache": {
+      "#ComplexTest": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "e"
+  },
+  "export_default_test12": {
+    "IdentifierCache": {
+      "#aliasDefaultClass": "e"
+    },
+    "MemberMethodCache": {},
+    "obfName": "f"
+  },
+  "export_default_test12_import": {
+    "IdentifierCache": {
+      "#aliasDefaultClass": "e"
+    },
+    "MemberMethodCache": {},
+    "obfName": "g"
+  },
+  "export_default_test1_import": {
+    "IdentifierCache": {
+      "#expression": "f"
+    },
+    "MemberMethodCache": {},
+    "obfName": "h"
+  },
+  "export_default_test2": {
+    "IdentifierCache": {
+      "#defaultFunction:17:19": "g"
+    },
+    "MemberMethodCache": {},
+    "obfName": "i"
+  },
+  "export_default_test2_import": {
+    "IdentifierCache": {
+      "#defaultFunction": "g"
+    },
+    "MemberMethodCache": {},
+    "obfName": "j"
+  },
+  "export_default_test3": {
+    "IdentifierCache": {
+      "#DefaultClass": "h",
+      "#PIValue": "j",
+      "#helloMessage": "k"
+    },
+    "MemberMethodCache": {
+      "DefaultClass:0:1": "h",
+      "testFunc:18:19": "i"
+    },
+    "obfName": "k"
+  },
+  "export_default_test3_import": {
+    "IdentifierCache": {
+      "#DefaultClassAlias": "l"
+    },
+    "MemberMethodCache": {},
+    "obfName": "l"
+  },
+  "export_default_test4": {
+    "IdentifierCache": {
+      "#generatorFunctionName:0:0": "m"
+    },
+    "MemberMethodCache": {},
+    "obfName": "m"
+  },
+  "export_default_test4_import": {
+    "IdentifierCache": {
+      "#generatorFunctionName": "m"
+    },
+    "MemberMethodCache": {},
+    "obfName": "n"
+  },
+  "export_default_test5": {
+    "IdentifierCache": {
+      "#default:17:18": "default"
+    },
+    "MemberMethodCache": {},
+    "obfName": "o"
+  },
+  "export_default_test5_import": {
+    "IdentifierCache": {
+      "#anonymousDefaultFunction": "n"
+    },
+    "MemberMethodCache": {},
+    "obfName": "p"
+  },
+  "export_default_test6": {
+    "IdentifierCache": {
+      "#default": "default"
+    },
+    "MemberMethodCache": {
+      "default:0:1": "default",
+      "testFunc:18:19": "i"
+    },
+    "obfName": "q"
+  },
+  "export_default_test6_import": {
+    "IdentifierCache": {
+      "#AnonymousDefaultClass": "o"
+    },
+    "MemberMethodCache": {},
+    "obfName": "r"
+  },
+  "export_default_test7": {
+    "IdentifierCache": {
+      "#default:0:0": "default",
+      "#hiMessage": "p"
+    },
+    "MemberMethodCache": {},
+    "obfName": "s"
+  },
+  "export_default_test7_import": {
+    "IdentifierCache": {
+      "#anonymousDefaultGenFunction": "q"
+    },
+    "MemberMethodCache": {},
+    "obfName": "t"
+  },
+  "export_default_test8": {
+    "IdentifierCache": {
+      "#hiMessage": "p"
+    },
+    "MemberMethodCache": {},
+    "obfName": "u"
+  },
+  "export_default_test8_import": {
+    "IdentifierCache": {
+      "#hiMessage": "p",
+      "#reExportDefault": "r"
+    },
+    "MemberMethodCache": {},
+    "obfName": "v"
+  },
+  "export_default_test9": {
+    "IdentifierCache": {
+      "#defaultAlias": "s"
+    },
+    "MemberMethodCache": {},
+    "obfName": "w"
+  },
+  "export_default_test9_import": {
+    "IdentifierCache": {
+      "#defaultAlias": "s"
+    },
+    "MemberMethodCache": {},
+    "obfName": "x"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "=ens0": "a",
+    "AnonymousDefaultClass": "o",
+    "ComplexTest": "c",
+    "DefaultClass": "h",
+    "DefaultClassAlias": "l",
+    "PIValue": "j",
+    "aliasDefaultClass": "e",
+    "anonymousDefaultFunction": "n",
+    "anonymousDefaultGenFunction": "q",
+    "complexFunc": "d",
+    "defaultAlias": "s",
+    "defaultFunction": "g",
+    "expression": "f",
+    "generatorFunctionName": "m",
+    "helloMessage": "k",
+    "hiMessage": "p",
+    "reExportDefault": "r",
+    "reExportDefaultAll": "b",
+    "testFunc": "i"
+  },
+  "FileNameCache": {
+    "export_default_test1": "a",
+    "export_default_test10": "b",
+    "export_default_test10_import": "c",
+    "export_default_test11": "d",
+    "export_default_test11_import": "e",
+    "export_default_test12": "f",
+    "export_default_test12_import": "g",
+    "export_default_test1_import": "h",
+    "export_default_test2": "i",
+    "export_default_test2_import": "j",
+    "export_default_test3": "k",
+    "export_default_test3_import": "l",
+    "export_default_test4": "m",
+    "export_default_test4_import": "n",
+    "export_default_test5": "o",
+    "export_default_test5_import": "p",
+    "export_default_test6": "q",
+    "export_default_test6_import": "r",
+    "export_default_test7": "s",
+    "export_default_test7_import": "t",
+    "export_default_test8": "u",
+    "export_default_test8_import": "v",
+    "export_default_test9": "w",
+    "export_default_test9_import": "x"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "age": "b",
+    "name": "a",
+    "onTest1": "c",
+    "onTest2": "d"
+  }
+}

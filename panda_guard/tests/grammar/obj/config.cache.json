@@ -1,0 +1,35 @@
+{
+  "obj_demo_1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_1"
+  },
+  "obj_demo_1_use": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_1_use"
+  },
+  "obj_demo_2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_2"
+  },
+  "obj_demo_2_use": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_2_use"
+  },
+  "obj_demo_3": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_3"
+  },
+  "obj_demo_3 use": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "obj_demo_3 use"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

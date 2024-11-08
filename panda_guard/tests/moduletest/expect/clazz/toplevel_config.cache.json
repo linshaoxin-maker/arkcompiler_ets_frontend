@@ -1,0 +1,31 @@
+{
+  "main": {
+    "IdentifierCache": {
+      "#ClassB": "a",
+      "methodB1#ClassC": "f"
+    },
+    "MemberMethodCache": {
+      "ClassA:20:23": "ClassA",
+      "ClassB:37:40": "a",
+      "ClassC:46:49": "f",
+      "methodA1:25:27": "methodA1",
+      "methodB1:42:56": "c",
+      "methodC1:51:53": "h",
+      "value1:29:31": "value1"
+    },
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "ClassB": "a",
+    "fieldC1": "i",
+    "fieldC2": "g",
+    "filedB1": "d",
+    "filedB2": "b",
+    "methodB1": "c",
+    "methodC1": "h",
+    "sFieldB0": "e",
+    "sFieldC0": "j"
+  }
+}

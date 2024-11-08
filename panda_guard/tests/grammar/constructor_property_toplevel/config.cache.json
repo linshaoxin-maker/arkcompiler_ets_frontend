@@ -1,0 +1,18 @@
+{
+  "constructor_property": {
+    "IdentifierCache": {
+      "#ts:18:53": "a",
+      "ts#A": "c",
+      "ts#B": "b"
+    },
+    "MemberMethodCache": {
+      "A:22:24": "c",
+      "B:42:45": "b",
+      "getX2:26:28": "getX2",
+      "obj:30:39": "obj"
+    },
+    "obfName": "constructor_property"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

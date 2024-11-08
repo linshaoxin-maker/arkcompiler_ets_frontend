@@ -1,0 +1,67 @@
+{
+  "class_1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {
+      "Human:0:1": "Human",
+      "Human:17:18": "Human"
+    },
+    "obfName": "class_1"
+  },
+  "function_1": {
+    "IdentifierCache": {
+      "#foo:16:23": "foo",
+      "foo#foo:19:21": "foo"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_1"
+  },
+  "interface_1": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "interface_1"
+  },
+  "namespace_1": {
+    "IdentifierCache": {
+      "#Foo:16:17": "Foo",
+      "Foo#Foo": "Foo",
+      "Foo#foo:22:23": "foo"
+    },
+    "MemberMethodCache": {
+      "Foo:17:18": "Foo"
+    },
+    "obfName": "namespace_1"
+  },
+  "namespace_2": {
+    "IdentifierCache": {
+      "#Ns:20:21": "Ns",
+      "Ns#Human": "Human",
+      "Ns#Ns:17:19": "Ns"
+    },
+    "MemberMethodCache": {
+      "Human:0:1": "Human"
+    },
+    "obfName": "namespace_2"
+  },
+  "namespace_3": {
+    "IdentifierCache": {
+      "#Imp2:16:17": "Imp2",
+      "Imp2#Imp3": "a"
+    },
+    "MemberMethodCache": {
+      "Imp3:17:18": "a"
+    },
+    "obfName": "namespace_3"
+  },
+  "namespace_4": {
+    "IdentifierCache": {
+      "#Imp2:16:17": "Imp2",
+      "Imp2#Imp2": "Imp2"
+    },
+    "MemberMethodCache": {
+      "Imp2:17:18": "Imp2"
+    },
+    "obfName": "namespace_4"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

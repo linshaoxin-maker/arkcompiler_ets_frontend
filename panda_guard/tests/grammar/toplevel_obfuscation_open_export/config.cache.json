@@ -1,0 +1,52 @@
+{
+  "exportApi_1": {
+    "IdentifierCache": {
+      "#colors": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "exportApi_1"
+  },
+  "exportApi_2": {
+    "IdentifierCache": {
+      "#Circle": "c",
+      "#PI": "d",
+      "#greet:18:20": "b"
+    },
+    "MemberMethodCache": {
+      "Circle:25:27": "c",
+      "area:29:31": "area"
+    },
+    "obfName": "exportApi_2"
+  },
+  "exportDefault_1": {
+    "IdentifierCache": {
+      "#=ens0": "e",
+      "#Color": "f"
+    },
+    "MemberMethodCache": {},
+    "obfName": "exportDefault_1"
+  },
+  "exportDefault_2": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "exportDefault_2"
+  },
+  "importApi_1": {
+    "IdentifierCache": {
+      "#Color": "f"
+    },
+    "MemberMethodCache": {},
+    "obfName": "importApi_1"
+  },
+  "importApi_2": {
+    "IdentifierCache": {
+      "#Circle": "c",
+      "#PI": "d",
+      "#greet": "b"
+    },
+    "MemberMethodCache": {},
+    "obfName": "importApi_2"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

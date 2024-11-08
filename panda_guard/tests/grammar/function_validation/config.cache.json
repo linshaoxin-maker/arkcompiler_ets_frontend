@@ -1,0 +1,75 @@
+{
+  "anonymous_function": {
+    "IdentifierCache": {
+      "#add:16:18": "b",
+      "#myAdd:22:24": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "anonymous_function"
+  },
+  "function_default_parameter": {
+    "IdentifierCache": {
+      "#buildName:15:17": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_default_parameter"
+  },
+  "function_optional_parameter": {
+    "IdentifierCache": {
+      "#buildName:16:20": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_optional_parameter"
+  },
+  "function_outer_variable": {
+    "IdentifierCache": {
+      "#addToZ:18:20": "d"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_outer_variable"
+  },
+  "function_overload": {
+    "IdentifierCache": {
+      "#pickCard:20:21": "e"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_overload"
+  },
+  "function_remaining_parameter": {
+    "IdentifierCache": {
+      "#buildName:15:18": "c"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_remaining_parameter"
+  },
+  "function_this": {
+    "IdentifierCache": {
+      "#createCardPicker:18:25": "h"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_this"
+  },
+  "function_types": {
+    "IdentifierCache": {
+      "#add:16:18": "b",
+      "#myAdd:29:31": "a",
+      "#theAdd:22:24": "j"
+    },
+    "MemberMethodCache": {},
+    "obfName": "function_types"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "add": "b",
+    "addToZ": "d",
+    "buildName": "c",
+    "card": "g",
+    "createCardPicker": "h",
+    "myAdd": "a",
+    "pickCard": "e",
+    "suit": "f",
+    "suits": "i",
+    "theAdd": "j"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "noExistFile": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "a"
+  },
+  "nosymbolIdentifierTest": {
+    "IdentifierCache": {
+      "#__ExportElement": "c",
+      "#__ImportElement": "b",
+      "#outElement": "d",
+      "#ownElement": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "b"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "FileNameCache": {
+    "noExistFile": "a",
+    "nosymbolIdentifierTest": "b"
+  }
+}

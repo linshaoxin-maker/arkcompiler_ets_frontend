@@ -1,0 +1,35 @@
+{
+  "number_toExponential": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_toExponential"
+  },
+  "number_toFixed": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_toFixed"
+  },
+  "number_toLocaleString": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_toLocaleString"
+  },
+  "number_toPrecision": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_toPrecision"
+  },
+  "number_toString": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_toString"
+  },
+  "number_valueOf": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {},
+    "obfName": "number_valueOf"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {}
+}

@@ -1,0 +1,46 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+ohmurl_test_468 
+
+ohmurl_test_472 { 22 [ i32:4, string:"@bundle:com.example.myapplication/entry/ets/pages/testfile1", string:"@bundle:com.example.myapplication/entry/ets/pages/test_constructor", string:"@bundle:com.example.myapplication/share_library/Index", string:"@bundle:com.example.myapplication/entry@library_test/Index", i32:4, string:"xx1", string:"xx1", method_affiliate:0, string:"xx3", string:"xx3", method_affiliate:2, string:"xx4", string:"xx4", method_affiliate:3, string:"yy1", string:"yy1", method_affiliate:1, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record ohmurl_test {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames ohmurl_test_468
+	u32 moduleRecordIdx ohmurl_test_472
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any ohmurl_test.func_main_0(any a0, any a1, any a2) {
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING

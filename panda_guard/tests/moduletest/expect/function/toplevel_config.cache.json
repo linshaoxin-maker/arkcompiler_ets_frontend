@@ -1,0 +1,13 @@
+{
+  "main": {
+    "IdentifierCache": {
+      "#fun1:22:24": "fun1",
+      "#fun3:27:28": "a",
+      "fun1#fun2:20:21": "b"
+    },
+    "MemberMethodCache": {},
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": ""
+}

@@ -1,0 +1,17 @@
+{
+  "main": {
+    "IdentifierCache": {
+      "#Color": "a"
+    },
+    "MemberMethodCache": {},
+    "obfName": "main"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "Blue": "d",
+    "Color": "a",
+    "Green": "c",
+    "Red": "b"
+  }
+}

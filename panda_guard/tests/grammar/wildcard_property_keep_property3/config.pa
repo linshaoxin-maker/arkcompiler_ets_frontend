@@ -1,0 +1,105 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+keep_all_property_759 { 2 [ tag_value:5, string:"KeepProperty3", ]}
+
+keep_all_property_768 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+keep_all_property_796 { 8 [ tag_value:5, string:"functionkeep", tag_value:6, method:keep_all_property.#~@0>#functionkeep, tag_value:9, method_affiliate:0, tag_value:2, i32:1, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record keep_all_property {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames keep_all_property_759
+	u32 moduleRecordIdx keep_all_property_768
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 14
+.function any keep_all_property.#~@0=#KeepProperty3(any a0, any a1, any a2) {
+	lda.str prop1                            # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str 1                                # line: 17           # column: 0
+	stobjbyvalue 0x0, a2, v0                 # line: 17           # column: 0
+	lda.str prop2                            # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x2                                 # line: 17           # column: 0
+	stobjbyvalue 0x2, a2, v0                 # line: 17           # column: 0
+	lda.str ******                           # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	stobjbyvalue 0x4, a2, v0                 # line: 17           # column: 0
+	lda.str abcdef                           # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	stobjbyvalue 0x6, a2, v0                 # line: 17           # column: 0
+	lda.str a*                               # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x5                                 # line: 17           # column: 0
+	stobjbyvalue 0x8, a2, v0                 # line: 17           # column: 0
+	lda.str /\\*                             # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x6                                 # line: 17           # column: 0
+	stobjbyvalue 0xa, a2, v0                 # line: 17           # column: 0
+	lda.str 1                                # line: 23           # column: 0
+	stobjbyname 0xc, prop, a2                # line: 23           # column: 0
+	lda a2                                   # line: 23           # column: 0
+	return                                   # line: 23           # column: 0
+}
+
+.function_kind FunctionKind::NONE
+ _ESSlotNumberAnnotation
+ SlotNumber 0
+.function any keep_all_property.#~@0>#functionkeep(any a0, any a1, any a2) {
+	lda.str function name should be kept.    # line: 26           # column: 0
+	return                                   # line: 27           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any keep_all_property.func_main_0(any a0, any a1, any a2) {
+	ldhole                                   # line: 16           # column: 0
+	sta v0                                   # line: 16           # column: 0
+	defineclasswithbuffer 0x0, keep_all_property.#~@0=#KeepProperty3, keep_all_property_796, 0x0, v0 # line: 16           # column: 0
+	ldobjbyname 0x1, prototype               # line: 16           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+******
+/\\*
+1
+a*
+abcdef
+function name should be kept.
+keep_all_property.#~@0=#KeepProperty3
+prop
+prop1
+prop2
+prototype

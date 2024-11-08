@@ -1,0 +1,48 @@
+{
+  "abcFilePath": "xxx",
+  "obfAbcFilePath": "xxx",
+  "obfPaFilePath": "xxx",
+  "compileSdkVersion": "xxx",
+  "entryPackageInfo": "xxx",
+  "defaultNameCachePath": "xxx",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": true,
+    "enableRemoveLog": true,
+    "printNameCache": "",
+    "applyNameCache": "",
+    "reservedNames": [],
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [],
+      "universalReservedProperties": [
+        "xx.*"
+      ]
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [],
+      "universalReservedToplevelNames": [
+        "yy."
+      ]
+    },
+    "fileNameObfuscation": {
+      "enable": true,
+      "reservedFileNames": [],
+      "universalReservedFileNames": [
+        ".*zz."
+      ]
+    },
+    "keepOptions": {
+      "enable": true,
+      "keepPaths": [],
+      "universalKeepPaths": [
+        "../x/.*/z.ets"
+      ],
+      "excludePaths": [],
+      "universalExcludePaths": [
+        "../x/./z.ets"
+      ]
+    }
+  }
+}

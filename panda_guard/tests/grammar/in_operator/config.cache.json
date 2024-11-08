@@ -1,0 +1,76 @@
+{
+  "importHelpersNoHelpersForPrivateFields": {
+    "IdentifierCache": {},
+    "MemberMethodCache": {
+      "Foo:0:1": "Foo",
+      "f:19:22": "f"
+    },
+    "obfName": "importHelpersNoHelpersForPrivateFields"
+  },
+  "privateKeyWord": {
+    "IdentifierCache": {
+      "#MyClass": "a"
+    },
+    "MemberMethodCache": {
+      "MyClass:0:1": "a",
+      "foo:19:21": "c"
+    },
+    "obfName": "privateKeyWord"
+  },
+  "privateNameInInExpression": {
+    "IdentifierCache": {
+      "#Bar": "d",
+      "#F": "h",
+      "#FooSub": "g"
+    },
+    "MemberMethodCache": {
+      "Bar:52:53": "d",
+      "F:0:1": "h",
+      "FooSub:48:49": "g",
+      "goodRhs:26:37": "i",
+      "whitespace:41:42": "j"
+    },
+    "obfName": "privateNameInInExpression"
+  },
+  "privateNameInInExpressionTransform": {
+    "IdentifierCache": {
+      "#Bar": "d",
+      "#F": "h"
+    },
+    "MemberMethodCache": {
+      "Bar:0:1": "d",
+      "F:0:1": "h",
+      "check:27:32": "k",
+      "check:48:50": "k",
+      "precedence:38:39": "l"
+    },
+    "obfName": "privateNameInInExpressionTransform"
+  },
+  "privateNameInInExpressionUnused": {
+    "IdentifierCache": {
+      "#Foo": "Foo"
+    },
+    "MemberMethodCache": {
+      "Foo:0:1": "Foo",
+      "isFoo:21:23": "m"
+    },
+    "obfName": "privateNameInInExpressionUnused"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "Bar": "d",
+    "F": "h",
+    "FooSub": "g",
+    "MyClass": "a",
+    "a": "b",
+    "check": "k",
+    "foo": "c",
+    "goodRhs": "i",
+    "isFoo": "m",
+    "notFoo": "e",
+    "precedence": "l",
+    "subTypeOfFoo": "n",
+    "whitespace": "j"
+  }
+}

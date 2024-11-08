@@ -1,0 +1,16 @@
+{
+  "exportDefaultTest": {
+    "IdentifierCache": {
+      "#__exportClass": "a"
+    },
+    "MemberMethodCache": {
+      "__exportClass:16:17": "a"
+    },
+    "obfName": "a"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "FileNameCache": {
+    "exportDefaultTest": "a"
+  }
+}

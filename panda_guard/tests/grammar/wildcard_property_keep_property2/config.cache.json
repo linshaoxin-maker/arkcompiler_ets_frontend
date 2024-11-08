@@ -1,0 +1,20 @@
+{
+  "keep_string_property": {
+    "IdentifierCache": {
+      "#KeepProperty2": "a"
+    },
+    "MemberMethodCache": {
+      "KeepProperty2:16:17": "a"
+    },
+    "obfName": "keep_string_property"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "*": "d",
+    "KeepProperty2": "a",
+    "prop1": "b",
+    "prop2": "c",
+    "{}": "e"
+  }
+}

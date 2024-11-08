@@ -1,0 +1,9 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "defaultNameCachePath": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableRemoveLog": true
+  }
+}

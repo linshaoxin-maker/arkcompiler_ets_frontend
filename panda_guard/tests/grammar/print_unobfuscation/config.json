@@ -1,0 +1,41 @@
+{
+  "compileSdkVersion": "",
+  "entryPackageInfo": "",
+  "obfuscationRules": {
+    "disableObfuscation": false,
+    "enableExportObfuscation": true,
+    "enableRemoveLog": false,
+    "propertyObfuscation": {
+      "enable": true,
+      "reservedProperties": [
+        "property1"
+      ],
+      "universalReservedProperties": [
+        "\\w+de"
+      ]
+    },
+    "toplevelObfuscation": {
+      "enable": true,
+      "reservedToplevelNames": [
+        "toplevel1"
+      ],
+      "universalReservedToplevelNames": []
+    },
+    "fileNameObfuscation": {
+      "enable": true,
+      "reservedFileNames": [
+        "local",
+        "rename_file_name",
+        "index"
+      ],
+      "universalReservedFileNames": []
+    },
+    "keepOptions": {
+      "enable": true,
+      "keepPaths": ["./print_path"],
+      "universalKeepPaths": [],
+      "excludePaths": [],
+      "universalExcludePaths": []
+    }
+  }
+}

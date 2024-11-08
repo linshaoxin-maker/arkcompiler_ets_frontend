@@ -1,0 +1,117 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+export_funtion_803 
+
+export_funtion_807 { 8 [ i32:0, i32:0, i32:0, i32:1, string:"c", string:"c", i32:0, i32:0, ]}
+
+import_function_843 
+
+import_function_847 { 10 [ i32:1, string:"./export_funtion", i32:1, string:"c", string:"c", method_affiliate:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record export_funtion {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames export_funtion_803
+	u32 moduleRecordIdx export_funtion_807
+}
+.record.source_file 
+
+.record import_function {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames import_function_843
+	u32 moduleRecordIdx import_function_847
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any export_funtion.#*#c(any a0, any a1, any a2, any a3) {
+	ldai 0x1                                 # line: 16           # column: 0
+	add2 0x0, a3                             # line: 16           # column: 0
+	return                                   # line: 18           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 1
+.function any export_funtion.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, export_funtion.#*#c, 0x1 # line: 18446744073709551615           # column: 0
+	stmodulevar 0x0                          # line: 18446744073709551615           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 3
+.function any import_function.#*#a(any a0, any a1, any a2, any a3, any a4) {
+	lda a4                                   # line: 18           # column: 0
+	stricteq 0x0, a3                         # line: 18           # column: 0
+	jeqz label@6                             # line: 18           # column: 0
+	lda a4                                   # line: 19           # column: 0
+	add2 0x1, a3                             # line: 19           # column: 0
+	return                                   # line: 23           # column: 0
+	label@6: lda a4                          # line: 22           # column: 0
+	sub2 0x2, a3                             # line: 22           # column: 0
+	return                                   # line: 22           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any import_function.func_main_0(any a0, any a1, any a2) {
+	definefunc 0x0, import_function.#*#a, 0x2 # line: 18446744073709551615           # column: 0
+	sta v0                                   # line: 18446744073709551615           # column: 0
+	tryldglobalbyname 0x1, print             # line: 25           # column: 0
+	sta v1                                   # line: 25           # column: 0
+	ldai 0x1                                 # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	ldai 0x2                                 # line: 25           # column: 0
+	sta v3                                   # line: 25           # column: 0
+	lda v0                                   # line: 25           # column: 0
+	callargs2 0x2, v2, v3                    # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda v2                                   # line: 25           # column: 0
+	neg 0x4                                  # line: 25           # column: 0
+	stricteq 0x5, v0                         # line: 25           # column: 0
+	sta v0                                   # line: 25           # column: 0
+	lda.str sucess                           # line: 25           # column: 0
+	sta v2                                   # line: 25           # column: 0
+	lda v1                                   # line: 25           # column: 0
+	callargs2 0x6, v0, v2                    # line: 25           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+export_funtion.#*#c
+import_function.#*#a
+print
+sucess

@@ -1,0 +1,1269 @@
+.language ECMAScript
+
+# ====================
+# LITERALS
+
+str_toLocaleLowerCase_5761 
+
+str_toLocaleLowerCase_5765 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_at_5793 
+
+string_at_5797 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_charAt_5825 
+
+string_charAt_5829 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_charCodeAt_5857 
+
+string_charCodeAt_5861 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_codePointAt_5889 
+
+string_codePointAt_5893 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_concat_5921 
+
+string_concat_5925 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_endsWith_5953 
+
+string_endsWith_5957 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_includes_5985 
+
+string_includes_5989 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_indexOf_6017 
+
+string_indexOf_6021 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_index_6049 
+
+string_index_6053 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_lastIndexOf_6081 
+
+string_lastIndexOf_6085 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_length_6113 
+
+string_length_6117 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_padEnd_6145 
+
+string_padEnd_6149 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_padStart_6177 
+
+string_padStart_6181 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_repeat_6209 
+
+string_repeat_6213 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_slice_6241 
+
+string_slice_6245 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_startsWith_6273 
+
+string_startsWith_6277 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_substr_6305 
+
+string_substr_6309 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_substring_6337 
+
+string_substring_6341 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_toLocaleUpperCase_6369 
+
+string_toLocaleUpperCase_6373 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_toLowerCase_6401 
+
+string_toLowerCase_6405 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_toString_6433 
+
+string_toString_6437 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_toUpperCase_6465 
+
+string_toUpperCase_6469 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_trimEnd_6497 
+
+string_trimEnd_6501 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_trimLeft_6529 
+
+string_trimLeft_6533 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_trimRight_6561 
+
+string_trimRight_6565 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_trimStart_6593 
+
+string_trimStart_6597 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_trim_6625 
+
+string_trim_6629 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+string_valueOf_6657 
+
+string_valueOf_6661 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
+
+
+
+# ====================
+# RECORDS
+
+.record _ESConcurrentModuleRequestsAnnotation {
+}
+.record.source_file 
+
+.record _ESSlotNumberAnnotation {
+}
+.record.source_file 
+
+.record str_toLocaleLowerCase {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames str_toLocaleLowerCase_5761
+	u32 moduleRecordIdx str_toLocaleLowerCase_5765
+}
+.record.source_file 
+
+.record string_at {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_at_5793
+	u32 moduleRecordIdx string_at_5797
+}
+.record.source_file 
+
+.record string_charAt {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_charAt_5825
+	u32 moduleRecordIdx string_charAt_5829
+}
+.record.source_file 
+
+.record string_charCodeAt {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_charCodeAt_5857
+	u32 moduleRecordIdx string_charCodeAt_5861
+}
+.record.source_file 
+
+.record string_codePointAt {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_codePointAt_5889
+	u32 moduleRecordIdx string_codePointAt_5893
+}
+.record.source_file 
+
+.record string_concat {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_concat_5921
+	u32 moduleRecordIdx string_concat_5925
+}
+.record.source_file 
+
+.record string_endsWith {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_endsWith_5953
+	u32 moduleRecordIdx string_endsWith_5957
+}
+.record.source_file 
+
+.record string_includes {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_includes_5985
+	u32 moduleRecordIdx string_includes_5989
+}
+.record.source_file 
+
+.record string_index {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_index_6049
+	u32 moduleRecordIdx string_index_6053
+}
+.record.source_file 
+
+.record string_indexOf {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_indexOf_6017
+	u32 moduleRecordIdx string_indexOf_6021
+}
+.record.source_file 
+
+.record string_lastIndexOf {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_lastIndexOf_6081
+	u32 moduleRecordIdx string_lastIndexOf_6085
+}
+.record.source_file 
+
+.record string_length {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_length_6113
+	u32 moduleRecordIdx string_length_6117
+}
+.record.source_file 
+
+.record string_padEnd {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_padEnd_6145
+	u32 moduleRecordIdx string_padEnd_6149
+}
+.record.source_file 
+
+.record string_padStart {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_padStart_6177
+	u32 moduleRecordIdx string_padStart_6181
+}
+.record.source_file 
+
+.record string_repeat {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_repeat_6209
+	u32 moduleRecordIdx string_repeat_6213
+}
+.record.source_file 
+
+.record string_slice {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_slice_6241
+	u32 moduleRecordIdx string_slice_6245
+}
+.record.source_file 
+
+.record string_startsWith {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_startsWith_6273
+	u32 moduleRecordIdx string_startsWith_6277
+}
+.record.source_file 
+
+.record string_substr {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_substr_6305
+	u32 moduleRecordIdx string_substr_6309
+}
+.record.source_file 
+
+.record string_substring {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_substring_6337
+	u32 moduleRecordIdx string_substring_6341
+}
+.record.source_file 
+
+.record string_toLocaleUpperCase {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_toLocaleUpperCase_6369
+	u32 moduleRecordIdx string_toLocaleUpperCase_6373
+}
+.record.source_file 
+
+.record string_toLowerCase {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_toLowerCase_6401
+	u32 moduleRecordIdx string_toLowerCase_6405
+}
+.record.source_file 
+
+.record string_toString {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_toString_6433
+	u32 moduleRecordIdx string_toString_6437
+}
+.record.source_file 
+
+.record string_toUpperCase {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_toUpperCase_6465
+	u32 moduleRecordIdx string_toUpperCase_6469
+}
+.record.source_file 
+
+.record string_trim {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_trim_6625
+	u32 moduleRecordIdx string_trim_6629
+}
+.record.source_file 
+
+.record string_trimEnd {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_trimEnd_6497
+	u32 moduleRecordIdx string_trimEnd_6501
+}
+.record.source_file 
+
+.record string_trimLeft {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_trimLeft_6529
+	u32 moduleRecordIdx string_trimLeft_6533
+}
+.record.source_file 
+
+.record string_trimRight {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_trimRight_6561
+	u32 moduleRecordIdx string_trimRight_6565
+}
+.record.source_file 
+
+.record string_trimStart {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_trimStart_6593
+	u32 moduleRecordIdx string_trimStart_6597
+}
+.record.source_file 
+
+.record string_valueOf {
+	u8 pkgName@entry 0
+	u8 isCommonjs 0
+	u8 hasTopLevelAwait 0
+	u8 isSharedModule 0
+	u32 scopeNames string_valueOf_6657
+	u32 moduleRecordIdx string_valueOf_6661
+}
+.record.source_file 
+
+
+# ====================
+# METHODS
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any str_toLocaleLowerCase.func_main_0(any a0, any a1, any a2) {
+	lda.str ABCDEFG                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, toLocaleLowerCase       # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any string_at.func_main_0(any a0, any a1, any a2) {
+	lda.str abcde                            # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	ldai 0x2                                 # line: 17           # column: 0
+	ldobjbyvalue 0x1, v0                     # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str c                                # line: 17           # column: 0
+	stricteq 0x3, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x4, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_charAt.func_main_0(any a0, any a1, any a2) {
+	lda.str abcbcbc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, charAt                  # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str b                                # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_charCodeAt.func_main_0(any a0, any a1, any a2) {
+	lda.str abcbcbc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, charCodeAt              # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x0                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x61                                # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_codePointAt.func_main_0(any a0, any a1, any a2) {
+	lda.str abcbcbc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, codePointAt             # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x1                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x62                                # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_concat.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, a                       # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str def                              # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdef                           # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any string_endsWith.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, endsWith                # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str c                                # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x5, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_includes.func_main_0(any a0, any a1, any a2) {
+	lda.str abc,aaa,bbb,abcde                # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, includes                # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str abc                              # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldtrue                                   # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 32
+.function any string_index.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefgbacde                     # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, indexOf                 # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str a                                # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x0                                 # line: 17           # column: 0
+	stricteq 0x5, v2                         # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v2, v3                    # line: 17           # column: 0
+	tryldglobalbyname 0x8, print             # line: 19           # column: 0
+	sta v1                                   # line: 19           # column: 0
+	lda v0                                   # line: 19           # column: 0
+	ldobjbyname 0x9, lastIndexOf             # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str b                                # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v2                                   # line: 19           # column: 0
+	callthis1 0xb, v0, v3                    # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	ldai 0x7                                 # line: 19           # column: 0
+	stricteq 0xd, v2                         # line: 19           # column: 0
+	sta v2                                   # line: 19           # column: 0
+	lda.str success                          # line: 19           # column: 0
+	sta v3                                   # line: 19           # column: 0
+	lda v1                                   # line: 19           # column: 0
+	callargs2 0xe, v2, v3                    # line: 19           # column: 0
+	tryldglobalbyname 0x10, print            # line: 21           # column: 0
+	sta v1                                   # line: 21           # column: 0
+	lda v0                                   # line: 21           # column: 0
+	ldobjbyname 0x11, indexOf                # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str a                                # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	ldai 0x3                                 # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	lda v2                                   # line: 21           # column: 0
+	callthis2 0x13, v0, v3, v4               # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	ldai 0x8                                 # line: 21           # column: 0
+	sta v3                                   # line: 21           # column: 0
+	lda v3                                   # line: 21           # column: 0
+	stricteq 0x15, v2                        # line: 21           # column: 0
+	sta v2                                   # line: 21           # column: 0
+	lda.str success                          # line: 21           # column: 0
+	sta v4                                   # line: 21           # column: 0
+	lda v1                                   # line: 21           # column: 0
+	callargs2 0x16, v2, v4                   # line: 21           # column: 0
+	tryldglobalbyname 0x18, print            # line: 23           # column: 0
+	sta v1                                   # line: 23           # column: 0
+	lda v0                                   # line: 23           # column: 0
+	ldobjbyname 0x19, lastIndexOf            # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda.str a                                # line: 23           # column: 0
+	sta v4                                   # line: 23           # column: 0
+	lda v2                                   # line: 23           # column: 0
+	callthis2 0x1b, v0, v4, v3               # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	lda v3                                   # line: 23           # column: 0
+	stricteq 0x1d, v0                        # line: 23           # column: 0
+	sta v0                                   # line: 23           # column: 0
+	lda.str success                          # line: 23           # column: 0
+	sta v2                                   # line: 23           # column: 0
+	lda v1                                   # line: 23           # column: 0
+	callargs2 0x1e, v0, v2                   # line: 23           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_indexOf.func_main_0(any a0, any a1, any a2) {
+	lda.str abcbcbc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, indexOf                 # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str b                                # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x1                                 # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_lastIndexOf.func_main_0(any a0, any a1, any a2) {
+	lda.str abcbcbc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, lastIndexOf             # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str b                                # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x5                                 # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 6
+.function any string_length.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, length                  # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	stricteq 0x3, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x4, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_padEnd.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, padEnd                  # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str de                               # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	ldai 0x8                                 # line: 17           # column: 0
+	sta v4                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis2 0x3, v0, v4, v3                # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdeded                         # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_padStart.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, padStart                # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str de                               # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	ldai 0x8                                 # line: 17           # column: 0
+	sta v4                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis2 0x3, v0, v4, v3                # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str dededabc                         # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_repeat.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, repeat                  # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x3                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcabcabc                        # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_slice.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, slice                   # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x1                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	sta v4                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis2 0x3, v0, v3, v4                # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str bcd                              # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 7
+.function any string_startsWith.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, startsWith              # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda.str a                                # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis1 0x3, v0, v3                    # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x5, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_substr.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, substr                  # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x1                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	sta v4                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis2 0x3, v0, v3, v4                # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str bcde                             # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_substring.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, substring               # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	ldai 0x1                                 # line: 17           # column: 0
+	sta v3                                   # line: 17           # column: 0
+	ldai 0x4                                 # line: 17           # column: 0
+	sta v4                                   # line: 17           # column: 0
+	lda v2                                   # line: 17           # column: 0
+	callthis2 0x3, v0, v3, v4                # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str bcd                              # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_toLocaleUpperCase.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, toLocaleUpperCase       # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str ABCDEFG                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_toLowerCase.func_main_0(any a0, any a1, any a2) {
+	lda.str ABCDEFG                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, toLowerCase             # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_toString.func_main_0(any a0, any a1, any a2) {
+	lda.str abc                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, toString                # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abc                              # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_toUpperCase.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, toUpperCase             # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str ABCDEFG                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_trim.func_main_0(any a0, any a1, any a2) {
+	lda.str     abc                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, trim                    # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abc                              # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_trimEnd.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, trimEnd                 # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_trimLeft.func_main_0(any a0, any a1, any a2) {
+	lda.str      abcdefg                     # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, trimLeft                # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_trimRight.func_main_0(any a0, any a1, any a2) {
+	lda.str abcdefg                          # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, trimRight               # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_trimStart.func_main_0(any a0, any a1, any a2) {
+	lda.str    abcdefg                       # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, b                       # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str abcdefg                          # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+.function_kind FunctionKind::FUNCTION
+ _ESSlotNumberAnnotation
+ SlotNumber 8
+.function any string_valueOf.func_main_0(any a0, any a1, any a2) {
+	lda.str 234                              # line: 15           # column: 0
+	sta v0                                   # line: 15           # column: 0
+	tryldglobalbyname 0x0, print             # line: 17           # column: 0
+	sta v1                                   # line: 17           # column: 0
+	lda v0                                   # line: 17           # column: 0
+	ldobjbyname 0x1, valueOf                 # line: 17           # column: 0
+	callthis0 0x3, v0                        # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str 234                              # line: 17           # column: 0
+	stricteq 0x5, v0                         # line: 17           # column: 0
+	sta v0                                   # line: 17           # column: 0
+	lda.str success                          # line: 17           # column: 0
+	sta v2                                   # line: 17           # column: 0
+	lda v1                                   # line: 17           # column: 0
+	callargs2 0x6, v0, v2                    # line: 17           # column: 0
+	ldundefined                              # line: 18446744073709551615           # column: 0
+	returnundefined                          # line: 18446744073709551615           # column: 0
+}
+
+# ====================
+# STRING
+     abcdefg
+    abc   
+   abcdefg
+234
+ABCDEFG
+a
+abc
+abc,aaa,bbb,abcde
+abcabcabc
+abcbcbc
+abcde
+abcdeded
+abcdef
+abcdefg
+abcdefg   
+abcdefg      
+abcdefgbacde
+b
+bcd
+bcde
+c
+charAt
+charCodeAt
+codePointAt
+de
+dededabc
+def
+endsWith
+includes
+indexOf
+lastIndexOf
+length
+padEnd
+padStart
+print
+repeat
+slice
+startsWith
+substr
+substring
+success
+toLocaleLowerCase
+toLocaleUpperCase
+toLowerCase
+toString
+toUpperCase
+trim
+trimEnd
+trimLeft
+trimRight
+valueOf

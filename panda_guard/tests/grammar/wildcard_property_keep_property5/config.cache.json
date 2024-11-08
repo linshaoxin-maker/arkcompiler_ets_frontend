@@ -1,0 +1,22 @@
+{
+  "keep_single_property": {
+    "IdentifierCache": {
+      "#KeepProperty5": "a"
+    },
+    "MemberMethodCache": {
+      "KeepProperty5:16:17": "a",
+      "functionobf:27:29": "e",
+      "g:32:34": "g"
+    },
+    "obfName": "keep_single_property"
+  },
+  "entryPackageInfo": "",
+  "compileSdkVersion": "",
+  "PropertyCache": {
+    "**": "d",
+    "KeepProperty5": "a",
+    "functionobf": "e",
+    "prop": "b",
+    "shouldbeobf": "c"
+  }
+}
