@@ -25,7 +25,7 @@ namespace panda::guard {
  * @tc.name: guard_driver_run_func_test_ret
  * @tc.desc: test function return value
  * @tc.type: FUNC
- * @tc.require: 
+ * @tc.require:
  */
 HWTEST(PandaGuardDriverTest, guard_driver_run_func_test_ret, TestSize.Level4)
 {
