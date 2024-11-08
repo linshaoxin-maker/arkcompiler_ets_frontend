@@ -32,4 +32,3 @@ DECLARE_VALIDATE_PA_AND_NAME_CACHE_MODULE_TEST(name_cache, toplevel_and_export_o
 DECLARE_VALIDATE_PA_AND_NAME_CACHE_MODULE_TEST(name_cache, property_and_toplevel_obfuscation)
 
 DECLARE_VALIDATE_PA_AND_NAME_CACHE_MODULE_TEST(name_cache, property_toplevel_and_export_obfuscation)
-

@@ -149,4 +149,3 @@ void panda::guard::StringUtil::RemoveSlashFromBothEnds(std::string &str)
         str.pop_back();
     }
 }
-

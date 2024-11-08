@@ -31,8 +31,7 @@
         },
         "build": {
             "sub_component": [
-                "//arkcompiler/ets_frontend:ets_frontend_build",
-                "//arkcompiler/ets_frontend:panda_guard_packages"
+                "//arkcompiler/ets_frontend:ets_frontend_build"
             ],
             "inner_kits": [
                 {
@@ -40,14 +39,10 @@
                 },
                 {
                     "name": "//arkcompiler/ets_frontend/es2panda:es2panda"
-                },
-                {
-                    "name": "//arkcompiler/ets_frontend/panda_guard:panda_guard_frontend_static"
                 }
             ],
             "test": [
-                "//arkcompiler/ets_frontend/es2panda:es2abc_tests",
-                "//arkcompiler/ets_frontend:panda_guard_host_unittest"
+                "//arkcompiler/ets_frontend/es2panda:es2abc_tests"
             ]
         }
     }

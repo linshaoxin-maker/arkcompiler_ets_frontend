@@ -155,5 +155,3 @@ void panda::guard::NameMapping::AddFileNameMapping(const std::set<std::string> &
         AddFileNameMapping(name);
     }
 }
-
-
