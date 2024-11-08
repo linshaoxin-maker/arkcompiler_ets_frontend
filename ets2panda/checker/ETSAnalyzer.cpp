@@ -2665,7 +2665,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 
     const auto arrayType = node->TsType()->AsETSArrayType();
     checker->CreateBuiltinArraySignature(arrayType, arrayType->Rank());
-    return nullptr;
+    return arrayType;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
