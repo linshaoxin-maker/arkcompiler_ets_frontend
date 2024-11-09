@@ -1,6 +1,9 @@
 # Issue #19225
 test262/data/other_tests/built-ins/Date/UTC/fp-evaluation-order.js
 
+# Issue #20456
+test262/data/other_tests/built-ins/TypedArray/prototype/findLastIndex/predicate-call-parameters.js
+
 # Issue #19223
 test262/data/other_tests/built-ins/Date/prototype/setDate/arg-coercion-order.js
 test262/data/other_tests/built-ins/Date/prototype/setHours/arg-coercion-order.js
