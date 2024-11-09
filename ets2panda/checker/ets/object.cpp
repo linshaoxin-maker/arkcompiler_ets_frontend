@@ -1088,15 +1088,7 @@ void ETSChecker::CheckClassAnnotations(ir::ClassDefinition *classDef)
 void ETSChecker::CheckClassMembers(ir::ClassDefinition *classDef)
 {
     for (auto *it : classDef->Body()) {
-        if (it->IsClassProperty()) {
-            it->Check(this);
-        }
-    }
-
-    for (auto *it : classDef->Body()) {
-        if (!it->IsClassProperty()) {
-            it->Check(this);
-        }
+        it->Check(this);
     }
 }
 
