@@ -63,3 +63,6 @@ nullableType.sts
 #Issue 17949
 #SyntaxError: Cannot find type 'C'.
 lambdaWithLocalClassAccess.sts
+
+# Issue 15278
+common_property_union_access_03.sts

@@ -235,11 +235,22 @@ checker::Type *MemberExpression::TraverseUnionMember(checker::ETSChecker *checke
 
 {
     auto const addPropType = [this, checker, &commonPropType](checker::Type *memberType) {
-        if (commonPropType != nullptr && commonPropType != memberType) {
-            checker->LogTypeError("Member type must be the same for all union objects.", Start());
-        } else {
+        if (commonPropType == nullptr || commonPropType == memberType) {
             commonPropType = memberType;
+            return;
         }
+        if (commonPropType->IsETSFunctionType() && memberType != nullptr && memberType->IsETSFunctionType()) {
+            commonPropType->AsETSFunctionType()->HasSameSignatures(checker, memberType->AsETSFunctionType());
+            if (!checker->Relation()->IsTrue()) {
+                checker->LogTypeError("Member type must be the same for all union objects.", Start());
+                return;
+            }
+            memberType->AsETSFunctionType()->HasSameSignatures(checker, commonPropType->AsETSFunctionType());
+            if (checker->Relation()->IsTrue()) {
+                return;
+            }
+        }
+        checker->LogTypeError("Member type must be the same for all union objects.", Start());
     };
     for (auto *const type : unionType->ConstituentTypes()) {
         auto *const apparent = checker->GetApparentType(type);
