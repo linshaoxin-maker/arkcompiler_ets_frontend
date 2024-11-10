@@ -1,6 +1,5 @@
-.language ECMAScript
-
 slotNum = 0xa
+.language ECMAScript
 .function any .#~A=#A(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -24,6 +23,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~A=A~=#(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -33,6 +33,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~A=A~^1=#(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -42,6 +43,7 @@ label_2:
 }
 
 slotNum = 0x1
+.language ECMAScript
 .function any .#~B=#B(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -52,6 +54,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~B=B*#B(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -61,6 +64,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~B>#B(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -70,6 +74,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~C<#foo(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -79,6 +84,7 @@ label_2:
 }
 
 slotNum = 0x3
+.language ECMAScript
 .function any .#~C=#C(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -90,6 +96,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~C=C*#(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -99,6 +106,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~C>#foo(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -108,6 +116,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~C>#foo^1(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -117,6 +126,7 @@ label_2:
 }
 
 slotNum = 0x9
+.language ECMAScript
 .function any .func_main_0(any a0, any a1, any a2) {
 label_1: 
 label_0: 

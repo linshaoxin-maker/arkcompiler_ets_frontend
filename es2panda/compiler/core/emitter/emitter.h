@@ -122,7 +122,8 @@ public:
     NO_COPY_SEMANTIC(Emitter);
     NO_MOVE_SEMANTIC(Emitter);
 
-    void AddAnnotationRecord(const std::string &annoName, const ir::ClassDeclaration *classDecl);
+    void AddAnnotationRecord(const std::string &annoName, const ir::ClassDeclaration *classDecl,
+                             pandasm::extensions::Language lang);
     void AddFunction(FunctionEmitter *func, CompilerContext *context);
     void AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context);
     void AddScopeNamesRecord(CompilerContext *context);
@@ -150,9 +151,9 @@ private:
     void CreateStringClass();
     panda::pandasm::Type DeduceArrayEnumType(const ir::Expression *value, uint8_t rank, bool &needToCreateArrayValue);
 
-    void SetCommonjsField(bool isCommonjs);
-    void SetPkgNameField(const std::string &pkgName);
-    void GenCommonjsRecord() const;
+    void SetCommonjsField(CompilerContext *context);
+    void SetPkgNameField(const std::string &pkgName, CompilerContext *context);
+    void GenCommonjsRecord(const CompilerContext *context) const;
     void AddHasTopLevelAwaitRecord(bool hasTLA, const CompilerContext *context);
     void AddSharedModuleRecord(const CompilerContext *context);
     void AddModuleRequestPhaseRecord(ModuleRecordEmitter *module, CompilerContext *context);
@@ -160,7 +161,9 @@ private:
     void CreateEnumProp(const ir::ClassProperty *prop, const std::string &annoName, panda::pandasm::Field &annoProp);
     void CreateLiteralArrayProp(const ir::ClassProperty *prop, const std::string &annoName,
                                 panda::pandasm::Field &annoProp);
-    panda::pandasm::Field CreateAnnotationProp(const ir::ClassProperty *prop, const std::string &annoName);
+    panda::pandasm::Field CreateAnnotationProp(const ir::ClassProperty *prop,
+                                               const std::string &annoName,
+                                               pandasm::extensions::Language lang);
 
     std::mutex m_;
     panda::pandasm::Program *prog_;

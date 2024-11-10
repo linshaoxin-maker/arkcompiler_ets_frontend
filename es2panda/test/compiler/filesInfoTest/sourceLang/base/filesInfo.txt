@@ -1,0 +1,4 @@
+test/compiler/filesInfoTest/sourceLang/base/ts.ts;ts;esm;base/ts.ts;ts;false;ts
+test/compiler/filesInfoTest/sourceLang/base/ets.ts;ets;esm;base/ets.ts;ets;false;ets
+test/compiler/filesInfoTest/sourceLang/base/js.js;js;esm;base/js.js;js;false;js
+test/compiler/filesInfoTest/sourceLang/base/default.ts;default;esm;base/default.ts;default;false;

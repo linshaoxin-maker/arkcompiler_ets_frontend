@@ -1,6 +1,5 @@
-.language ECMAScript
-
 slotNum = 0x2
+.language ECMAScript
 .function any .#~A=#A(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -12,6 +11,7 @@ label_2:
 }
 
 slotNum = 0x5
+.language ECMAScript
 .function any .#~A>#instance_initializer(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -32,6 +32,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~A>#instance_initializer^1(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -41,6 +42,7 @@ label_2:
 }
 
 slotNum = 0x0
+.language ECMAScript
 .function any .#~A>@0*#b(any a0, any a1, any a2) {
 label_1: 
 label_0: 
@@ -50,6 +52,7 @@ label_2:
 }
 
 slotNum = 0x4
+.language ECMAScript
 .function any .func_main_0(any a0, any a1, any a2) {
 	nop
 label_7: 
