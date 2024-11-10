@@ -189,4 +189,8 @@ export class FileUtils {
         fs.unlinkSync(filePath);
     }
   }
+
+  public static fileExtensionIs(str: string, suffix: string): boolean {
+    return str.length > suffix.length && str.endsWith(suffix);
+  }
 }

@@ -18,6 +18,7 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import proxyquire from 'proxyquire';
 import { constants } from 'fs';
+import { Extension } from '../../../src/common/type'
 
 import { IOptions } from '../../../src/configs/IOptions';
 
@@ -98,6 +99,16 @@ describe('FileUtils.getFileExtension', () => {
   it('should return extension for valid file name with multiple dots', () => {
     const result = FileUtils.getFileExtension('/path/to/file.name.with.dots.txt');
     expect(result).to.equal('txt');
+  });
+
+  it('should return extension for valid file name with d.ts', () => {
+    const result = FileUtils.getFileExtension('/path/to/file.d.ts');
+    expect(result).to.equal('ts');
+  });
+
+  it('should return extension for valid file name with d.ets', () => {
+    const result = FileUtils.getFileExtension('D:\path\to\file.d.ets');
+    expect(result).to.equal('ets');
   });
 });
 
@@ -200,5 +211,24 @@ describe('FileUtils.getAbsPathBaseConfigPath', () => {
 
   it('should handle empty paths', () => {
     expect(FileUtils.getAbsPathBaseConfigPath('', '')).to.equal('.')
+  });
+});
+
+describe('FileUtils.fileExtensionIs', () => {
+  it('should return true for d.ts and d.ets test', () => {
+    expect(FileUtils.fileExtensionIs('/a/b/c.d.ts', Extension.DTS)).to.equal(true)
+    expect(FileUtils.fileExtensionIs('/a/b/c.d.ets', Extension.DETS)).to.equal(true)
+  });
+
+  it('should return false for d.ts test', () => {
+    expect(FileUtils.fileExtensionIs('/a/b/c.ts', Extension.DTS)).to.equal(false)
+  });
+
+  it('The path length is less than or equal to the suffix length', () => {
+    expect(FileUtils.fileExtensionIs('a.ts', 'd.ts')).to.equal(false)
+  });
+
+  it('The path does not match the suffix', () => {
+    expect(FileUtils.fileExtensionIs('a/b/c.ts', Extension.DETS)).to.equal(false)
   });
 });

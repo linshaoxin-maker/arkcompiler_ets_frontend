@@ -19,34 +19,13 @@ import {ListUtil} from '../utils/ListUtil';
 import type {IOptions} from '../configs/IOptions';
 import { stringPropsSet, structPropsSet, enumPropsSet } from '../utils/OhsUtil';
 
-export const scanProjectConfig: {
+export let scanProjectConfig: {
   mPropertyObfuscation?: boolean,
   mKeepStringProperty?: boolean,
   mExportObfuscation?: boolean,
   mkeepFilesAndDependencies?: Set<string>,
   isHarCompiled?: boolean
 } = {};
-
-/**
- * if rename property is not open, api read and extract can be skipped
- *
- * init plugin, read api info of openHarmony sdk and generate file of reserved name, property and string.
- * @param sdkDir absolute path like D:\\HuaweiApp\\ohsdk
- * @param outputDir
- */
-export function initPlugin(sdkDir: string, outputDir: string): void {
-  // create sdk api file if not exist
-  const ohSdkPath: string = path.resolve(sdkDir);
-  if (!ohSdkPath) {
-    console.error('SDK path is not found.');
-  }
-
-  const apiVersions: string[] = [''];
-
-  apiVersions.forEach((versionString) => {
-    ApiExtractor.parseOhSdk(ohSdkPath, versionString, true, outputDir);
-  });
-}
 
 /**
  * need read api info or not
@@ -128,6 +107,7 @@ export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<s
   if (scanProjectConfig.mExportObfuscation) {
     exportNameSet = new Set(exportNames);
   }
+  scanProjectConfig = {};
 
   return {
     structPropertySet: structPropertySet,
