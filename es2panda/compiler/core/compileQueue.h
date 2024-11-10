@@ -88,9 +88,11 @@ public:
 
 private:
     friend class CompileAbcClassJob;
-    bool RetrieveProgramFromCacheFiles(const std::string &buffer);
     void CompileProgram();
     void OptimizeAndCacheProgram(panda::pandasm::Program *prog);
+    bool RetrieveProgramFromCacheFiles(const std::string &buffer, bool isAbcFile = false);
+    void InsertAbcCachePrograms(std::map<std::string, panda::es2panda::util::ProgramCache *> &abcProgramsInfo);
+    void CompileAbcFileJobInParallel(es2panda::Compiler &compiler);
 
     static std::mutex globalMutex_;
     es2panda::SourceFile *src_;
