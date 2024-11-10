@@ -38,5 +38,15 @@ struct ProgramCache {
     {
     }
 };
+
+struct AbcProgramsCache {
+    uint32_t hashCode { 0 };
+    std::map<std::string, ProgramCache *> programsCache {};
+
+    AbcProgramsCache(uint32_t hashCode, std::map<std::string, ProgramCache *> &programsCache)
+        : hashCode(hashCode), programsCache(std::move(programsCache))
+    {
+    }
+};
 } //panda::es2panda::util
 #endif

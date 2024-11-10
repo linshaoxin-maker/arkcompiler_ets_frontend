@@ -726,6 +726,7 @@ class CompilerProjectTest(Test):
         self.abc_input_filenames = None
         self.record_names_path = os.path.join(os.path.join(self.projects_path, self.project), 'recordnames.txt')
         self.abc_inputs_path = os.path.join(os.path.join(self.projects_path, self.project), 'abcinputs')
+        self.modules_cache_path = os.path.join(os.path.join(self.projects_path, self.project), 'modulescache.cache')
 
     def remove_project(self, runner):
         project_path = runner.build_dir + "/" + self.project
@@ -735,6 +736,18 @@ class CompilerProjectTest(Test):
             os.remove(self.files_info_path)
         if path.exists(self.generated_abc_inputs_path):
             shutil.rmtree(self.generated_abc_inputs_path)
+        if path.exists(self.modules_cache_path):
+            self.remove_cache_files()
+
+    def remove_cache_files(self):
+        if path.exists(self.modules_cache_path):
+            with open(self.modules_cache_path) as cache_fp:
+                cache_lines = cache_fp.readlines()
+                for cache_line in cache_lines:
+                    cache_file_path = cache_line[:-1].split(";")[1]
+                    if path.exists(cache_file_path):
+                        os.remove(cache_file_path)
+            os.remove(self.modules_cache_path)
 
     def get_file_absolute_path_and_name(self, runner):
         sub_path = self.path[len(self.projects_path):]
@@ -849,9 +862,44 @@ class CompilerProjectTest(Test):
         self.gen_abc_input_files_infos(runner, abc_files_infos, f)
         f.close()
 
+    def gen_modules_cache(self, runner):
+        if "--cache-file" not in self.flags or "--file-threads=0" in self.flags:
+            return
+        fd = os.open(self.modules_cache_path, os.O_RDWR | os.O_CREAT | os.O_TRUNC)
+        f = os.fdopen(fd, 'w')
+        abc_files = set()
+        for test_path in self.test_paths:
+            cache_info = ('%s;%s\n' % (test_path, f"{test_path.rsplit('.', 1)[0]}.protobin"))
+            belonging_abc_input = self.get_belonging_abc_input(test_path)
+            if belonging_abc_input is not None:
+                abc_files.add(belonging_abc_input)
+            else:
+                f.writelines(cache_info)
+        for abc_path in abc_files:
+            abc_input_path = path.join(self.generated_abc_inputs_path, abc_path) + "-abcinput.abc"
+            cache_info = ('%s;%s\n' % (abc_input_path, f"{abc_input_path.rsplit('.', 1)[0]}.protobin"))
+            f.writelines(cache_info)
+        f.close()
+
     def gen_es2abc_cmd(self, runner, input_file, output_file):
         es2abc_cmd = runner.cmd_prefix + [runner.es2panda]
-        es2abc_cmd.extend(self.flags)
+
+        new_flags = self.flags
+        if "--cache-file" in new_flags and len(self.test_paths) == 1:
+            # Generate cache-file test case in single thread 
+            new_flags.remove("--cache-file")
+            protobin_path = self.test_paths[0].rsplit('.', 1)[0] + ".protoBin"
+            self.protoBin_file_path = protobin_path
+            es2abc_cmd.append('--cache-file=%s' % (protobin_path))
+        elif "--cache-file" in self.flags and output_file.endswith("-abcinput.abc"):
+            # Generate abc for bytecode har
+            new_flags = list(filter(lambda x: x != "--cache-file", new_flags))
+        elif "--cache-file" in self.flags:
+            new_flags = list(filter(lambda x: x != "--cache-file", new_flags))
+            es2abc_cmd.append('--cache-file')
+            es2abc_cmd.append('@%s' % (self.modules_cache_path))
+
+        es2abc_cmd.extend(new_flags)
         es2abc_cmd.extend(['%s%s' % ("--output=", output_file)])
         es2abc_cmd.append(input_file)
         return es2abc_cmd
@@ -910,7 +958,22 @@ class CompilerProjectTest(Test):
             es2abc_cmd.append("%s%s" % ("--compile-context-info=", compile_context_info_path))
         process = run_subprocess_with_beta3(self, es2abc_cmd)
         self.path = exec_file_path
-        out, err = process.communicate()
+        out, err = [None, None]
+
+        # Check single-thread execution timeout when required
+        if "--file-threads=0" in self.flags:
+            try:
+                out, err = process.communicate(timeout=60)
+            except:
+                process.kill()
+                print("Generating the abc file timed out.")
+        else:
+            out, err = process.communicate()
+        
+        if "--cache-file" in self.flags:
+            # Firstly generate cache file, and generate abc from cache file
+            process = run_subprocess_with_beta3(self, es2abc_cmd)
+            out, err = process.communicate()
 
         # restore merge-abc flag
         if "merge_abc_consistence_check" in self.path and "--merge-abc" not in self.flags:
@@ -946,6 +1009,7 @@ class CompilerProjectTest(Test):
         # Compile all ts source files in the project to abc files.
         if ("--merge-abc" in self.flags):
             self.gen_files_info(runner)
+            self.gen_modules_cache(runner)
             self.gen_merged_abc(runner)
         else:
             self.gen_single_abc(runner)
@@ -2352,6 +2416,11 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/bytecodehar/merge_abc_consistence_check/projects", "js",
                                                 ["--merge-abc", "--dump-assembly", "--enable-abc-input",
                                                  "--abc-class-threads=4"]))
+    compiler_test_infos.append(CompilerTestInfo("compiler/cache_projects", "ts",
+                                                ["--merge-abc", "--dump-assembly", "--enable-abc-input",
+                                                 "--dump-deps-info", "--remove-redundant-file",
+                                                 "--dump-literal-buffer", "--dump-string", "--abc-class-threads=4",
+                                                 "--cache-file"]))
 
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/shared_module/projects", "ts",
                                                 ["--module", "--merge-abc", "--dump-assembly"]))
