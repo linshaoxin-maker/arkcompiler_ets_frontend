@@ -1243,6 +1243,12 @@ ir::Identifier *ParserImpl::ExpectIdentifier([[maybe_unused]] bool isReference, 
 
     lexer_->NextToken();
 
+    if (IsETSParser() && (ident->Name() == compiler::Signatures::READONLY_TYPE_NAME ||
+                          ident->Name() == compiler::Signatures::REQUIRED_TYPE_NAME ||
+                          ident->Name() == compiler::Signatures::PARTIAL_TYPE_NAME)) {
+        LogSyntaxError({"'", ident->Name().Utf8(), "' is utility type name, cannot be used there"}, ident->Start());
+    }
+
     return ident;
 }
 
