@@ -136,7 +136,7 @@ void panda::guard::Class::CreateMethod(const pandasm::LiteralArray &literalArray
 
     const size_t methodIdxLiteralIndex = methodNameLiteralIndex + LITERAL_ITEM_LEN;
     PANDA_GUARD_ASSERT_PRINT(methodIdxLiteralIndex >= literalArray.literals_.size(),
-         TAG << "methodIdxLiteralIndex offset overflow");
+        TAG << "methodIdxLiteralIndex offset overflow");
     const auto &[tag_, value_] = literalArray.literals_[methodIdxLiteralIndex];
     PANDA_GUARD_ASSERT_PRINT(tag_ != panda::panda_file::LiteralTag::METHOD, TAG << "bad tag for methodIdx");
 

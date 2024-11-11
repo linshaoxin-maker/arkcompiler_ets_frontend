@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-// TODO 待确认，无法执行
 import {StringValidator} from "./export_validation_test";
 
 export const numberRegexp = /^[0-9]+$/;

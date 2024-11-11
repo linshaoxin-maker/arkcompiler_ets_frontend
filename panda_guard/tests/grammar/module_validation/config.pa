@@ -1,3 +1,18 @@
+/**
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 .language ECMAScript
 
 # ====================
@@ -134,7 +149,7 @@ namespace_merge_3366 { 2 [ tag_value:2, i32:0, ]}
  _ESSlotNumberAnnotation
  SlotNumber 0
 .function any default_export.func_main_0(any a0, any a1, any a2) {
-	lda.str huawei                           # line: 15           # column: 0
+	lda.str default export test              # line: 15           # column: 0
 	stmodulevar 0x0                          # line: 17           # column: 0
 	ldundefined                              # line: 18446744073709551615           # column: 0
 	returnundefined                          # line: 18446744073709551615           # column: 0
@@ -149,7 +164,7 @@ namespace_merge_3366 { 2 [ tag_value:2, i32:0, ]}
 	ldexternalmodulevar 0x0                  # line: 17           # column: 0
 	sta v1                                   # line: 17           # column: 0
 	throw.undefinedifholewithname s          # line: 17           # column: 0
-	lda.str huawei                           # line: 17           # column: 0
+	lda.str default export test              # line: 17           # column: 0
 	stricteq 0x1, v1                         # line: 17           # column: 0
 	sta v1                                   # line: 17           # column: 0
 	lda.str success                          # line: 17           # column: 0
@@ -699,7 +714,7 @@ d
 e
 f
 g
-huawei
+default export test
 i
 import_tests.#~@0=#ZipCodeValidator
 isAcceptable

@@ -21,4 +21,4 @@ let myIdentity: <U>(arg: U) => U = identity;
 
 print(myIdentity(3) === 3, 'success');
 
-print(myIdentity('huawei') === 'huawei', 'success');
+print(myIdentity('test') === 'test', 'success');

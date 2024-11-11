@@ -1,3 +1,18 @@
+/**
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 .language ECMAScript
 
 # ====================
@@ -210,12 +225,12 @@ generics_types_1337 { 6 [ i32:0, i32:0, i32:0, i32:0, i32:0, i32:0, ]}
 	callargs2 0x5, v2, v3                    # line: 21           # column: 0
 	tryldglobalbyname 0x7, print             # line: 23           # column: 0
 	sta v1                                   # line: 23           # column: 0
-	lda.str huawei                           # line: 23           # column: 0
+	lda.str test                             # line: 23           # column: 0
 	sta v2                                   # line: 23           # column: 0
 	lda v0                                   # line: 23           # column: 0
 	callarg1 0x8, v2                         # line: 23           # column: 0
 	sta v0                                   # line: 23           # column: 0
-	lda.str huawei                           # line: 23           # column: 0
+	lda.str test                             # line: 23           # column: 0
 	stricteq 0xa, v0                         # line: 23           # column: 0
 	sta v0                                   # line: 23           # column: 0
 	lda.str success                          # line: 23           # column: 0
@@ -232,7 +247,7 @@ generics_interface.#*#a
 generics_lenth.#*#b
 generics_lenth.#*#c
 generics_types.#*#a
-huawei
+test
 indexOf
 length
 print
