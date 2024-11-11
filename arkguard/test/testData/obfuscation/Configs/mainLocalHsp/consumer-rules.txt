@@ -1,0 +1,4 @@
+-keep-global-name
+MainLocalHspClass 
+-keep-property-name
+mainLocalHspGreeting
