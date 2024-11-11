@@ -24,7 +24,7 @@ namespace panda::guard {
     class ObjectProperty final : public PropertyOptionEntity, public IExtractNames {
     public:
         ObjectProperty(Program *program, std::string literalArrayIdx)
-                : PropertyOptionEntity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : PropertyOptionEntity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -44,7 +44,7 @@ namespace panda::guard {
     class Object final : public Entity, public IExtractNames {
     public:
         Object(Program *program, std::string literalArrayIdx)
-                : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 

@@ -53,7 +53,7 @@ void panda::guard::Method::UpdateDefine() const
 void panda::guard::Method::WriteFileCache(const std::string &filePath)
 {
     GuardContext::GetInstance()->GetNameCache()->AddObfMemberMethodName(
-            filePath, this->nameCacheScope_ + this->GetLines(), this->obfName_);
+        filePath, this->nameCacheScope_ + this->GetLines(), this->obfName_);
 }
 
 void panda::guard::Method::WritePropertyCache()
@@ -80,7 +80,7 @@ void panda::guard::OuterMethod::RefreshNeedUpdate()
 void panda::guard::OuterMethod::WriteFileCache(const std::string &filePath)
 {
     GuardContext::GetInstance()->GetNameCache()->AddObfMemberMethodName(
-            filePath, this->nameCacheScope_ + this->GetLines(), this->obfName_);
+        filePath, this->nameCacheScope_ + this->GetLines(), this->obfName_);
 }
 
 void panda::guard::OuterMethod::WritePropertyCache()

@@ -24,7 +24,7 @@ namespace panda::guard {
     class Class final : public Entity, public IExtractNames {
     public:
         Class(Program *program, const std::string &constructorIdx)
-                : Entity(program), constructor_(program, constructorIdx)
+            : Entity(program), constructor_(program, constructorIdx)
         {
         }
 

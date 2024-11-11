@@ -24,6 +24,7 @@
 
 namespace {
     constexpr std::string_view TAG = "[Object]";
+    constexpr size_t LITERAL_OBJECT_ITEM_LEN = 2;
     constexpr size_t LITERAL_OBJECT_COMMON_ITEM_GROUP_LEN = 4; // 每4个元素表示一组普通key-value
     constexpr size_t LITERAL_OBJECT_METHOD_ITEM_GROUP_LEN = 6; // 每6个元素表示一组方法key-value
     constexpr size_t MAX_EXPORT_ITEM_LEN = 10000;
@@ -49,8 +50,8 @@ void panda::guard::ObjectProperty::Update()
 {
     auto &literalArrayTable = this->program_->prog_->literalarray_table;
     PANDA_GUARD_ASSERT_PRINT(
-            literalArrayTable.find(this->literalArrayIdx_) == literalArrayTable.end(),
-            TAG << "get bad literalArrayIdx:" << this->literalArrayIdx_);
+        literalArrayTable.find(this->literalArrayIdx_) == literalArrayTable.end(),
+        TAG << "get bad literalArrayIdx:" << this->literalArrayIdx_);
 
     auto &literalArray = literalArrayTable.at(this->literalArrayIdx_);
     this->obfName_ = GuardContext::GetInstance()->GetNameMapping()->GetName(this->name_);
@@ -70,8 +71,8 @@ void panda::guard::Object::Build()
     const auto &parentFunc = this->program_->prog_->function_table.at(this->insInfo_.function_->idx_);
     const size_t nextInsIndex = this->insInfo_.index_ + 1;
     PANDA_GUARD_ASSERT_PRINT(
-            nextInsIndex >= parentFunc.ins.size(),
-            TAG << "try to find next ins of createobjectwithbuffer get bad ins index:" << nextInsIndex);
+        nextInsIndex >= parentFunc.ins.size(),
+        TAG << "try to find next ins of createobjectwithbuffer get bad ins index:" << nextInsIndex);
 
     const auto &ins = parentFunc.ins[nextInsIndex];
     this->export_ = ins.opcode == pandasm::Opcode::STMODULEVAR; // 下一条指令为stmodulevar则为导出object
@@ -88,7 +89,7 @@ void panda::guard::Object::Build()
 
     const auto &literalArray = this->program_->prog_->literalarray_table.at(this->literalArrayIdx_);
     size_t keyIndex = 1; // object item key index
-    size_t valueIndex = keyIndex + 2; // object item value index
+    size_t valueIndex = keyIndex + LITERAL_OBJECT_ITEM_LEN; // object item value index
     while (valueIndex < literalArray.literals_.size()) {
         auto &valueLiteral = literalArray.literals_[valueIndex];
         bool isMethod = valueLiteral.tag_ == panda_file::LiteralTag::METHOD;
@@ -117,10 +118,10 @@ void panda::guard::Object::CreateProperty(const pandasm::LiteralArray &literalAr
     if (isMethod) {
         size_t valueLiteralIndex = index + 2;
         PANDA_GUARD_ASSERT_PRINT(
-                valueLiteralIndex >= literalArray.literals_.size(), "bad valueLiteralIndex:" << valueLiteralIndex);
+            valueLiteralIndex >= literalArray.literals_.size(), "bad valueLiteralIndex:" << valueLiteralIndex);
         const auto &[valueTag, valueValue] = literalArray.literals_[valueLiteralIndex];
         PANDA_GUARD_ASSERT_PRINT(
-                valueTag != panda_file::LiteralTag::METHOD, "bad valueLiteral tag:" << (int) valueTag);
+            valueTag != panda_file::LiteralTag::METHOD, "bad valueLiteral tag:" << (int) valueTag);
         property.method_ = std::make_shared<PropertyMethod>(this->program_, std::get<std::string>(valueValue));
         property.method_->export_ = this->export_;
         property.method_->scope_ = this->scope_;

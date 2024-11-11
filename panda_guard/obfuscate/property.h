@@ -22,7 +22,7 @@ namespace panda::guard {
     class Property final : public PropertyOptionEntity, public IExtractNames {
     public:
         Property(Program *program, const std::string &name)
-                : PropertyOptionEntity(program)
+            : PropertyOptionEntity(program)
         {
             this->name_ = name;
             this->obfName_ = this->name_;

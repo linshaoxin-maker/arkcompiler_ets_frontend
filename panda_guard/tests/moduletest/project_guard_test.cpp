@@ -138,13 +138,16 @@ void panda::guard::ProjectGuardTest::ValidateNameCache()
     context->GetNameCache()->WriteCache();
 
     std::string nameCachePath = context->GetGuardOptions()->GetDefaultNameCachePath();
-    std::string expectNameCachePath = TEST_EXPECT_DIR + "/" + this->GetProjectName() + "/" + this->GetConfigName() + CACHE_FILE_SUFFIX;
+    std::string expectNameCachePath = TEST_EXPECT_DIR + "/" + this->GetProjectName() + "/" +
+        this->GetConfigName() + CACHE_FILE_SUFFIX;
     TestUtil::ValidateData(nameCachePath, expectNameCachePath);
 }
 
 void panda::guard::ProjectGuardTest::ValidatePa()
 {
-    std::string paPath = TEST_PROJECT_OUT_DIR + this->GetProjectName() + "/obf/" + this->GetConfigName() + PA_FILE_SUFFIX;
-    std::string expectPaPath = TEST_EXPECT_DIR + "/" + this->GetProjectName() + "/" + this->GetConfigName() + PA_FILE_SUFFIX;
+    std::string paPath = TEST_PROJECT_OUT_DIR + this->GetProjectName() + "/obf/" +
+        this->GetConfigName() + PA_FILE_SUFFIX;
+    std::string expectPaPath = TEST_EXPECT_DIR + "/" + this->GetProjectName() + "/" +
+        this->GetConfigName() + PA_FILE_SUFFIX;
     TestUtil::ValidateData(paPath, expectPaPath);
 }

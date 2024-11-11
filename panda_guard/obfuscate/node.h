@@ -33,7 +33,7 @@ namespace panda::guard {
     class Node final : public Entity {
     public:
         Node(Program *program, const std::string &name, std::string pkgName)
-                : Entity(program, name), moduleRecord_(program, name), pkgName_(std::move(pkgName))
+            : Entity(program, name), moduleRecord_(program, name), pkgName_(std::move(pkgName))
         {}
 
         void Build() override;

@@ -31,8 +31,8 @@ void panda::guard::Property::ExtractNames(std::set<std::string> &strings) const
 void panda::guard::Property::Update()
 {
     PANDA_GUARD_ASSERT_PRINT(
-            !this->insInfo_.IsValid() || !this->nameInfo_.IsValid(),
-            TAG << "get bad insInfo for ins" << this->name_);
+        !this->insInfo_.IsValid() || !this->nameInfo_.IsValid(),
+        TAG << "get bad insInfo for ins" << this->name_);
 
     this->obfName_ = GuardContext::GetInstance()->GetNameMapping()->GetName(this->name_);
     this->nameInfo_.ins_->ids[0] = this->obfName_;

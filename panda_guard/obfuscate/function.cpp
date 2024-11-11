@@ -43,17 +43,17 @@ namespace {
     constexpr std::string_view ANONYMOUS_FUNCTION_NAME = "^0"; // first anonymous function name
 
     const std::map<char, panda::guard::FunctionType> FUNCTION_TYPE_MAP = {
-            {'>', panda::guard::FunctionType::INSTANCE_FUNCTION},
-            {'<', panda::guard::FunctionType::STATIC_FUNCTION},
-            {'=', panda::guard::FunctionType::CONSTRUCTOR_FUNCTION},
-            {'*', panda::guard::FunctionType::NORMAL_FUNCTION},
-            {'%', panda::guard::FunctionType::ENUM_FUNCTION},
-            {'&', panda::guard::FunctionType::NAMESPACE_FUNCTION},
+        {'>', panda::guard::FunctionType::INSTANCE_FUNCTION},
+        {'<', panda::guard::FunctionType::STATIC_FUNCTION},
+        {'=', panda::guard::FunctionType::CONSTRUCTOR_FUNCTION},
+        {'*', panda::guard::FunctionType::NORMAL_FUNCTION},
+        {'%', panda::guard::FunctionType::ENUM_FUNCTION},
+        {'&', panda::guard::FunctionType::NAMESPACE_FUNCTION},
     };
     const OpcodeList PROPERTY_TYPE_LIST_NORMAL = {
-            panda::pandasm::Opcode::STOBJBYNAME,
-            panda::pandasm::Opcode::DEFINEPROPERTYBYNAME,
-            panda::pandasm::Opcode::STOBJBYVALUE,
+        panda::pandasm::Opcode::STOBJBYNAME,
+        panda::pandasm::Opcode::DEFINEPROPERTYBYNAME,
+        panda::pandasm::Opcode::STOBJBYVALUE,
     };
 
     /**
@@ -96,13 +96,13 @@ namespace {
                 ins.ids[0] == CONSOLE_INS_VAR) {
                 size_t nextInsIndex = i + 1;
                 PANDA_GUARD_ASSERT_PRINT(
-                        nextInsIndex >= insList.size(),
-                        TAG << "get console next ins get bad index:" << nextInsIndex);
+                    nextInsIndex >= insList.size(),
+                    TAG << "get console next ins get bad index:" << nextInsIndex);
 
                 auto &nextIns = insList[nextInsIndex];
                 PANDA_GUARD_ASSERT_PRINT(
-                        nextIns.opcode != panda::pandasm::Opcode::STA,
-                        TAG << "get console next ins get bad ins type");
+                    nextIns.opcode != panda::pandasm::Opcode::STA,
+                    TAG << "get console next ins get bad ins type");
 
                 reg = nextIns.regs[0];
                 start = i;
@@ -130,7 +130,7 @@ namespace {
     }
 
     int GetConsoleLogInfoForEnd(
-            const std::vector<panda::pandasm::Ins> &insList, size_t start, uint16_t reg, size_t &end)
+        const std::vector<panda::pandasm::Ins> &insList, size_t start, uint16_t reg, size_t &end)
     {
         size_t i = start + 1;
         while (i < insList.size()) {
@@ -181,12 +181,12 @@ namespace {
     }
 
     void ReplaceJumpInsLabel(
-            std::vector<panda::pandasm::Ins> &insList, const std::string &oldLabel, const std::string &newLabel)
+        std::vector<panda::pandasm::Ins> &insList, const std::string &oldLabel, const std::string &newLabel)
     {
         size_t i = 0;
         while (i < insList.size()) {
             auto &ins = insList[i];
-            if (!ins.ids.empty() && ins.ids[0] == oldLabel) { // TODO 识别为跳转指令才修改，防止修改用户字符串
+            if (!ins.ids.empty() && ins.ids[0] == oldLabel) {
                 ins.ids[0] = newLabel;
                 LOG(INFO, PANDAGUARD) << TAG << "replace label at index:" << i << " " << oldLabel << "-->"
                                       << newLabel;
@@ -221,8 +221,8 @@ void panda::guard::Function::Init()
 
     std::vector<std::string> scopeAndName = StringUtil::Split(rawName, SCOPE_DELIMITER.data());
     PANDA_GUARD_ASSERT_PRINT(
-            scopeAndName.empty() || scopeAndName.size() > SCOPE_AND_NAME_LEN,
-            TAG << "split scope and name get bad len");
+        scopeAndName.empty() || scopeAndName.size() > SCOPE_AND_NAME_LEN,
+        TAG << "split scope and name get bad len");
 
     this->scopeTypeStr_ = scopeAndName[0];
     this->SetFunctionType(scopeAndName[0].back());
@@ -276,8 +276,8 @@ void panda::guard::Function::InitBaseInfo()
 void panda::guard::Function::SetFunctionType(char functionTypeCode)
 {
     PANDA_GUARD_ASSERT_PRINT(
-            FUNCTION_TYPE_MAP.find(functionTypeCode) == FUNCTION_TYPE_MAP.end(),
-            TAG << "unsupported function type code:" << functionTypeCode);
+        FUNCTION_TYPE_MAP.find(functionTypeCode) == FUNCTION_TYPE_MAP.end(),
+        TAG << "unsupported function type code:" << functionTypeCode);
 
     this->type_ = FUNCTION_TYPE_MAP.at(functionTypeCode);
 }
@@ -389,7 +389,7 @@ void panda::guard::Function::ExtractNames(std::set<std::string> &strings) const
 std::string panda::guard::Function::GetLines() const
 {
     return LINE_DELIMITER.data() + std::to_string(this->startLine_) + LINE_DELIMITER.data() + std::to_string(
-            this->endLine_);
+        this->endLine_);
 }
 
 void panda::guard::Function::CreateProperty(const InstructionInfo &info)
@@ -400,7 +400,7 @@ void panda::guard::Function::CreateProperty(const InstructionInfo &info)
 
     InstructionInfo nameInfo;
     GetPropertyNameInfo(info, nameInfo);
-    if(!nameInfo.IsValid()) {
+    if (!nameInfo.IsValid()) {
         LOG(INFO, PANDAGUARD) << TAG << "invalid nameInfo:" << info.index_ << " " << info.ins_->ToString();
         return;
     }
@@ -422,10 +422,10 @@ void panda::guard::Function::CreateProperty(const InstructionInfo &info)
 bool panda::guard::Function::IsValidProperty(const InstructionInfo &info)
 {
     bool found = std::any_of(
-            PROPERTY_TYPE_LIST_NORMAL.begin(), PROPERTY_TYPE_LIST_NORMAL.end(),
-            [&](panda::pandasm::Opcode opcode) -> bool {
-                return info.ins_->opcode == opcode;
-            });
+        PROPERTY_TYPE_LIST_NORMAL.begin(), PROPERTY_TYPE_LIST_NORMAL.end(),
+        [&](panda::pandasm::Opcode opcode) -> bool {
+            return info.ins_->opcode == opcode;
+        });
     return found && !info.IsInnerReg(); // 寄存器小于函数申请寄存器数量则为函数内寄存器, 这种情况下不关联属性
 }
 
@@ -472,11 +472,11 @@ void panda::guard::Function::UpdateDefine() const
 
     // definefunc, definemethod for function, defineclasswithbuffer, callruntime.definesendableclass for constructor
     PANDA_GUARD_ASSERT_PRINT(
-            this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINEFUNC &&
-            this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINECLASSWITHBUFFER &&
-            this->insInfo_.ins_->opcode != pandasm::Opcode::CALLRUNTIME_DEFINESENDABLECLASS &&
-            this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINEMETHOD,
-            TAG << "get bad ins type");
+        this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINEFUNC &&
+        this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINECLASSWITHBUFFER &&
+        this->insInfo_.ins_->opcode != pandasm::Opcode::CALLRUNTIME_DEFINESENDABLECLASS &&
+        this->insInfo_.ins_->opcode != pandasm::Opcode::DEFINEMETHOD,
+        TAG << "get bad ins type");
 
     this->insInfo_.ins_->ids[0] = this->obfIdx_;
     this->program_->prog_->strings.emplace(this->obfIdx_);
@@ -514,7 +514,7 @@ void panda::guard::Function::GetGraph(compiler::Graph *&outGraph)
                                                         Arch::NONE, method_ptr, this->runtimeInterface_.get(),
                                                         false, nullptr, true, true);
     PANDA_GUARD_ASSERT_PRINT((graph == nullptr) || !graph->RunPass<panda::compiler::IrBuilder>(),
-                             TAG << "Graph " << this->idx_ << ": IR builder failed!");
+         TAG << "Graph " << this->idx_ << ": IR builder failed!");
 
     this->BuildPcInsMap(graph);
     this->graph_ = graph;

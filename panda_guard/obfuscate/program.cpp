@@ -26,15 +26,15 @@ namespace {
     bool FoundModuleRecord(const panda::pandasm::Record &record, std::string &pkgName)
     {
         return std::any_of(
-                record.field_list.begin(), record.field_list.end(),
-                [&](const panda::pandasm::Field &field) -> bool {
-                    bool found = field.name.rfind(PKG_NAME_PREFIX, 0) == 0;
-                    if (found) {
-                        pkgName = field.name.substr(PKG_NAME_PREFIX.size(),
-                                                    field.name.size() - PKG_NAME_PREFIX.size());
-                    }
-                    return found;
-                });
+            record.field_list.begin(), record.field_list.end(),
+            [&](const panda::pandasm::Field &field) -> bool {
+                bool found = field.name.rfind(PKG_NAME_PREFIX, 0) == 0;
+                if (found) {
+                    pkgName = field.name.substr(PKG_NAME_PREFIX.size(),
+                                                field.name.size() - PKG_NAME_PREFIX.size());
+                }
+                return found;
+            });
     }
 }
 

@@ -392,3 +392,4 @@ void panda::guard::Node::UpdateFileNameReferences()
     moduleRecord_.UpdateFileNameReferences();
     // todo: dynamic_import
 }
+

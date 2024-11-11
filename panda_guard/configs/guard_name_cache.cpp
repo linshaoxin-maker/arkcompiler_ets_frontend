@@ -203,8 +203,8 @@ void panda::guard::NameCache::WriteCache()
     std::string defaultPath = options_->GetDefaultNameCachePath();
     std::string printPath = options_->GetPrintNameCache();
     PANDA_GUARD_ASSERT_PRINT(
-            defaultPath.empty() && printPath.empty(),
-            TAG << "default and print name cache path is empty");
+        defaultPath.empty() && printPath.empty(),
+        TAG << "default and print name cache path is empty");
 
     ProjectNameCacheInfo merge;
     merge.fileCacheInfoMap_ = newNameCache_.fileCacheInfoMap_;

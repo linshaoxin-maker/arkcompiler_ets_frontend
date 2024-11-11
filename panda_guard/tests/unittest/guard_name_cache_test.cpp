@@ -24,7 +24,8 @@ using namespace panda;
 namespace {
     const std::string NAME_CACHE_TEST_01_FILE = PANDA_GUARD_UNIT_TEST_DIR "configs/name_cache_test_01.json";
     const std::string NAME_CACHE_TEST_02_FILE = PANDA_GUARD_UNIT_TEST_DIR "configs/name_cache_test_02.json";
-    const std::string NAME_CACHE_TEST_02_CONFIG_FILE = PANDA_GUARD_UNIT_TEST_DIR "configs/name_cache_test_02_config.json";
+    const std::string NAME_CACHE_TEST_02_CONFIG_FILE =
+        PANDA_GUARD_UNIT_TEST_DIR "configs/name_cache_test_02_config.json";
     const std::string NAME_CACHE_TEST_04_FILE = PANDA_GUARD_UNIT_TEST_DIR "configs/name_cache_test_04.json";
 }
 
@@ -93,7 +94,8 @@ HWTEST(GuardNameCacheUnitTest, guard_name_cache_test_002, TestSize.Level4)
 
     nameCache.WriteCache();
 
-    static const std::string NEW_NAME_CACHE_TEST_JSON_FILE = PANDA_GUARD_UNIT_TEST_DIR "configs/new_name_cache_test.json";
+    static const std::string NEW_NAME_CACHE_TEST_JSON_FILE =
+        PANDA_GUARD_UNIT_TEST_DIR "configs/new_name_cache_test.json";
     guard::NameCache newNameCache(options);
     newNameCache.Load(NEW_NAME_CACHE_TEST_JSON_FILE);
 

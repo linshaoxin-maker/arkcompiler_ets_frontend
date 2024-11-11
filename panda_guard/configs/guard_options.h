@@ -23,39 +23,39 @@
 
 namespace panda::guard {
     struct ObfuscationOption {
-        bool enable_ = false;
-        std::vector<std::string> reservedList_;
-        std::vector<std::string> universalReservedList_;
+        bool enable = false;
+        std::vector<std::string> reservedList;
+        std::vector<std::string> universalReservedList;
     };
 
     struct KeepOption {
-        bool enable_ = false;
-        std::vector<std::string> keepPaths_;
+        bool enable = false;
+        std::vector<std::string> keepPaths;
     };
 
     struct ObfuscationRules {
-        bool disableObfuscation_ = false;
-        bool enableExportObfuscation_ = false;
-        bool enableRemoveLog_ = false;
-        std::string printNameCache_;
-        std::string applyNameCache_;
-        std::vector<std::string> reservedNames_;
-        ObfuscationOption propertyOption_;
-        ObfuscationOption toplevelOption_;
-        ObfuscationOption fileNameOption_;
-        KeepOption keepOption_;
+        bool disableObfuscation = false;
+        bool enableExportObfuscation = false;
+        bool enableRemoveLog = false;
+        std::string printNameCache;
+        std::string applyNameCache;
+        std::vector<std::string> reservedNames;
+        ObfuscationOption propertyOption;
+        ObfuscationOption toplevelOption;
+        ObfuscationOption fileNameOption;
+        KeepOption keepOption;
     };
 
     struct ObfuscationConfig {
-        std::string abcFilePath_;
-        std::string obfAbcFilePath_;
-        std::string obfPaFilePath_;
-        std::string compileSdkVersion_;
-        uint8_t targetApiVersion_;
-        std::string targetApiSubVersion_;
-        std::string entryPackageInfo_;
-        std::string defaultNameCachePath_;
-        ObfuscationRules obfuscationRules_;
+        std::string abcFilePath;
+        std::string obfAbcFilePath;
+        std::string obfPaFilePath;
+        std::string compileSdkVersion;
+        uint8_t targetApiVersion;
+        std::string targetApiSubVersion;
+        std::string entryPackageInfo;
+        std::string defaultNameCachePath;
+        ObfuscationRules obfuscationRules;
     };
 
     class GuardOptions {

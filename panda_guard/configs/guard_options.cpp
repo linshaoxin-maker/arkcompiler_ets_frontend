@@ -63,10 +63,10 @@ namespace {
             LOG(INFO, PANDAGUARD) << TAG << "not config " << objKey;
             return;
         }
-        option.enable_ = panda::guard::JsonUtil::GetBoolValue(innerObj, ENABLE);
-        option.reservedList_ = panda::guard::JsonUtil::GetArrayStringValue(innerObj, reservedKey);
-        option.universalReservedList_ = panda::guard::JsonUtil::GetArrayStringValue(innerObj, universalKey);
-        for (auto &str: option.universalReservedList_) {
+        option.enable = panda::guard::JsonUtil::GetBoolValue(innerObj, ENABLE);
+        option.reservedList = panda::guard::JsonUtil::GetArrayStringValue(innerObj, reservedKey);
+        option.universalReservedList = panda::guard::JsonUtil::GetArrayStringValue(innerObj, universalKey);
+        for (auto &str: option.universalReservedList) {
             panda::guard::StringUtil::RemoveSlashFromBothEnds(str);
         }
     }
@@ -94,8 +94,8 @@ namespace {
             LOG(INFO, PANDAGUARD) << TAG << "not config " << KEEP_OPTIONS;
             return;
         }
-        option.enable_ = panda::guard::JsonUtil::GetBoolValue(innerObj, ENABLE);
-        option.keepPaths_ = panda::guard::JsonUtil::GetArrayStringValue(innerObj, KEEP_PATHS);
+        option.enable = panda::guard::JsonUtil::GetBoolValue(innerObj, ENABLE);
+        option.keepPaths = panda::guard::JsonUtil::GetArrayStringValue(innerObj, KEEP_PATHS);
     }
 
     void FillObfuscationConfig(const std::string &content, panda::guard::ObfuscationConfig &obfConfig)
@@ -103,29 +103,29 @@ namespace {
         panda::JsonObject configObj(content);
         PANDA_GUARD_ASSERT_PRINT(!configObj.IsValid(), TAG << "config file content is invalid json");
 
-        obfConfig.abcFilePath_ = panda::guard::JsonUtil::GetStringValue(&configObj, ABC_FILE_PATH);
-        obfConfig.obfAbcFilePath_ = panda::guard::JsonUtil::GetStringValue(&configObj, OBF_ABC_FILE_PATH);
-        obfConfig.obfPaFilePath_ = panda::guard::JsonUtil::GetStringValue(&configObj, OBF_PA_FILE_PATH);
-        obfConfig.compileSdkVersion_ = panda::guard::JsonUtil::GetStringValue(&configObj, COMPILE_SDK_VERSION);
-        obfConfig.targetApiVersion_ = (uint8_t)panda::guard::JsonUtil::GetDoubleValue(&configObj, TARGET_API_VERSION_);
-        obfConfig.targetApiSubVersion_ = panda::guard::JsonUtil::GetStringValue(&configObj, TARGET_API_SUB_VERSION_);
-        obfConfig.entryPackageInfo_ = panda::guard::JsonUtil::GetStringValue(&configObj, ENTRY_PACKAGE_INFO);
-        obfConfig.defaultNameCachePath_ = panda::guard::JsonUtil::GetStringValue(&configObj, DEFAULT_NAME_CACHE_PATH);
+        obfConfig.abcFilePath = panda::guard::JsonUtil::GetStringValue(&configObj, ABC_FILE_PATH);
+        obfConfig.obfAbcFilePath = panda::guard::JsonUtil::GetStringValue(&configObj, OBF_ABC_FILE_PATH);
+        obfConfig.obfPaFilePath = panda::guard::JsonUtil::GetStringValue(&configObj, OBF_PA_FILE_PATH);
+        obfConfig.compileSdkVersion = panda::guard::JsonUtil::GetStringValue(&configObj, COMPILE_SDK_VERSION);
+        obfConfig.targetApiVersion = (uint8_t)panda::guard::JsonUtil::GetDoubleValue(&configObj, TARGET_API_VERSION_);
+        obfConfig.targetApiSubVersion = panda::guard::JsonUtil::GetStringValue(&configObj, TARGET_API_SUB_VERSION_);
+        obfConfig.entryPackageInfo = panda::guard::JsonUtil::GetStringValue(&configObj, ENTRY_PACKAGE_INFO);
+        obfConfig.defaultNameCachePath = panda::guard::JsonUtil::GetStringValue(&configObj, DEFAULT_NAME_CACHE_PATH);
 
         auto rulesObj = panda::guard::JsonUtil::GetJsonObject(&configObj, OBFUSCATION_RULES);
         PANDA_GUARD_ASSERT_PRINT(!rulesObj, TAG << "not config obfuscation rules");
 
-        auto obfRule = &obfConfig.obfuscationRules_;
-        obfRule->disableObfuscation_ = panda::guard::JsonUtil::GetBoolValue(rulesObj, DISABLE_OBFUSCATION);
-        obfRule->enableExportObfuscation_ = panda::guard::JsonUtil::GetBoolValue(rulesObj, ENABLE_EXPORT_OBFUSCATION);
-        obfRule->enableRemoveLog_ = panda::guard::JsonUtil::GetBoolValue(rulesObj, ENABLE_REMOVE_LOG);
-        obfRule->printNameCache_ = panda::guard::JsonUtil::GetStringValue(rulesObj, PRINT_NAME_CACHE);
-        obfRule->applyNameCache_ = panda::guard::JsonUtil::GetStringValue(rulesObj, APPLY_NAME_CACHE);
-        obfRule->reservedNames_ = panda::guard::JsonUtil::GetArrayStringValue(rulesObj, RESERVED_NAMES);
-        FillPropertyOption(rulesObj, obfRule->propertyOption_);
-        FillToplevelOption(rulesObj, obfRule->toplevelOption_);
-        FillFileNameOption(rulesObj, obfRule->fileNameOption_);
-        FillKeepOption(rulesObj, obfRule->keepOption_);
+        auto obfRule = &obfConfig.obfuscationRules;
+        obfRule->disableObfuscation = panda::guard::JsonUtil::GetBoolValue(rulesObj, DISABLE_OBFUSCATION);
+        obfRule->enableExportObfuscation = panda::guard::JsonUtil::GetBoolValue(rulesObj, ENABLE_EXPORT_OBFUSCATION);
+        obfRule->enableRemoveLog = panda::guard::JsonUtil::GetBoolValue(rulesObj, ENABLE_REMOVE_LOG);
+        obfRule->printNameCache = panda::guard::JsonUtil::GetStringValue(rulesObj, PRINT_NAME_CACHE);
+        obfRule->applyNameCache = panda::guard::JsonUtil::GetStringValue(rulesObj, APPLY_NAME_CACHE);
+        obfRule->reservedNames = panda::guard::JsonUtil::GetArrayStringValue(rulesObj, RESERVED_NAMES);
+        FillPropertyOption(rulesObj, obfRule->propertyOption);
+        FillToplevelOption(rulesObj, obfRule->toplevelOption);
+        FillFileNameOption(rulesObj, obfRule->fileNameOption);
+        FillKeepOption(rulesObj, obfRule->keepOption);
     }
 
     bool NeedToBeReserved(const std::vector<std::string> &reservedNames,
@@ -152,132 +152,132 @@ void panda::guard::GuardOptions::Load(const std::string &configFilePath)
 
     FillObfuscationConfig(fileContent, this->obfConfig_);
     PANDA_GUARD_ASSERT_PRINT(
-            obfConfig_.abcFilePath_.empty() || obfConfig_.obfAbcFilePath_.empty(),
-            TAG << "abcFilePath and obfAbcFilePath must not empty");
+        obfConfig_.abcFilePath.empty() || obfConfig_.obfAbcFilePath.empty(),
+        TAG << "abcFilePath and obfAbcFilePath must not empty");
 
     PANDA_GUARD_ASSERT_PRINT(
-            (obfConfig_.targetApiVersion_ == 0) || obfConfig_.targetApiSubVersion_.empty(),
-            TAG << "targetApiVersion and targetApiSubVersion must not empty");
+        (obfConfig_.targetApiVersion == 0) || obfConfig_.targetApiSubVersion.empty(),
+        TAG << "targetApiVersion and targetApiSubVersion must not empty");
 
-    LOG(INFO, PANDAGUARD) << TAG << "disableObfuscation_:" << obfConfig_.obfuscationRules_.disableObfuscation_;
-    LOG(INFO, PANDAGUARD) << TAG << "export obfuscation:" << obfConfig_.obfuscationRules_.enableExportObfuscation_;
-    LOG(INFO, PANDAGUARD) << TAG << "removeLog obfuscation:" << obfConfig_.obfuscationRules_.enableRemoveLog_;
-    LOG(INFO, PANDAGUARD) << TAG << "property obfuscation:" << obfConfig_.obfuscationRules_.propertyOption_.enable_;
-    LOG(INFO, PANDAGUARD) << TAG << "topLevel obfuscation:" << obfConfig_.obfuscationRules_.toplevelOption_.enable_;
-    LOG(INFO, PANDAGUARD) << TAG << "fileName obfuscation:" << obfConfig_.obfuscationRules_.fileNameOption_.enable_;
+    LOG(INFO, PANDAGUARD) << TAG << "disableObfuscation_:" << obfConfig_.obfuscationRules.disableObfuscation;
+    LOG(INFO, PANDAGUARD) << TAG << "export obfuscation:" << obfConfig_.obfuscationRules.enableExportObfuscation;
+    LOG(INFO, PANDAGUARD) << TAG << "removeLog obfuscation:" << obfConfig_.obfuscationRules.enableRemoveLog;
+    LOG(INFO, PANDAGUARD) << TAG << "property obfuscation:" << obfConfig_.obfuscationRules.propertyOption.enable;
+    LOG(INFO, PANDAGUARD) << TAG << "topLevel obfuscation:" << obfConfig_.obfuscationRules.toplevelOption.enable;
+    LOG(INFO, PANDAGUARD) << TAG << "fileName obfuscation:" << obfConfig_.obfuscationRules.fileNameOption.enable;
 }
 
 const std::string &panda::guard::GuardOptions::GetAbcFilePath() const
 {
-    return obfConfig_.abcFilePath_;
+    return obfConfig_.abcFilePath;
 }
 
 const std::string &panda::guard::GuardOptions::GetObfAbcFilePath() const
 {
-    return obfConfig_.obfAbcFilePath_;
+    return obfConfig_.obfAbcFilePath;
 }
 
 const std::string &panda::guard::GuardOptions::GetObfPaFilePath() const
 {
-    return obfConfig_.obfPaFilePath_;
+    return obfConfig_.obfPaFilePath;
 }
 
 const std::string &panda::guard::GuardOptions::GetCompileSdkVersion() const
 {
-    return obfConfig_.compileSdkVersion_;
+    return obfConfig_.compileSdkVersion;
 }
 
 uint8_t panda::guard::GuardOptions::GetTargetApiVersion() const
 {
-    return obfConfig_.targetApiVersion_;
+    return obfConfig_.targetApiVersion;
 }
 
 const std::string &panda::guard::GuardOptions::GetTargetApiSubVersion() const
 {
-    return obfConfig_.targetApiSubVersion_;
+    return obfConfig_.targetApiSubVersion;
 }
 
 const std::string &panda::guard::GuardOptions::GetEntryPackageInfo() const
 {
-    return obfConfig_.entryPackageInfo_;
+    return obfConfig_.entryPackageInfo;
 }
 
 const std::string &panda::guard::GuardOptions::GetDefaultNameCachePath() const
 {
-    return obfConfig_.defaultNameCachePath_;
+    return obfConfig_.defaultNameCachePath;
 }
 
 bool panda::guard::GuardOptions::DisableObfuscation() const
 {
-    return obfConfig_.obfuscationRules_.disableObfuscation_;
+    return obfConfig_.obfuscationRules.disableObfuscation;
 }
 
 bool panda::guard::GuardOptions::EnableExport() const
 {
-    return obfConfig_.obfuscationRules_.enableExportObfuscation_;
+    return obfConfig_.obfuscationRules.enableExportObfuscation;
 }
 
 bool panda::guard::GuardOptions::EnableRemoveLog() const
 {
-    return obfConfig_.obfuscationRules_.enableRemoveLog_;
+    return obfConfig_.obfuscationRules.enableRemoveLog;
 }
 
 const std::string &panda::guard::GuardOptions::GetPrintNameCache() const
 {
-    return obfConfig_.obfuscationRules_.printNameCache_;
+    return obfConfig_.obfuscationRules.printNameCache;
 }
 
 const std::string &panda::guard::GuardOptions::GetApplyNameCache() const
 {
-    return obfConfig_.obfuscationRules_.applyNameCache_;
+    return obfConfig_.obfuscationRules.applyNameCache;
 }
 
 bool panda::guard::GuardOptions::EnableProperty() const
 {
-    return obfConfig_.obfuscationRules_.propertyOption_.enable_;
+    return obfConfig_.obfuscationRules.propertyOption.enable;
 }
 
 bool panda::guard::GuardOptions::EnableToplevel() const
 {
-    return obfConfig_.obfuscationRules_.toplevelOption_.enable_;
+    return obfConfig_.obfuscationRules.toplevelOption.enable;
 }
 
 bool panda::guard::GuardOptions::EnableFileName() const
 {
-    return obfConfig_.obfuscationRules_.fileNameOption_.enable_;
+    return obfConfig_.obfuscationRules.fileNameOption.enable;
 }
 
 bool panda::guard::GuardOptions::IsKeepPath(const std::string &path) const
 {
-    const auto keepOption = &obfConfig_.obfuscationRules_.keepOption_;
-    if (!keepOption->enable_ || path.empty()) {
+    const auto keepOption = &obfConfig_.obfuscationRules.keepOption;
+    if (!keepOption->enable || path.empty()) {
         return false;
     }
 
     std::vector<std::string> universalKeepPaths;
-    return NeedToBeReserved(keepOption->keepPaths_, universalKeepPaths, path);
+    return NeedToBeReserved(keepOption->keepPaths, universalKeepPaths, path);
 }
 
 bool panda::guard::GuardOptions::IsReservedNames(const std::string &name) const
 {
     std::vector<std::string> universalReservedNames;
-    return NeedToBeReserved(obfConfig_.obfuscationRules_.reservedNames_, universalReservedNames, name);
+    return NeedToBeReserved(obfConfig_.obfuscationRules.reservedNames, universalReservedNames, name);
 }
 
 bool panda::guard::GuardOptions::IsReservedProperties(const std::string &name) const
 {
-    return NeedToBeReserved(obfConfig_.obfuscationRules_.propertyOption_.reservedList_,
-                            obfConfig_.obfuscationRules_.propertyOption_.universalReservedList_, name);
+    return NeedToBeReserved(obfConfig_.obfuscationRules.propertyOption.reservedList,
+                            obfConfig_.obfuscationRules.propertyOption.universalReservedList, name);
 }
 
 bool panda::guard::GuardOptions::IsReservedToplevelNames(const std::string &name) const
 {
-    return NeedToBeReserved(obfConfig_.obfuscationRules_.toplevelOption_.reservedList_,
-                            obfConfig_.obfuscationRules_.toplevelOption_.universalReservedList_, name);
+    return NeedToBeReserved(obfConfig_.obfuscationRules.toplevelOption.reservedList,
+                            obfConfig_.obfuscationRules.toplevelOption.universalReservedList, name);
 }
 
 bool panda::guard::GuardOptions::IsReservedFileNames(const std::string &name) const
 {
-    return NeedToBeReserved(obfConfig_.obfuscationRules_.fileNameOption_.reservedList_,
-                            obfConfig_.obfuscationRules_.fileNameOption_.universalReservedList_, name);
+    return NeedToBeReserved(obfConfig_.obfuscationRules.fileNameOption.reservedList,
+                            obfConfig_.obfuscationRules.fileNameOption.universalReservedList, name);
 }

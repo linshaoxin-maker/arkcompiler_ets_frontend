@@ -30,41 +30,44 @@ namespace {
     const std::string CACHE_FILE_SUFFIX = ".cache.json";
 }
 
-#define DECLARE_VALIDATE_GRAMMAR_TEST(projectName, configName)\
-class GrammarTest_##projectName##_##configName : public testing::Test {\
-public:\
-    static void SetUpTestCase() {}\
-    static void TearDownTestCase() {}\
-    void SetUp() override {}\
-    void TearDown() override {}\
-    std::string GetProjectName()\
-    {\
-        return #projectName;\
-    }\
-    std::string GetConfigName()\
-    {\
-        return #configName;\
-    }\
-};\
+#define DECLARE_VALIDATE_GRAMMAR_TEST(projectName, configName) \
+class GrammarTest_##projectName##_##configName : public testing::Test { \
+public: \
+    static void SetUpTestCase() {} \
+    static void TearDownTestCase() {} \
+    void SetUp() override {} \
+    void TearDown() override {} \
+    std::string GetProjectName() \
+    { \
+        return #projectName; \
+    } \
+    std::string GetConfigName() \
+    { \
+        return #configName; \
+    } \
+}; \
 \
-HWTEST_F(GrammarTest_##projectName##_##configName, should_success_when_obf_##projectName##_with_##configName, TestSize.Level4)\
+HWTEST_F(GrammarTest_##projectName##_##configName, should_success_when_obf_##projectName##_with_##configName, TestSize.Level4) \
 {\
-    std::string configPath = GRAMMAR_TEST_OUT_DIR + this->GetProjectName() + "/" + this->GetConfigName() + JSON_FILE_SUFFIX;\
-    int argc = 3;\
-    char *argv[3];\
-    argv[0] = const_cast<char *>("xxx");\
-    argv[1] = const_cast<char *>("--debug");\
-    argv[2] = const_cast<char *>(configPath.c_str());\
-    GuardDriver driver;\
-    driver.Run(argc, const_cast<const char **>(argv));\
+    std::string projectPath = GRAMMAR_TEST_OUT_DIR + this->GetProjectName(); \
+    std::string expectProjectPath = GRAMMAR_TEST_EXPECT_DIR + this->GetProjectName(); \
 \
-    std::string nameCachePath = GRAMMAR_TEST_OUT_DIR + this->GetProjectName() + "/obf/" + this->GetConfigName() + CACHE_FILE_SUFFIX;\
-    std::string expectNameCachePath = GRAMMAR_TEST_EXPECT_DIR + this->GetProjectName() + "/" + this->GetConfigName() + CACHE_FILE_SUFFIX;\
-    TestUtil::ValidateData(nameCachePath, expectNameCachePath);\
+    std::string configPath = projectPath + "/" + this->GetConfigName() + JSON_FILE_SUFFIX; \
+    int argc = 3; \
+    char *argv[3]; \
+    argv[0] = const_cast<char *>("xxx"); \
+    argv[1] = const_cast<char *>("--debug"); \
+    argv[2] = const_cast<char *>(configPath.c_str()); \
+    GuardDriver driver; \
+    driver.Run(argc, const_cast<const char **>(argv)); \
 \
-    std::string paPath = GRAMMAR_TEST_OUT_DIR + this->GetProjectName() + "/obf/" + this->GetConfigName() + PA_FILE_SUFFIX;\
-    std::string expectPaPath = GRAMMAR_TEST_EXPECT_DIR + this->GetProjectName() + "/" + this->GetConfigName() + PA_FILE_SUFFIX;\
-    TestUtil::ValidateData(paPath, expectPaPath);\
+    std::string nameCachePath = projectPath + "/obf/" + this->GetConfigName() + CACHE_FILE_SUFFIX; \
+    std::string expectNameCachePath = expectProjectPath + "/" + this->GetConfigName() + CACHE_FILE_SUFFIX; \
+    TestUtil::ValidateData(nameCachePath, expectNameCachePath); \
+\
+    std::string paPath = projectPath + "/obf/" + this->GetConfigName() + PA_FILE_SUFFIX; \
+    std::string expectPaPath = expectProjectPath + "/" + this->GetConfigName() + PA_FILE_SUFFIX; \
+    TestUtil::ValidateData(paPath, expectPaPath); \
 }
 
 DECLARE_VALIDATE_GRAMMAR_TEST(advanced_type, config)

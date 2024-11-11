@@ -208,6 +208,7 @@ void panda::guard::InstructionInfo::WriteNameCache()
     GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(this->origin_, this->obfName_);
 }
 
-bool panda::guard::InstructionInfo::IsValid() const {
+bool panda::guard::InstructionInfo::IsValid() const
+{
     return this->ins_ != nullptr;
 }

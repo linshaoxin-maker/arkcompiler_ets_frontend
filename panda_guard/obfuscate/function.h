@@ -40,7 +40,7 @@ namespace panda::guard {
     class Function : public Entity, public IExtractNames {
     public:
         Function(Program *program, std::string idx, bool useScope = true)
-                : Entity(program), idx_(std::move(idx)), useScope_(useScope)
+            : Entity(program), idx_(std::move(idx)), useScope_(useScope)
         {
             this->obfIdx_ = this->idx_; // obfIdx default equal to idx
         }

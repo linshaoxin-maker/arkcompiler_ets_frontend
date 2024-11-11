@@ -67,7 +67,7 @@ std::vector<std::string> panda::guard::StringUtil::StrictSplit(const std::string
 }
 
 std::tuple<std::string, std::string> panda::guard::StringUtil::RSplitOnce(
-        const std::string &str, const std::string &delimiter)
+    const std::string &str, const std::string &delimiter)
 {
     auto pos = str.find_last_of(delimiter);
     if (pos == std::string::npos) {
@@ -149,3 +149,4 @@ void panda::guard::StringUtil::RemoveSlashFromBothEnds(std::string &str)
         str.pop_back();
     }
 }
+

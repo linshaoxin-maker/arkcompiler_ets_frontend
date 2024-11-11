@@ -30,26 +30,27 @@ namespace {
     constexpr std::string_view COLON_DELIMITER = ":";
     constexpr std::string_view NORMALIZED_OHM_DELIMITER = "&";
     constexpr std::string_view PATH_DELIMITER = "/";
+    constexpr size_t FILEPATH_ITEM_MAX_PART_NUM = 2;
 
     uint16_t GetMethodAffiliateValueByOffset(const std::vector<panda::pandasm::LiteralArray::Literal> &literals,
                                              uint32_t &offset)
     {
         PANDA_GUARD_ASSERT_PRINT(offset >= literals.size(), TAG << "offset overflow");
         PANDA_GUARD_ASSERT_PRINT(literals[offset].tag_ != panda::panda_file::LiteralTag::METHODAFFILIATE,
-                                 TAG << "not method affiliate value");
+            TAG << "not method affiliate value");
         return std::get<uint16_t>(literals[offset++].value_);
     }
 
-    uint32_t
-    GetIntegerValueByOffset(const std::vector<panda::pandasm::LiteralArray::Literal> &literals, uint32_t &offset)
+    uint32_t GetIntegerValueByOffset(const std::vector<panda::pandasm::LiteralArray::Literal> &literals,
+                                     uint32_t &offset)
     {
         PANDA_GUARD_ASSERT_PRINT(offset >= literals.size(), TAG << "offset overflow");
         PANDA_GUARD_ASSERT_PRINT(!literals[offset].IsIntegerValue(), TAG << "not integer value");
         return std::get<uint32_t>(literals[offset++].value_);
     }
 
-    std::string
-    GetStringValueByOffset(const std::vector<panda::pandasm::LiteralArray::Literal> &literals, uint32_t &offset)
+    std::string GetStringValueByOffset(const std::vector<panda::pandasm::LiteralArray::Literal> &literals,
+                                       uint32_t &offset)
     {
         PANDA_GUARD_ASSERT_PRINT(offset >= literals.size(), TAG << "offset overflow");
         PANDA_GUARD_ASSERT_PRINT(!literals[offset].IsStringValue(), TAG << "not string value");
@@ -155,7 +156,7 @@ std::string panda::guard::FilePathItem::GetRawPath() const
     }
 
     auto parts = StringUtil::StrictSplit(rawName_, NORMALIZED_OHM_DELIMITER.data());
-    PANDA_GUARD_ASSERT_PRINT(parts.size() < 2, "unexpected FilePathItem");
+    PANDA_GUARD_ASSERT_PRINT(parts.size() < FILEPATH_ITEM_MAX_PART_NUM, "unexpected FilePathItem");
     return parts[1];
 }
 
@@ -374,8 +375,8 @@ void panda::guard::ModuleRecord::Build()
 {
     auto recordItem = program_->prog_->record_table.find(this->name_);
     PANDA_GUARD_ASSERT_PRINT(
-            recordItem == program_->prog_->record_table.end(),
-            TAG << "name:" << this->name_ << "not find in record_table");
+        recordItem == program_->prog_->record_table.end(),
+        TAG << "name:" << this->name_ << "not find in record_table");
 
     for (const auto &field: recordItem->second.field_list) {
         if (field.name == MODULE_RECORD_IDX) {
@@ -519,7 +520,7 @@ void panda::guard::ModuleRecord::CreateRegularImportList(const std::vector<panda
         item.obfImportName_ = item.importName_;
         uint16_t filePathItemIndex = GetMethodAffiliateValueByOffset(literals, offset);
         PANDA_GUARD_ASSERT_PRINT(filePathItemIndex >= this->filePathList_.size(),
-                                 TAG << "filePathItem index overflow");
+            TAG << "filePathItem index overflow");
         item.remoteFile_ = this->filePathList_[filePathItemIndex].isRemoteFile_;
         this->regularImportList_.emplace_back(item);
     }
@@ -536,7 +537,7 @@ void panda::guard::ModuleRecord::CreateNameSpaceImportList(const std::vector<pan
         item.obfLocalName_ = item.localName_;
         uint16_t filePathItemIndex = GetMethodAffiliateValueByOffset(literals, offset);
         PANDA_GUARD_ASSERT_PRINT(filePathItemIndex >= this->filePathList_.size(),
-                                 TAG << "filePathItem index overflow");
+            TAG << "filePathItem index overflow");
         item.remoteFile_ = this->filePathList_[filePathItemIndex].isRemoteFile_;
         this->nameSpaceImportList_.emplace_back(item);
     }
@@ -572,7 +573,7 @@ void panda::guard::ModuleRecord::CreateIndirectExportList(const std::vector<pand
         item.obfImportName_ = item.importName_;
         uint16_t filePathItemIndex = GetMethodAffiliateValueByOffset(literals, offset);
         PANDA_GUARD_ASSERT_PRINT(filePathItemIndex >= this->filePathList_.size(),
-                                 TAG << "filePathItem index overflow");
+            TAG << "filePathItem index overflow");
         item.remoteFile_ = this->filePathList_[filePathItemIndex].isRemoteFile_;
         this->indirectExportList_.emplace_back(item);
     }

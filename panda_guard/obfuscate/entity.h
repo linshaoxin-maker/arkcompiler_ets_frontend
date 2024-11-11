@@ -102,7 +102,7 @@ namespace panda::guard {
         }
 
         Entity(Program *program, const std::string &name)
-                : program_(program), name_(name), obfName_(name)
+            : program_(program), name_(name), obfName_(name)
         {}
 
         /**

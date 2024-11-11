@@ -52,39 +52,41 @@ namespace panda::guard {
     };
 }
 
-#define DECLARE_MODULE_TEST_CLASS(class_name, projectName, configName)\
-class class_name##_##projectName##_##configName : public panda::guard::ProjectGuardTest {\
-public:\
-    [[nodiscard]] std::string GetProjectName() const override\
-    {\
-        return #projectName;\
-    }\
+#define DECLARE_MODULE_TEST_CLASS(class_name, projectName, configName) \
+class class_name##_##projectName##_##configName : public panda::guard::ProjectGuardTest { \
+public: \
+    [[nodiscard]] std::string GetProjectName() const override \
+    { \
+        return #projectName; \
+    } \
 \
-    std::string GetConfigName() override\
-    {\
-        return #configName;\
-    }\
-};
-
-#define DECLARE_VALIDATE_PA_AND_NAME_CACHE_MODULE_TEST(projectName, configName)\
-DECLARE_MODULE_TEST_CLASS(ValidatePaAndNameCache, projectName, configName)\
-HWTEST_F(ValidatePaAndNameCache_##projectName##_##configName, should_success_when_validate_pa_and_name_cache_with_##configName, TestSize.Level4)\
-{\
-    DoObfuscation();\
-    ValidateNameCache();\
-    DumpAndRun();\
-    ValidatePa();\
+    std::string GetConfigName() override \
+    { \
+        return #configName; \
+    } \
 }
 
-#define DECLARE_VALIDATE_PA_AND_NAME_CACHE_NOT_RUN_ABC_MODULE_TEST(projectName, configName)\
-DECLARE_MODULE_TEST_CLASS(ValidatePaAndNameCache, projectName, configName)\
-HWTEST_F(ValidatePaAndNameCache_##projectName##_##configName, should_success_when_validate_pa_and_name_cache_with_##configName, TestSize.Level4)\
-{\
-    hasRun = false;\
-    DoObfuscation();\
-    ValidateNameCache();\
-    DumpAndRun();\
-    ValidatePa();\
+#define DECLARE_VALIDATE_PA_AND_NAME_CACHE_MODULE_TEST(projectName, configName) \
+DECLARE_MODULE_TEST_CLASS(ValidatePaAndNameCache, projectName, configName); \
+HWTEST_F(ValidatePaAndNameCache_##projectName##_##configName, \
+should_success_when_validate_pa_and_name_cache_with_##configName, TestSize.Level4) \
+{ \
+    DoObfuscation(); \
+    ValidateNameCache(); \
+    DumpAndRun(); \
+    ValidatePa(); \
+}
+
+#define DECLARE_VALIDATE_PA_AND_NAME_CACHE_NOT_RUN_ABC_MODULE_TEST(projectName, configName) \
+DECLARE_MODULE_TEST_CLASS(ValidatePaAndNameCache, projectName, configName); \
+HWTEST_F(ValidatePaAndNameCache_##projectName##_##configName, \
+should_success_when_validate_pa_and_name_cache_with_##configName, TestSize.Level4) \
+{ \
+    hasRun = false; \
+    DoObfuscation(); \
+    ValidateNameCache(); \
+    DumpAndRun(); \
+    ValidatePa(); \
 }
 
 #endif // PANDA_GUARD_MODULE_TEST_PROJECT_GUARD_TEST_H

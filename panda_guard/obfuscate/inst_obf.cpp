@@ -85,20 +85,20 @@ namespace {
     };
 
     const ProcessorMap INST_PROCESSOR_MAP = {
-            {panda::pandasm::Opcode::LDOBJBYNAME,                   PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::THROW_UNDEFINEDIFHOLEWITHNAME, PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::LDSUPERBYNAME,                 PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::STOBJBYNAME,                   PROCESSOR_STOBJBYNAME},
-            {panda::pandasm::Opcode::DEFINEPROPERTYBYNAME,          PROCESSOR_DEFINEPROPERTYBYNAME},
-            {panda::pandasm::Opcode::STSUPERBYNAME,                 PROCESSOR_STSUPERBYNAME},
-            {panda::pandasm::Opcode::LDOBJBYVALUE,                  PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::STOBJBYVALUE,                  PROCESSOR_STOBJBYVALUE},
-            {panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,     PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::ISIN,                          PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::LDSUPERBYVALUE,                PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::STSUPERBYVALUE,                PROCESSOR_STSUPERBYVALUE},
-            {panda::pandasm::Opcode::STOWNBYNAME,                   PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,       PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::LDOBJBYNAME,                   PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::THROW_UNDEFINEDIFHOLEWITHNAME, PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::LDSUPERBYNAME,                 PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::STOBJBYNAME,                   PROCESSOR_STOBJBYNAME},
+        {panda::pandasm::Opcode::DEFINEPROPERTYBYNAME,          PROCESSOR_DEFINEPROPERTYBYNAME},
+        {panda::pandasm::Opcode::STSUPERBYNAME,                 PROCESSOR_STSUPERBYNAME},
+        {panda::pandasm::Opcode::LDOBJBYVALUE,                  PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::STOBJBYVALUE,                  PROCESSOR_STOBJBYVALUE},
+        {panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,     PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::ISIN,                          PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::LDSUPERBYVALUE,                PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::STSUPERBYVALUE,                PROCESSOR_STSUPERBYVALUE},
+        {panda::pandasm::Opcode::STOWNBYNAME,                   PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,       PROCESSOR_DEFAULT_LDA_STR},
     };
 }
 

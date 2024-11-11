@@ -32,97 +32,97 @@ namespace {
     };
 
     const InstIdFilterList INST_ID_LIST_DYNAMICIMPORT = {
-            IntrinsicId::DYNAMICIMPORT,
+        IntrinsicId::DYNAMICIMPORT,
     };
     const InstIdFilterList INST_ID_LIST_LDOBJBYVALUE = {
-            IntrinsicId::LDOBJBYVALUE_IMM8_V8,
-            IntrinsicId::LDOBJBYVALUE_IMM16_V8,
+        IntrinsicId::LDOBJBYVALUE_IMM8_V8,
+        IntrinsicId::LDOBJBYVALUE_IMM16_V8,
     };
     const InstIdFilterList INST_ID_LIST_STOBJBYVALUE = {
-            IntrinsicId::STOBJBYVALUE_IMM8_V8_V8,
-            IntrinsicId::STOBJBYVALUE_IMM16_V8_V8,
+        IntrinsicId::STOBJBYVALUE_IMM8_V8_V8,
+        IntrinsicId::STOBJBYVALUE_IMM16_V8_V8,
     };
     const InstIdFilterList INST_ID_LIST_DEFINEGETTERSETTERBYVALUE = {
-            IntrinsicId::DEFINEGETTERSETTERBYVALUE_V8_V8_V8_V8,
+        IntrinsicId::DEFINEGETTERSETTERBYVALUE_V8_V8_V8_V8,
     };
     const InstIdFilterList INST_ID_LIST_ISIN = {
-            IntrinsicId::ISIN_IMM8_V8,
+        IntrinsicId::ISIN_IMM8_V8,
     };
     const InstIdFilterList INST_ID_LIST_LDSUPERBYVALUE = {
-            IntrinsicId::LDSUPERBYVALUE_IMM16_V8,
-            IntrinsicId::LDSUPERBYVALUE_IMM8_V8,
+        IntrinsicId::LDSUPERBYVALUE_IMM16_V8,
+        IntrinsicId::LDSUPERBYVALUE_IMM8_V8,
     };
     const InstIdFilterList INST_ID_LIST_STSUPERBYVALUE = {
-            IntrinsicId::STSUPERBYVALUE_IMM16_V8_V8,
-            IntrinsicId::STSUPERBYVALUE_IMM8_V8_V8,
+        IntrinsicId::STSUPERBYVALUE_IMM16_V8_V8,
+        IntrinsicId::STSUPERBYVALUE_IMM8_V8_V8,
     };
     const InstIdFilterList INST_ID_LIST_STOWNBYVALUEWITHNAMESET = {
-            IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM16_V8_V8,
-            IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM8_V8_V8,
+        IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM16_V8_V8,
+        IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM8_V8_V8,
     };
     const InstIdFilterList INST_ID_LIST_DEFINEMETHOD = {
-            IntrinsicId::DEFINEMETHOD_IMM16_ID16_IMM8,
-            IntrinsicId::DEFINEMETHOD_IMM8_ID16_IMM8,
+        IntrinsicId::DEFINEMETHOD_IMM16_ID16_IMM8,
+        IntrinsicId::DEFINEMETHOD_IMM8_ID16_IMM8,
     };
     const InstIdFilterList INST_ID_LIST_CREATEOBJECTWITHBUFFER = {
-            IntrinsicId::CREATEOBJECTWITHBUFFER_IMM16_ID16,
-            IntrinsicId::CREATEOBJECTWITHBUFFER_IMM8_ID16,
+        IntrinsicId::CREATEOBJECTWITHBUFFER_IMM16_ID16,
+        IntrinsicId::CREATEOBJECTWITHBUFFER_IMM8_ID16,
     };
     const InstIdFilterList INST_ID_LIST_DEFINECLASSWITHBUFFER = {
-            IntrinsicId::DEFINECLASSWITHBUFFER_IMM16_ID16_ID16_IMM16_V8,
-            IntrinsicId::DEFINECLASSWITHBUFFER_IMM8_ID16_ID16_IMM16_V8,
+        IntrinsicId::DEFINECLASSWITHBUFFER_IMM16_ID16_ID16_IMM16_V8,
+        IntrinsicId::DEFINECLASSWITHBUFFER_IMM8_ID16_ID16_IMM16_V8,
     };
     const InstIdFilterList INST_ID_LIST_LDOBJBYNAME = {
-            IntrinsicId::LDOBJBYNAME_IMM16_ID16,
-            IntrinsicId::LDOBJBYNAME_IMM8_ID16,
+        IntrinsicId::LDOBJBYNAME_IMM16_ID16,
+        IntrinsicId::LDOBJBYNAME_IMM8_ID16,
     };
     const InstIdFilterList INST_ID_LIST_CALLRUNTIME_TOPROPERTYKEY = {
-            IntrinsicId::CALLRUNTIME_TOPROPERTYKEY_PREF_NONE,
+        IntrinsicId::CALLRUNTIME_TOPROPERTYKEY_PREF_NONE,
     };
 
     const std::map<panda::pandasm::Opcode, InstParam> LDA_STA_INST_PARAM_MAP = {
-            {
-                    panda::pandasm::Opcode::DYNAMICIMPORT,
-                    {0, INST_ID_LIST_DYNAMICIMPORT}
-            },
-            {
-                    panda::pandasm::Opcode::LDOBJBYVALUE,
-                    {1, INST_ID_LIST_LDOBJBYVALUE}
-            },
-            {
-                    panda::pandasm::Opcode::STOBJBYVALUE,
-                    {1, INST_ID_LIST_STOBJBYVALUE}
-            },
-            {
-                    panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,
-                    {1, INST_ID_LIST_DEFINEGETTERSETTERBYVALUE}
-            },
-            {
-                    panda::pandasm::Opcode::ISIN,
-                    {0, INST_ID_LIST_ISIN}
-            },
-            {
-                    panda::pandasm::Opcode::LDSUPERBYVALUE,
-                    {1, INST_ID_LIST_LDSUPERBYVALUE}
-            },
-            {
-                    panda::pandasm::Opcode::STSUPERBYVALUE,
-                    {1, INST_ID_LIST_STSUPERBYVALUE}
-            },
-            {
-                    panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,
-                    {1, INST_ID_LIST_STOWNBYVALUEWITHNAMESET}
-            }
+        {
+            panda::pandasm::Opcode::DYNAMICIMPORT,
+            {0, INST_ID_LIST_DYNAMICIMPORT}
+        },
+        {
+            panda::pandasm::Opcode::LDOBJBYVALUE,
+            {1, INST_ID_LIST_LDOBJBYVALUE}
+        },
+        {
+            panda::pandasm::Opcode::STOBJBYVALUE,
+            {1, INST_ID_LIST_STOBJBYVALUE}
+        },
+        {
+            panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,
+            {1, INST_ID_LIST_DEFINEGETTERSETTERBYVALUE}
+        },
+        {
+            panda::pandasm::Opcode::ISIN,
+            {0, INST_ID_LIST_ISIN}
+        },
+        {
+            panda::pandasm::Opcode::LDSUPERBYVALUE,
+            {1, INST_ID_LIST_LDSUPERBYVALUE}
+        },
+        {
+            panda::pandasm::Opcode::STSUPERBYVALUE,
+            {1, INST_ID_LIST_STSUPERBYVALUE}
+        },
+        {
+            panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,
+            {1, INST_ID_LIST_STOWNBYVALUEWITHNAMESET}
+        }
     };
 
     const std::vector<InstIdFilterList> DEFINE_INST_PASS_THROUGH_LIST = {
-            INST_ID_LIST_DEFINEGETTERSETTERBYVALUE,
-            INST_ID_LIST_DEFINEMETHOD,
+        INST_ID_LIST_DEFINEGETTERSETTERBYVALUE,
+        INST_ID_LIST_DEFINEMETHOD,
     };
     const std::vector<InstIdFilterList> DEFINE_INST_ID_LIST = {
-            INST_ID_LIST_DEFINECLASSWITHBUFFER,
-            INST_ID_LIST_CREATEOBJECTWITHBUFFER,
-            INST_ID_LIST_LDOBJBYNAME,
+        INST_ID_LIST_DEFINECLASSWITHBUFFER,
+        INST_ID_LIST_CREATEOBJECTWITHBUFFER,
+        INST_ID_LIST_LDOBJBYNAME,
     };
 
     /**
@@ -136,18 +136,18 @@ namespace {
 
         IntrinsicId instId = inst->CastToIntrinsic()->GetIntrinsicId();
         return std::any_of(
-                list.begin(), list.end(),
-                [&instId](IntrinsicId filter) -> bool {
-                    return instId == filter;
-                });
+            list.begin(), list.end(),
+            [&instId](IntrinsicId filter) -> bool {
+                return instId == filter;
+            });
     }
     bool IsInstIdMatched(const panda::compiler::Inst *inst, const std::vector<InstIdFilterList> &list)
     {
         return std::any_of(
-                list.begin(), list.end(),
-                [&](const InstIdFilterList &filter) -> bool {
-                    return IsInstIdMatched(inst, filter);
-                });
+            list.begin(), list.end(),
+            [&](const InstIdFilterList &filter) -> bool {
+                return IsInstIdMatched(inst, filter);
+            });
     }
 
     /**
@@ -210,8 +210,8 @@ namespace {
         uint32_t pcVal = target->GetPc();
         Function *func = inIns.function_;
         PANDA_GUARD_ASSERT_PRINT(
-                func->pcInstMap_.find(pcVal) == func->pcInstMap_.end(),
-                TAG << "no valid target ins: " << inIns.function_->idx_ << ", " << inIns.index_);
+            func->pcInstMap_.find(pcVal) == func->pcInstMap_.end(),
+            TAG << "no valid target ins: " << inIns.function_->idx_ << ", " << inIns.index_);
         func->FillInstInfo(func->pcInstMap_.at(pcVal), outIns);
     }
 
@@ -251,7 +251,10 @@ namespace {
     void FindDefineInst(const panda::compiler::Inst *prevInst, const panda::compiler::Inst *&outIns)
     {
         if (IsInstIdMatched(prevInst,
-                            {INST_ID_LIST_CREATEOBJECTWITHBUFFER, INST_ID_LIST_DEFINECLASSWITHBUFFER})) {
+                            {
+                                INST_ID_LIST_CREATEOBJECTWITHBUFFER,
+                                INST_ID_LIST_DEFINECLASSWITHBUFFER
+                            })) {
             outIns = prevInst;
             return;
         }
@@ -273,7 +276,7 @@ void GraphAnalyzer::GetLdaStr(const InstructionInfo &inIns, InstructionInfo &out
 {
     auto it = LDA_STA_INST_PARAM_MAP.find(inIns.ins_->opcode);
     PANDA_GUARD_ASSERT_PRINT(it == LDA_STA_INST_PARAM_MAP.end(),
-                             TAG << "unsupported lda.str scene: " << inIns.ins_->ToString());
+        TAG << "unsupported lda.str scene: " << inIns.ins_->ToString());
 
     const panda::compiler::Inst *inst;
     VisitGraph(inIns, it->second.filterList, inst);
@@ -301,14 +304,14 @@ void GraphAnalyzer::HandleDefineMethod(const InstructionInfo &inIns, Instruction
         inst = inst->GetInput(0).GetInst();
     } while (IsInstIdMatched(inst, DEFINE_INST_PASS_THROUGH_LIST));
     PANDA_GUARD_ASSERT_PRINT(!IsInstIdMatched(inst, DEFINE_INST_ID_LIST),
-                             TAG << "unexpect defineMethod scene: "
-                                     << inIns.function_->idx_ << ", " << inIns.index_ << ";" << PrintInst(inst));
+                             TAG << "unexpect defineMethod scene: " << inIns.function_->idx_ << ", " << inIns.index_
+                                 << ";" << PrintInst(inst));
 
     const panda::compiler::Inst *targetInst = nullptr;
     FindDefineInst(inst, targetInst);
     PANDA_GUARD_ASSERT_PRINT(targetInst == nullptr,
-                             TAG << "HandleDefineMethod failed: "
-                                     << inIns.function_->idx_ << ", " << inIns.index_ << ";" << PrintInst(inst));
+                             TAG << "HandleDefineMethod failed: " << inIns.function_->idx_ << ", " << inIns.index_
+                                 << ";" << PrintInst(inst));
 
     FillInstInfo(inIns, targetInst, defineIns);
 }
