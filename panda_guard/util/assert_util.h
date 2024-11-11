@@ -22,16 +22,16 @@
 #define PANDA_GUARD_ASSERT_PRINT(cond, message)     \
     do {                                            \
         if (UNLIKELY((cond))) {                     \
-            LOG(ERROR, PANDAGUARD) << message;      \
-            std::cerr << message <<std::endl;       \
+            LOG(ERROR, PANDAGUARD) << (message);    \
+            std::cerr << (message) <<std::endl;     \
             std::abort();                           \
         }                                           \
     } while (0)
 
 #define PANDA_GUARD_ABORT_PRINT(message)        \
     do {                                        \
-        LOG(ERROR, PANDAGUARD) << message;      \
-        std::cerr << message <<std::endl;       \
+        LOG(ERROR, PANDAGUARD) << (message);    \
+        std::cerr << (message) <<std::endl;     \
         std::abort();                           \
     } while (0)
 

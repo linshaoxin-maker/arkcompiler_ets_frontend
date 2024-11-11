@@ -41,6 +41,7 @@ namespace {
     constexpr std::string_view INSTANCE_INITIALIZER_TAG = ">#instance_initializer";
     constexpr std::string_view CONSOLE_INS_VAR = "console";
     constexpr std::string_view ANONYMOUS_FUNCTION_NAME = "^0"; // first anonymous function name
+    constexpr size_t STOBJBYVALUE_ACC_INDEX_2 = 2;
 
     const std::map<char, panda::guard::FunctionType> FUNCTION_TYPE_MAP = {
         {'>', panda::guard::FunctionType::INSTANCE_FUNCTION},
@@ -444,7 +445,7 @@ void panda::guard::Function::GetPropertyNameInfo(const InstructionInfo &info, In
 
     // e.g. this[0] = 'property'
     LOG(INFO, PANDAGUARD) << TAG << "try to find property in acc";
-    GraphAnalyzer::GetLdaStr(info, nameInfo, 2);
+    GraphAnalyzer::GetLdaStr(info, nameInfo, STOBJBYVALUE_ACC_INDEX_2);
 }
 
 void panda::guard::Function::UpdateName(const Node &node)
@@ -454,7 +455,6 @@ void panda::guard::Function::UpdateName(const Node &node)
         this->obfName_ = GuardContext::GetInstance()->GetNameMapping()->GetName(this->name_);
         obfRawName = obfRawName +
                      SCOPE_DELIMITER.data() + this->scopeTypeStr_ + SCOPE_DELIMITER.data() + this->obfName_;
-
     } else {
         obfRawName = this->rawName_;
     }
@@ -514,7 +514,7 @@ void panda::guard::Function::GetGraph(compiler::Graph *&outGraph)
                                                         Arch::NONE, method_ptr, this->runtimeInterface_.get(),
                                                         false, nullptr, true, true);
     PANDA_GUARD_ASSERT_PRINT((graph == nullptr) || !graph->RunPass<panda::compiler::IrBuilder>(),
-         TAG << "Graph " << this->idx_ << ": IR builder failed!");
+        TAG << "Graph " << this->idx_ << ": IR builder failed!");
 
     this->BuildPcInsMap(graph);
     this->graph_ = graph;

@@ -46,7 +46,7 @@ namespace panda::guard {
          * @param str split str
          * @param delimiter split delimiter
          * @return (left, right) if split failed return tuple is ("", "")
-         * e.g. RSplitOnce("com.huawei.main.js", ".") => ["com.huawei.main", "js"]
+         * e.g. RSplitOnce("com.test.main.js", ".") => ["com.test.main", "js"]
          */
         static std::tuple<std::string, std::string> RSplitOnce(const std::string &str, const std::string &delimiter);
 

@@ -34,6 +34,7 @@ namespace {
     const std::string ABC_FILE_SUFFIX = ".abc";
     const std::string JSON_FILE_SUFFIX = ".json";
     const std::string CACHE_FILE_SUFFIX = ".cache.json";
+    constexpr size_t ARGV_INDEX_2 = 2;
 
     void Dump(const std::string &abcFilePath, const std::string &paFilePath)
     {
@@ -88,7 +89,7 @@ void panda::guard::ProjectGuardTest::SetUp()
     char *argv[3];
     argv[0] = const_cast<char *>("xxx");
     argv[1] = const_cast<char *>("--debug");
-    argv[2] = const_cast<char *>(configPath.c_str());
+    argv[ARGV_INDEX_2] = const_cast<char *>(configPath.c_str());
     GuardContext::GetInstance()->Init(argc, const_cast<const char **>(argv));
 
     this->compiler_ = std::make_unique<abc2program::Abc2ProgramCompiler>();

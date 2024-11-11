@@ -51,7 +51,7 @@ namespace panda::guard {
         explicit InstructionInfo() = default;
 
         InstructionInfo(Function *func, pandasm::Ins *ins, size_t index)
-                : function_(func), ins_(ins), index_(index)
+            : function_(func), ins_(ins), index_(index)
         {
         }
 

@@ -40,7 +40,5 @@ std::string panda::guard::OrderNameGenerator::GetName()
 
 std::string panda::guard::OrderNameGenerator::FromCharCode(uint32_t code)
 {
-    std::string res;
-    res = static_cast<char>(code);
-    return res;
+    return {static_cast<char>(code)};
 }

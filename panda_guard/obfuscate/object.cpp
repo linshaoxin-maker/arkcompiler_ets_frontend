@@ -60,7 +60,7 @@ void panda::guard::ObjectProperty::Update()
 
     if (this->method_) {
         this->method_->Obfuscate();
-        literalArray.literals_[this->index_ + 2].value_ = this->method_->obfIdx_;
+        literalArray.literals_[this->index_ + LITERAL_OBJECT_ITEM_LEN].value_ = this->method_->obfIdx_;
     }
 }
 
@@ -99,7 +99,7 @@ void panda::guard::Object::Build()
         } else {
             keyIndex += LITERAL_OBJECT_COMMON_ITEM_GROUP_LEN;
         }
-        valueIndex = keyIndex + 2;
+        valueIndex = keyIndex + LITERAL_OBJECT_ITEM_LEN;
     }
     LOG(INFO, PANDAGUARD) << TAG << "object create for " << this->literalArrayIdx_ << " end";
 }

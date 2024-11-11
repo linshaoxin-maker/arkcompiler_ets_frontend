@@ -15,4 +15,4 @@
 
 import s from './default_export';
 
-print(s === 'huawei', 'success');
+print(s === 'default export test', 'success');

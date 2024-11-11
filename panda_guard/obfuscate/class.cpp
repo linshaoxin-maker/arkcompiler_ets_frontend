@@ -113,7 +113,7 @@ void panda::guard::Class::CreateMethods(const pandasm::LiteralArray &literalArra
 
     const auto &staticMethodIndexLiteral = literalArray.literals_[staticMethodIndexLiteralIndex];
     PANDA_GUARD_ASSERT_PRINT(staticMethodIndexLiteral.tag_ != panda::panda_file::LiteralTag::INTEGER,
-         TAG << "bad tag for staticMethodIndex");
+        TAG << "bad tag for staticMethodIndex");
 
     const uint32_t staticMethodIndex = std::get<uint32_t>(staticMethodIndexLiteral.value_);
     const size_t methodCount = methodItemCount / LITERAL_METHOD_GROUP_LEN;

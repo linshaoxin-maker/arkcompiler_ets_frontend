@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 
-let s: String = 'huawei';
+let s: String = 'default export test';
 
 export default s;

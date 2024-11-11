@@ -47,8 +47,9 @@ public: \
     } \
 }; \
 \
-HWTEST_F(GrammarTest_##projectName##_##configName, should_success_when_obf_##projectName##_with_##configName, TestSize.Level4) \
-{\
+HWTEST_F(GrammarTest_##projectName##_##configName, \
+should_success_when_obf_##projectName##_with_##configName, TestSize.Level4) \
+{ \
     std::string projectPath = GRAMMAR_TEST_OUT_DIR + this->GetProjectName(); \
     std::string expectProjectPath = GRAMMAR_TEST_EXPECT_DIR + this->GetProjectName(); \
 \
