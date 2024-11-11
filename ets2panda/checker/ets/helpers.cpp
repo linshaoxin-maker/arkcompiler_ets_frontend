@@ -694,6 +694,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     const bool omitConstInit = isConst || (isReadonly && isStatic);
 
     if (typeAnnotation != nullptr) {
+        auto newStatus = this->Context().Status() | CheckerStatus::NO_CHECK_INHERIT;
+        auto context = SavedCheckerContext(this, newStatus);
         annotationType = typeAnnotation->GetType(this);
         bindingVar->SetTsType(annotationType);
     }

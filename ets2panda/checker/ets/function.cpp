@@ -1343,6 +1343,8 @@ void ETSChecker::BuildFunctionSignature(ir::ScriptFunction *func, bool isConstru
     auto *nameVar = isArrow ? nullptr : func->Id()->Variable();
     auto funcName = nameVar == nullptr ? util::StringView() : nameVar->Name();
 
+    auto newStatus = checker::CheckerStatus::NO_CHECK_INHERIT | this->Context().Status();
+    auto savedContext = SavedCheckerContext(this, newStatus, this->Context().ContainingClass());
     auto *signatureInfo = ComposeSignatureInfo(func);
     if (signatureInfo == nullptr) {
         return;

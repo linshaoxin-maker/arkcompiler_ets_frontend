@@ -397,7 +397,9 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
 
     auto *enclosingClass = Context().ContainingClass();
     classType->SetEnclosingType(enclosingClass);
-    CheckerStatus newStatus = CheckerStatus::IN_CLASS;
+    CheckerStatus newStatus = HasStatus(CheckerStatus::NO_CHECK_INHERIT)
+                                  ? CheckerStatus::IN_CLASS | CheckerStatus::NO_CHECK_INHERIT
+                                  : CheckerStatus::IN_CLASS;
 
     if (classDef->IsInner()) {
         newStatus |= CheckerStatus::INNER_CLASS;
