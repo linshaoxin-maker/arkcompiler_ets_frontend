@@ -38,6 +38,7 @@ import { historyUnobfuscatedPropMap } from './Initializer';
 import { LocalVariableCollections, UnobfuscationCollections } from '../utils/CommonCollections';
 import { INameObfuscationOption } from '../configs/INameObfuscationOption';
 import { WhitelistType } from '../utils/TransformUtil';
+import { initScanProjectConfigByMergeConfig, scanProjectConfig } from '../common/ApiReader';
 
 enum OptionType {
   NONE,
@@ -59,6 +60,9 @@ enum OptionType {
   PRINT_NAMECACHE,
   PRINT_KEPT_NAMES,
   APPLY_NAMECACHE,
+  EXTRA_OPTIONS,
+  STRIP_LANGUAGE_DEFAULT,
+  STRIP_SYSTEM_API_ARGS,
 }
 export { OptionType as OptionTypeForTest };
 
@@ -96,6 +100,8 @@ class ObOptions {
   printNameCache: string = '';
   printKeptNamesPath: string = '';
   applyNameCache: string = '';
+  stripLanguageDefault: boolean = false;
+  stripSystemApiArgs: boolean = false;
 
   merge(other: ObOptions): void {
     this.disableObfuscation = this.disableObfuscation || other.disableObfuscation;
@@ -108,6 +114,9 @@ class ObOptions {
     this.removeLog = this.removeLog || other.removeLog;
     this.enableFileNameObfuscation = this.enableFileNameObfuscation || other.enableFileNameObfuscation;
     this.enableExportObfuscation = this.enableExportObfuscation || other.enableExportObfuscation;
+    this.stripLanguageDefault = this.stripLanguageDefault || other.stripLanguageDefault;
+    this.stripSystemApiArgs = this.stripSystemApiArgs || other.stripSystemApiArgs;
+
     if (other.printNameCache.length > 0) {
       this.printNameCache = other.printNameCache;
     }
@@ -230,6 +239,7 @@ export class ObConfigResolver {
     const mergedConfigs: MergedConfig = this.getMergedConfigs(selfConfig, dependencyConfigs);
     UnobfuscationCollections.printKeptName = mergedConfigs.options.printKeptNames;
     this.handleReservedArray(mergedConfigs);
+    initScanProjectConfigByMergeConfig(mergedConfigs);
 
     let needKeepSystemApi =
       enableObfuscation &&
@@ -278,7 +288,7 @@ export class ObConfigResolver {
     }
     this.handleConfigContent(fileContent, configs, path);
   }
-  
+
   public getConfigByPathForTest(path: string, configs: MergedConfig): void {
     return this.getConfigByPath(path, configs);
   }
@@ -320,6 +330,9 @@ export class ObConfigResolver {
   static readonly PRINT_NAMECACHE = '-print-namecache';
   static readonly PRINT_KEPT_NAMES = '-print-kept-names';
   static readonly APPLY_NAMECACHE = '-apply-namecache';
+  static readonly EXTRA_OPTIONS = '-extra-options';
+  static readonly STRIP_LANGUAGE_DEFAULT = 'strip-language-default';
+  static readonly STRIP_SYSTEM_API_ARGS = 'strip-system-api-args';
 
   // renameFileName, printNameCache, applyNameCache, removeComments and keepComments won't be reserved in obfuscation.txt file.
   static exportedSwitchMap: Map<string, string> = new Map([
@@ -369,6 +382,12 @@ export class ObConfigResolver {
         return OptionType.APPLY_NAMECACHE;
       case ObConfigResolver.KEEP:
         return OptionType.KEEP;
+      case ObConfigResolver.EXTRA_OPTIONS:
+        return OptionType.EXTRA_OPTIONS;
+      case ObConfigResolver.STRIP_LANGUAGE_DEFAULT:
+        return OptionType.STRIP_LANGUAGE_DEFAULT;
+      case ObConfigResolver.STRIP_SYSTEM_API_ARGS:
+        return OptionType.STRIP_SYSTEM_API_ARGS;
       default:
         return OptionType.NONE;
     }
@@ -425,6 +444,24 @@ export class ObConfigResolver {
         case OptionType.REMOVE_LOG: {
           configs.options.removeLog = true;
           continue;
+        }
+        case OptionType.EXTRA_OPTIONS: {
+          let nextTokenType;
+          if (i < tokens.length - 1) {
+            nextTokenType = this.getTokenType(tokens[i + 1]);
+          }
+          while (nextTokenType === OptionType.STRIP_LANGUAGE_DEFAULT || nextTokenType === OptionType.STRIP_SYSTEM_API_ARGS) {
+            switch (nextTokenType) {
+              case OptionType.STRIP_LANGUAGE_DEFAULT:
+                  configs.options.stripLanguageDefault = true;
+                  break;
+              case OptionType.STRIP_SYSTEM_API_ARGS:
+                  configs.options.stripSystemApiArgs = true;
+                  break;
+            }
+            ++i;
+            nextTokenType = i < tokens.length - 1 ? this.getTokenType(tokens[i + 1]) : null;
+          }
         }
         case OptionType.PRINT_KEPT_NAMES: {
           configs.options.printKeptNames = true;
@@ -499,7 +536,7 @@ export class ObConfigResolver {
 
   public handleConfigContentForTest(data: string, configs: MergedConfig, configPath: string): void {
     return this.handleConfigContent(data, configs, configPath);
-  } 
+  }
   // get absolute path
   private resolvePath(configPath: string, token: string): string {
     if (path.isAbsolute(token)) {
@@ -588,15 +625,18 @@ export class ObConfigResolver {
     ApiExtractor.mSystemExportSet.clear();
 
     interface ArkUIWhitelist {
-      ReservedPropertyNames: string[]
+      ReservedPropertyNames: string[],
+      OptimizedReservedPropertyNames: string[]
     }
-    let arkUIWhitelist: ArkUIWhitelist = { ReservedPropertyNames: [] };
+    let arkUIWhitelist: ArkUIWhitelist = { ReservedPropertyNames: [], OptimizedReservedPropertyNames: []};
     const sdkApis: string[] = sortAndDeduplicateStringArr(this.sourceObConfig.sdkApis);
     for (let apiPath of sdkApis) {
       this.getSdkApiCache(apiPath);
-      const UIPath: string = path.join(apiPath, '../build-tools/ets-loader/lib/pre_define.js');
-      if (fs.existsSync(UIPath)) {
-        this.getUIApiCache(UIPath);
+      if (scanProjectConfig.mStripSystemApiArgs !== true) {
+        const UIPath: string = path.join(apiPath, '../build-tools/ets-loader/lib/pre_define.js');
+        if (fs.existsSync(UIPath)) {
+          this.getUIApiCache(UIPath);
+        }
       }
       const arkUIWhitelistPath: string = path.join(apiPath, '../build-tools/ets-loader/obfuscateWhiteList.json5');
       if (fs.existsSync(arkUIWhitelistPath)) {
@@ -606,11 +646,16 @@ export class ObConfigResolver {
     let systemApiContent: SystemApiContent = {};
 
     if (systemConfigs.options.enablePropertyObfuscation) {
-      const savedNameAndPropertySet = new Set([...ApiExtractor.mPropertySet, ...arkUIWhitelist.ReservedPropertyNames]);
+      if (!scanProjectConfig.mStripSystemApiArgs) {
+        UnobfuscationCollections.reservedSdkApiForLocal = new Set(ApiExtractor.mPropertySet);
+        systemApiContent.ReservedLocalNames = Array.from(ApiExtractor.mPropertySet);
+      }
+      const arkUIReservedPropertyNames: string[] = scanProjectConfig.mStripSystemApiArgs
+          ? [...arkUIWhitelist.ReservedPropertyNames, ...arkUIWhitelist.OptimizedReservedPropertyNames]
+          : [...arkUIWhitelist.ReservedPropertyNames];
+      const savedNameAndPropertySet = new Set([...ApiExtractor.mPropertySet, ...arkUIReservedPropertyNames]);
       UnobfuscationCollections.reservedSdkApiForProp = savedNameAndPropertySet;
-      UnobfuscationCollections.reservedSdkApiForLocal = new Set(ApiExtractor.mPropertySet);
       systemApiContent.ReservedPropertyNames = Array.from(savedNameAndPropertySet);
-      systemApiContent.ReservedLocalNames = Array.from(ApiExtractor.mPropertySet);
     }
     if (systemConfigs.options.enableToplevelObfuscation && systemConfigs.options.enableExportObfuscation) {
       const savedExportNamesSet = new Set(ApiExtractor.mSystemExportSet);
@@ -1015,7 +1060,7 @@ export function printWhitelist(obfuscationOptions: ObOptions, nameOptions: IName
   let enumSet: Set<string>;
   if (enableProperty) {
     enumSet = UnobfuscationCollections.reservedEnum;
-  } 
+  }
   whitelistObj.enum = convertSetToArray(enumSet);
 
   let whitelistContent = JSON.stringify(whitelistObj, null, 2); // 2: indentation
@@ -1076,7 +1121,7 @@ export function printUnobfuscationReasons(configPath: string, defaultPath: strin
     fs.mkdirSync(path.dirname(defaultPath), { recursive: true });
   }
   fs.writeFileSync(defaultPath, unobfuscationContent);
-  
+
   if (!fs.existsSync(path.dirname(configPath))) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
   }
