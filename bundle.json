@@ -18,7 +18,6 @@
         "ram": "",
         "deps": {
             "components": [
-                "json",
                 "runtime_core",
                 "zlib",
                 "bounds_checking_function"
