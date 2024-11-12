@@ -15,8 +15,9 @@
 
 import { ApiExtractor } from '../../../src/common/ApiExtractor';
 import {assert} from 'chai';
-import { readProjectPropertiesByCollectedPaths } from '../../../src/common/ApiReader';
+import { initScanProjectConfigByMergeConfig, readProjectPropertiesByCollectedPaths } from '../../../src/common/ApiReader';
 import { NameGeneratorType } from '../../../src/generator/NameFactory';
+import { MergedConfig } from '../../../src/ArkObfuscator';
 
 function collectApi(apiPath: string): void {
   clearAll();
@@ -122,6 +123,11 @@ describe('test for ApiExtractor', function () {
   describe('test for visitPropertyAndName', function () {
     it('Class Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/classTest.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass2'), false);
@@ -138,6 +144,11 @@ describe('test for ApiExtractor', function () {
 
     it('Interface Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/interfaceTest.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestInterface1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestInterface2'), false);
@@ -152,6 +163,11 @@ describe('test for ApiExtractor', function () {
 
     it('TypeLiteral Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/typeLiteralTest.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestType1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestType2'), false);
@@ -166,6 +182,11 @@ describe('test for ApiExtractor', function () {
 
     it('Enum Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/enumTest.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestEnum1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestEnum2'), false);
@@ -176,6 +197,11 @@ describe('test for ApiExtractor', function () {
 
     it('ObjectLiteral Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/objectLiteral.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('obj1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('obj2'), false);
@@ -192,6 +218,11 @@ describe('test for ApiExtractor', function () {
 
     it('Module Test', function () {
       let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/moduleTest.d.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = false;
+      initScanProjectConfigByMergeConfig(config);
+
       collectApi(filePath);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('ns1'), true);
       assert.strictEqual(ApiExtractor.mSystemExportSet.has('ns2'), false);
@@ -204,6 +235,50 @@ describe('test for ApiExtractor', function () {
       assert.strictEqual(ApiExtractor.mPropertySet.has('TestInterface2'), false);
       assert.strictEqual(ApiExtractor.mPropertySet.has('prop4'), true);
       assert.strictEqual(ApiExtractor.mPropertySet.has('prop5'), true);
+      clearAll();
+    });
+
+    it('When "-extre-options strip-system-api-args" option is enabled, no function parameters are collected', function () {
+      let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/systemApiArgsTest.ts';
+      clearAll();
+      let config: MergedConfig = new MergedConfig();
+      config.options.stripSystemApiArgs = true;
+      initScanProjectConfigByMergeConfig(config);
+
+      collectApi(filePath);
+      assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('prop1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param2'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('foo1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param5'), false);
+      assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass2'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('prop2'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param3'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param4'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('foo2'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param6'), false);
+      clearAll();
+    });
+
+    it('When "-extre-options strip-system-api-args" option is not enabled, function parameters are collected', function () {
+      let filePath: string = 'test/ut/utils/apiTest_visitPropertyAndName/systemApiArgsTest.ts';
+      let config: MergedConfig = new MergedConfig();
+      initScanProjectConfigByMergeConfig(config);
+
+      collectApi(filePath);
+      assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('prop1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param2'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('foo1'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param5'), false);
+      assert.strictEqual(ApiExtractor.mSystemExportSet.has('TestClass2'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('prop2'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param3'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param4'), false);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('foo2'), true);
+      assert.strictEqual(ApiExtractor.mPropertySet.has('param6'), false);
       clearAll();
     });
   });
@@ -222,7 +297,7 @@ describe('test for ApiExtractor', function () {
             mRenameProperties: true,
             mKeepStringProperty: false,
             mNameGeneratorType: NameGeneratorType.ORDERED,
-            mReservedNames: [], 
+            mReservedNames: [],
             mReservedToplevelNames: []
           },
           mExportObfuscation: false,
@@ -315,7 +390,7 @@ describe('test for ApiExtractor', function () {
             mRenameProperties: false,
             mKeepStringProperty: false,
             mNameGeneratorType: NameGeneratorType.ORDERED,
-            mReservedNames: [], 
+            mReservedNames: [],
             mReservedToplevelNames: []
           },
           mExportObfuscation: true,
@@ -410,7 +485,7 @@ describe('test for ApiExtractor', function () {
             mRenameProperties: true,
             mKeepStringProperty: false,
             mNameGeneratorType: NameGeneratorType.ORDERED,
-            mReservedNames: [], 
+            mReservedNames: [],
             mReservedToplevelNames: []
           },
           mExportObfuscation: true,

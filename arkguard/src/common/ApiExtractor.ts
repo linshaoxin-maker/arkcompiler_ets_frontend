@@ -62,7 +62,9 @@ import {
   isPropertyAssignment,
   isModuleBlock,
   isFunctionDeclaration,
-  isEnumMember
+  isEnumMember,
+  isParameter,
+  isTypeParameterDeclaration
 } from 'typescript';
 
 import fs from 'fs';
@@ -183,7 +185,6 @@ export namespace ApiExtractor {
 
     let {hasExport, hasDeclare} = getKeyword(astNode.modifiers);
     if (!hasExport) {
-      addCommonJsExports(astNode, isSystemApi);
       return;
     }
 
@@ -207,19 +208,11 @@ export namespace ApiExtractor {
   };
 
   const isCollectedToplevelElements = function (astNode): boolean {
-    if (astNode.name && !mCurrentExportNameSet.has(astNode.name.getText())) {
-      return false;
+    if (astNode.name && mCurrentExportNameSet.has(astNode.name.getText())) {
+      return true;
     }
 
-    if (astNode.name === undefined) {
-      let {hasDeclare} = getKeyword(astNode.modifiers);
-      if (hasDeclare && astNode.declarationList &&
-        !mCurrentExportNameSet.has(astNode.declarationList.declarations[0].name.getText())) {
-        return false;
-      }
-    }
-
-    return true;
+    return false;
   };
 
   /**
@@ -232,10 +225,13 @@ export namespace ApiExtractor {
     }
 
     if (astNode.name !== undefined && !mCurrentExportedPropertySet.has(astNode.name.getText())) {
-      if (isStringLiteral(astNode.name)) {
-        mCurrentExportedPropertySet.add(astNode.name.text);
-      } else {
-        mCurrentExportedPropertySet.add(astNode.name.getText());
+      const shouldAddParemeter = scanProjectConfig.mStripSystemApiArgs
+        ? !(isParameter(astNode) && astNode.modifiers === undefined) && !isTypeParameterDeclaration(astNode)
+        : true;
+
+      if (shouldAddParemeter) {
+        const nameToAdd = isStringLiteral(astNode.name) ? astNode.name.text : astNode.name.getText();
+        mCurrentExportedPropertySet.add(nameToAdd);
       }
     }
 

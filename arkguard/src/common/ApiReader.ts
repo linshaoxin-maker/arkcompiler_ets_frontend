@@ -18,6 +18,7 @@ import {ApiExtractor} from './ApiExtractor';
 import {ListUtil} from '../utils/ListUtil';
 import type {IOptions} from '../configs/IOptions';
 import { stringPropsSet, structPropsSet, enumPropsSet } from '../utils/OhsUtil';
+import { MergedConfig } from '../ArkObfuscator';
 
 export let scanProjectConfig: {
   mPropertyObfuscation?: boolean,
@@ -25,6 +26,7 @@ export let scanProjectConfig: {
   mExportObfuscation?: boolean,
   mkeepFilesAndDependencies?: Set<string>,
   isHarCompiled?: boolean
+  mStripSystemApiArgs?: boolean;
 } = {};
 
 /**
@@ -70,6 +72,9 @@ function initScanProjectConfig(customProfiles: IOptions, isHarCompiled?: boolean
   scanProjectConfig.isHarCompiled = isHarCompiled;
 }
 
+export function initScanProjectConfigByMergeConfig(config: MergedConfig) {
+  scanProjectConfig.mStripSystemApiArgs = config.options.stripSystemApiArgs;
+}
 export interface ReseverdSetForArkguard {
   structPropertySet: Set<string> | undefined;
   stringPropertySet: Set<string> | undefined;
