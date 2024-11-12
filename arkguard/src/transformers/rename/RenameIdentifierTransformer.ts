@@ -269,22 +269,15 @@ namespace secharmony {
             return;
           }
 
+          
+          // Retrieve the original symbol for the given symbol to ensure we can reuse the mangled name if it already exists.
+          // This ensures that the obfuscated name for the declaration is consistent across different references to the same symbol.
+          // Example: if we have `class A {}`, and then `declare namespace ns { export { A }; }`, we want both `A` references to be obfuscated as the same name.
           let originalSymbol = TypeUtils.getOriginalSymbol(def, checker);
 
-          // Apply the obfuscated name from the declaration to the current node 
-          // only if the current node's name matches the name at the declaration site.
-          //
-          // In most cases, symbol and original symbol have the same symbol name, thus 
-          // these symbols can have the same obfuscated names, for example:
-          // let A = 1;
-          // let B = A;
-          // Clearly, two A should have the same obfuscated names
-          // But sometimes, you cannot apply the obfuscated name of original symbol to every use site
-          // For example, in the following case:
-          // let A = 1;
-          // export {A as B};
-          // When trying to get B's originalSymbol, you will obtain A's symbol from the declaration site.
-          // However, clearly, you cannot apply A's obfuscated name to B.
+          // Check if the name of the current symbol matches the name of the original symbol and if it already has an obfuscated name.
+          // If `def` and `originalSymbol` have the same name, we assume they are the same logical entity and return to reuse the obfuscated name.
+          // Example: For `let A = 1; export { A as B };`, `originalSymbol` for `B` will be `A`, but since their names differ, they should not share the same mangled name.
           if (def.name === originalSymbol.name && mangledSymbolNames.has(originalSymbol)) {
             return;
           }
