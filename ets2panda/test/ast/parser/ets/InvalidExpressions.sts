@@ -58,8 +58,9 @@ function f7(a: (b: int = 0) => int): void {
 }
 
 /* @@? 16:35 Error SyntaxError: Rest parameter cannot have the default value.  */
-/* @@? 17:21 Error SyntaxError: Unexpected token, expected: ')'.  */
-/* @@? 17:24 Error SyntaxError: Unexpected token ')'.  */
+/* @@? 17:21 Error SyntaxError: Unexpected token, expected ',' or ')'.  */
+/* @@? 17:21 Error SyntaxError: Unexpected token '...'.  */
+/* @@? 17:21 Error SyntaxError: Unexpected token '...'.  */
 /* @@? 17:24 Error SyntaxError: Unexpected token ')'.  */
 /* @@? 18:35 Error SyntaxError: Unexpected token, expected: '>'.  */
 /* @@? 18:36 Error SyntaxError: Unexpected token, expected: ')'.  */
@@ -77,7 +78,6 @@ function f7(a: (b: int = 0) => int): void {
 /* @@? 35:10 Error SyntaxError: Unexpected token, expected: ')'.  */
 /* @@? 35:10 Error SyntaxError: Unexpected token ')'.  */
 /* @@? 35:10 Error SyntaxError: Unexpected token ')'.  */
-/* @@? 35:10 Error SyntaxError: Unexpected token ')'.  */
 /* @@? 35:12 Error SyntaxError: Unexpected token 'identification literal'.  */
 /* @@? 35:16 Error SyntaxError: Unexpected token '=>'.  */
 /* @@? 35:21 Error SyntaxError: return keyword should be used in function body  */
@@ -91,15 +91,20 @@ function f7(a: (b: int = 0) => int): void {
 /* @@? 47:17 Error SyntaxError: Unexpected token, expected an identifier.  */
 /* @@? 47:19 Error SyntaxError: Unexpected token, expected an identifier.  */
 /* @@? 48:5 Error SyntaxError: Unexpected token, expected an identifier.  */
-/* @@? 50:7 Error SyntaxError: Invalid token: ',' or ')' expected.  */
-/* @@? 50:8 Error SyntaxError: Unexpected token, expected: '=>'.  */
+/* @@? 50:7 Error SyntaxError: Unexpected token, expected ',' or ')'.  */
+/* @@? 50:7 Error SyntaxError: Unexpected token, expected: '=>'.  */
+/* @@? 50:8 Error SyntaxError: Unexpected token ')'.  */
+/* @@? 50:8 Error SyntaxError: Unexpected token ')'.  */
+/* @@? 50:8 Error SyntaxError: Unexpected token ')'.  */
 /* @@? 51:13 Error SyntaxError: Unexpected token 'number literal'.  */
 /* @@? 51:16 Error SyntaxError: Invalid left-hand side operator.  */
-/* @@? 55:1 Error SyntaxError: Identifier expected, got 'function'.  */
-/* @@? 55:10 Error SyntaxError: Field type annotation expected  */
+/* @@? 55:1 Error SyntaxError: Unexpected token: 'function'.  */
 /* @@? 55:24 Error SyntaxError: Unexpected token: '@@'.  */
-/* @@? 55:24 Error SyntaxError: Invalid token: ',' or ')' expected.  */
-/* @@? 55:26 Error SyntaxError: Identifier expected, got ')'.  */
-/* @@? 57:1 Error SyntaxError: Identifier expected, got 'function'.  */
-/* @@? 57:10 Error SyntaxError: Field type annotation expected  */
+/* @@? 55:24 Error SyntaxError: Unexpected token, expected ',' or ')'.  */
+/* @@? 55:24 Error SyntaxError: There is no any node to insert at the placeholder position.  */
+/* @@? 55:24 Error SyntaxError: Unexpected token: '@@'.  */
+/* @@? 55:26 Error SyntaxError: Unexpected token: ')'.  */
+/* @@? 55:27 Error SyntaxError: Unexpected token: ':'.  */
+/* @@? 55:33 Error SyntaxError: Field type annotation expected  */
+/* @@? 57:1 Error SyntaxError: Unexpected token: 'function'.  */
 /* @@? 57:26 Error SyntaxError: Default value is allowed only for optional parameters  */

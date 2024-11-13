@@ -278,7 +278,7 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
 
     bool spreadTypePresent = false;
 
-    while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
+    auto parseElem = [this, options, &tupleTypeList, &tupleType, &spreadTypePresent]() {
         // Parse named parameter if name presents
         if ((Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) &&
             (Lexer()->Lookahead() == lexer::LEX_CHAR_COLON)) {
@@ -291,7 +291,7 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         auto *const currentTypeAnnotation = ParseTypeAnnotation(options);
         if (currentTypeAnnotation == nullptr) {  // Error processing.
             Lexer()->NextToken();
-            continue;
+            return false;
         }
 
         currentTypeAnnotation->SetParent(tupleType);
@@ -310,20 +310,9 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         } else {
             tupleTypeList.push_back(currentTypeAnnotation);
         }
-
-        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
-            Lexer()->NextToken();  // eat comma
-            continue;
-        }
-
-        if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            // tuple_type_3_neg.sts
-            LogSyntaxError("Comma is mandatory between elements in a tuple type declaration");
-            Lexer()->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
-        }
-    }
-
-    Lexer()->NextToken();  // eat ']'
+        return true;
+    };
+    ParseList(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET, lexer::NextTokenFlags::NONE, parseElem);
 
     tupleType->SetTypeAnnotationsList(std::move(tupleTypeList));
     const auto endLoc = Lexer()->GetToken().End();
