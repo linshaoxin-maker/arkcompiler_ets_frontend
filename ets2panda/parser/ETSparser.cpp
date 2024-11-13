@@ -129,8 +129,10 @@ ir::ETSScript *ETSParser::ParseETSGlobalScript(lexer::SourcePosition startLoc, A
     auto imports = ParseImportDeclarations();
     statements.insert(statements.end(), imports.begin(), imports.end());
 
-    auto topLevelStatements = ParseTopLevelDeclaration();
-    statements.insert(statements.end(), topLevelStatements.begin(), topLevelStatements.end());
+    if (!(GetContext().Status() & parser::ParserStatus::PARSE_IMPORTS)) {
+        auto topLevelStatements = ParseTopLevelDeclaration();
+        statements.insert(statements.end(), topLevelStatements.begin(), topLevelStatements.end());
+    }
 
     etsnolintParser.ApplyETSNolintsToStatements(statements);
 

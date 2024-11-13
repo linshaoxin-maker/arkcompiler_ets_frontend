@@ -40,6 +40,16 @@ public:
 
     ~ETSParser() final = default;
 
+    util::ImportPathManager *GetImportPathManager()
+    {
+        return importPathManager_.get();
+    }
+
+    parser::Program *GetGlobalProgram()
+    {
+        return globalProgram_;
+    }
+
     [[nodiscard]] bool IsETSParser() const noexcept override;
 
     void AddDirectImportsToDirectExternalSources(const ArenaVector<util::StringView> &directImportsFromMainSource,

@@ -65,6 +65,8 @@ enum class ParserStatus : uint64_t {
     IN_NAMESPACE = 1ULL << 32ULL,
 
     ALLOW_DEFAULT_VALUE = 1ULL << 33ULL,
+
+    PARSE_IMPORTS = 1ULL << 34ULL,
 };
 
 }  // namespace ark::es2panda::parser

@@ -91,6 +91,11 @@ public:
         return &errorLogger_;
     }
 
+    void SetParserStatus(ParserStatus status)
+    {
+        GetContext().Status() |= status;
+    }
+
     static constexpr std::string_view const ERROR_LITERAL = "*ERROR_LITERAL*";
 
 protected:

@@ -51,6 +51,7 @@ if(PANDA_WITH_ETS)
   )
   file(COPY "${GENERATED_DIR}/arktsconfig.json" DESTINATION "${DEFAULT_ARKTSCONFIG}/")
   file(COPY "${GENERATED_DIR}/arktsconfig.json" DESTINATION "${CMAKE_BINARY_DIR}/bin")
+  file(COPY "${GENERATED_DIR}/arktsconfig.json" DESTINATION "${CMAKE_BINARY_DIR}/bin-gtests")
 endif()
 
 if(NOT PANDA_PRODUCT_BUILD)
@@ -603,6 +604,7 @@ add_subdirectory(${ES2PANDA_LIB_DIR})
 
 add_subdirectory(aot)
 add_subdirectory(declgen_ets2ts)
+add_subdirectory(dependency_analyzer)
 
 if(PANDA_WITH_TESTS)
   add_subdirectory(test)
