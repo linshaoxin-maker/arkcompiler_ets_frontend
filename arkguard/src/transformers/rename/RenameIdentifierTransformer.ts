@@ -705,12 +705,13 @@ namespace secharmony {
           (identifierCache as Map<string, string>).delete(originalName);
         }
 
-        let mangledName: string | undefined = undefined;
+        let mangledName: string | undefined;
 
         if (sym) {
           const originalSym = TypeUtils.getOriginalSymbol(sym, checker);
           // Only those symbols of declaration nodes have mangledNames in mangledSymbolNames
-          let hasOriginalObfuscatedName: boolean = sym.name === originalSym.name && mangledSymbolNames.has(originalSym);
+          let hasOriginalObfuscatedName: boolean =
+            sym === originalSym || (sym.name === originalSym.name && mangledSymbolNames.has(originalSym));
           if (hasOriginalObfuscatedName) {
             mangledName = mangledSymbolNames.get(originalSym).mangledName;
           } else {

@@ -105,7 +105,7 @@ export class TypeUtils {
   }
 
   public static getOriginalSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
-    if (symbol.getFlags() === SymbolFlags.Alias) {
+    if (symbol.getFlags() & SymbolFlags.Alias) {
       symbol = checker.getAliasedSymbol(symbol);
     }
     return symbol;
