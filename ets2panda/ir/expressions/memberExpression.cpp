@@ -238,6 +238,9 @@ checker::Type *MemberExpression::TraverseUnionMember(checker::ETSChecker *checke
         if (apparent->IsETSObjectType()) {
             SetObjectType(apparent->AsETSObjectType());
             addPropType(ResolveObjectMember(checker).first);
+        } else if (apparent->IsETSFunctionType() && apparent->AsETSFunctionType()->IsFunctional()) {
+            SetObjectType(apparent->AsETSFunctionType()->FunctionalInterface()->AsETSObjectType());
+            addPropType(ResolveObjectMember(checker).first);
         } else {
             checker->LogTypeError({"Type ", unionType, " is illegal in union member expression."}, Start());
         }

@@ -178,6 +178,7 @@ public:
     void CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type);
     ETSTypeParameter *SetUpParameterType(ir::TSTypeParameter *param);
     void CheckIfOverrideIsValidInInterface(ETSObjectType *classType, Signature *sig, ir::ScriptFunction *func);
+    std::pair<Type *, Type *> RelationConvertFunctional(Type *source, Type *target);
     void CheckFunctionRedeclarationInInterface(ETSObjectType *classType, ArenaVector<Signature *> &similarSignatures,
                                                ir::ScriptFunction *func);
     void ValidateAbstractMethodsToBeImplemented(ArenaVector<ETSFunctionType *> &abstractsToBeImplemented,
@@ -352,6 +353,7 @@ public:
     Type *PerformRelationOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
 
     // Function
+    bool IsFunctional(Type const *type) const;
     bool NeedTypeInference(const ir::ScriptFunction *lambda);
     std::vector<bool> FindTypeInferenceArguments(const ArenaVector<ir::Expression *> &arguments);
     void InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunctionType *calleeType,

@@ -47,7 +47,8 @@ checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETSExtensi
 ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, checker::ETSUnionType *etsUnionType);
 ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker::Type *calleeType,
                                                     bool isConstructorCall, bool isFunctionalInterface,
-                                                    bool isUnionTypeWithFunctionalInterface);
+                                                    bool isUnionTypeWithFunctionalInterface,
+                                                    bool isUserDefinedFunctionalInterface);
 checker::ETSObjectType *ChooseCalleeObj(ETSChecker *checker, ir::CallExpression *expr, checker::Type *calleeType,
                                         bool isConstructorCall);
 void ProcessExclamationMark(ETSChecker *checker, ir::UnaryExpression *expr, checker::Type *operandType);

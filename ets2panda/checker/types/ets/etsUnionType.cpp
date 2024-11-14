@@ -181,13 +181,24 @@ bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
         isAssignable = std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
                                    [relation, target](auto *t) { return relation->IsAssignableTo(t, target); });
     } else {
+        // For functional interface, ETSUnionType carries its different signature, so one match is enough. But when
+        // There still are some thing else could be in it:
+        // For example: let a = (b:int,c:string = "b") | string
+        // TsType of a :
+        // ETSUnionType(signature1:ETSFunctionType->IsFunctional == true,
+        // signature2:ETSFunctionType->IsFunctional()== true, ETSString)
+        // Still, there maybe a user defined functional interface, so we keep process ETSObjectType(functional)
         for (auto it : constituentTypes_) {
-            if (!it->IsETSObjectType() || !it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+            if ((!it->IsETSObjectType() || !it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) &&
+                (!it->IsETSFunctionType() || !it->AsETSFunctionType()->IsFunctional())) {
                 isAssignable = false;
                 break;
             }
 
-            if (relation->IsAssignableTo(it, target)) {
+            auto newSource = it->IsETSObjectType() ? it->AsETSObjectType()
+                                                   : it->AsETSFunctionType()->FunctionalInterface()->AsETSObjectType();
+
+            if (relation->IsAssignableTo(newSource, target)) {
                 isAssignable = true;
             }
         }
@@ -257,6 +268,11 @@ static std::optional<Type *> TryMergeTypes(TypeRelation *relation, Type *const t
 {
     auto checker = relation->GetChecker()->AsETSChecker();
     auto never = checker->GetGlobalTypesHolder()->GlobalETSNeverType();
+    // we do not merge function interface
+    if ((t1->IsETSFunctionType() && t1->AsETSFunctionType()->IsFunctional()) ||
+        (t2->IsETSFunctionType() && t2->AsETSFunctionType()->IsFunctional())) {
+        return std::nullopt;
+    }
     if (relation->IsSupertypeOf(t1, t2) || t2 == never) {
         return t1;
     }
@@ -687,6 +703,13 @@ bool ETSUnionType::HasObjectType(ETSObjectFlags flag) const
     auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(), [flag](Type *t) {
         return t->IsETSObjectType() && t->AsETSObjectType()->HasObjectFlag(flag);
     });
+    return it != constituentTypes_.end();
+}
+
+bool ETSUnionType::IsFunctional() const
+{
+    auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(),
+                           [](Type *t) { return t->IsETSFunctionType() && t->AsETSFunctionType()->IsFunctional(); });
     return it != constituentTypes_.end();
 }
 

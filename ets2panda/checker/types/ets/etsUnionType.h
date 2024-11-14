@@ -52,6 +52,7 @@ public:
     bool HasUndefinedType() const;
     bool HasType(Type *type) const;
     bool HasNullishType(const ETSChecker *checker) const;
+    bool IsFunctional() const;
 
     bool IsOverlapWith(TypeRelation *relation, Type *type);
 

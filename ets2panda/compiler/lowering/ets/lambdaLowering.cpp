@@ -1084,7 +1084,8 @@ static ir::AstNode *BuildLambdaClassWhenNeeded(public_lib::Context *ctx, ir::Ast
     if (node->IsMemberExpression()) {
         auto *mexpr = node->AsMemberExpression();
         if (mexpr->Kind() == ir::MemberExpressionKind::PROPERTY_ACCESS && mexpr->TsType() != nullptr &&
-            mexpr->TsType()->IsETSFunctionType() && mexpr->Object()->TsType()->IsETSObjectType()) {
+            mexpr->TsType()->IsETSFunctionType() && !mexpr->TsType()->AsETSFunctionType()->IsFunctional() &&
+            mexpr->Object()->TsType()->IsETSObjectType()) {
             ASSERT(mexpr->Property()->IsIdentifier());
             auto *var = mexpr->Object()->TsType()->AsETSObjectType()->GetProperty(
                 mexpr->Property()->AsIdentifier()->Name(),
@@ -1109,6 +1110,198 @@ static void CallPerformForExtSources(LambdaConversionPhase *phase, public_lib::C
             phase->Perform(ctx, extProg);
         }
     }
+}
+
+static checker::Type *ConvertType(checker::ETSChecker *checker, checker::Type *type);
+
+static checker::ETSObjectType *ConvertObjectType(checker::ETSChecker *checker, checker::ETSObjectType *objType)
+{
+    if (objType == nullptr) {
+        return nullptr;
+    }
+    if (objType->IsTransferResolved()) {
+        return objType;
+    }
+    objType->SetTransferResolved();
+    bool anyChange = false;
+    ConvertObjectType(checker, objType->GetBaseType());
+
+    checker::Substitution *newSubstitution = checker->NewSubstitution();
+    auto *oldSubstitution = objType->ForceGetEffectiveSubstitution();
+    if (oldSubstitution != nullptr) {
+        for (auto it : *oldSubstitution) {
+            auto newArgType = ConvertType(checker, it.second);
+            if (it.second != newArgType) {
+                anyChange = true;
+            }
+            checker->EmplaceSubstituted(newSubstitution, it.first, newArgType);
+        }
+    }
+    for (auto &arg : objType->TypeArguments()) {
+        arg = ConvertType(checker, arg);
+    }
+    if (anyChange) {
+        objType->ForceSetEffectiveSubstitution(newSubstitution);
+    }
+
+    if (objType->HasObjectFlag(checker::ETSObjectFlags::FUNCTIONAL)) {
+        return objType;
+    }
+
+    objType->SetSuperType(ConvertObjectType(checker, objType->SuperType()));
+    auto itfaces = objType->Interfaces();
+    for (auto &intf : itfaces) {
+        intf = ConvertObjectType(checker, intf);
+    }
+
+    if (objType->IsPropertiesInstantiated()) {
+        auto properties = objType->GetAllProperties();
+        for (auto *prop : properties) {
+            prop->SetTsType(ConvertType(checker, prop->TsType()));
+        }
+    }
+
+    return objType;
+}
+
+static checker::Signature *ConvertSignatrue(checker::ETSChecker *checker, checker::Signature *sig)
+{
+    auto *allocator = checker->Allocator();
+    bool anyChange = false;
+    checker::SignatureInfo *newSigInfo = allocator->New<checker::SignatureInfo>(allocator);
+
+    auto *sigInfo = sig->GetSignatureInfo();
+    if (!sigInfo->typeParams.empty()) {
+        newSigInfo->typeParams.insert(newSigInfo->typeParams.begin(), sigInfo->typeParams.begin(),
+                                      sigInfo->typeParams.end());
+    }
+
+    newSigInfo->minArgCount = sigInfo->minArgCount;
+
+    for (auto *param : sigInfo->params) {
+        auto *newParam = param;
+        auto *newParamType = ConvertType(checker, param->TsType());
+        if (newParamType != param->TsType()) {
+            anyChange = true;
+            newParam = param->Copy(allocator, param->Declaration());
+            newParam->SetTsType(newParamType);
+        }
+        newSigInfo->params.push_back(newParam);
+    }
+
+    if (sigInfo->restVar != nullptr) {
+        auto *newRestType = ConvertType(checker, sigInfo->restVar->TsType());
+        if (newRestType != sigInfo->restVar->TsType()) {
+            anyChange = true;
+            newSigInfo->restVar = sigInfo->restVar->Copy(allocator, sigInfo->restVar->Declaration());
+            newSigInfo->restVar->SetTsType(newRestType);
+        }
+    }
+
+    if (!anyChange) {
+        newSigInfo = sigInfo;
+    }
+
+    auto *newReturnType = ConvertType(checker, sig->ReturnType());
+    if (newReturnType == sig->ReturnType() && !anyChange) {
+        return sig;
+    }
+
+    auto *result = allocator->New<checker::Signature>(newSigInfo, newReturnType, sig->InternalName());
+    result->SetFunction(sig->Function());
+    result->AddSignatureFlag(sig->GetFlags());
+    result->SetOwner(sig->Owner());
+    result->SetOwnerVar(sig->OwnerVar());
+
+    return result;
+}
+
+static checker::Type *ConvertETSFunctionType(checker::ETSChecker *checker, checker::ETSFunctionType *functionType)
+{
+    if (functionType->IsFunctional()) {
+        return ConvertType(checker, functionType->FunctionalInterface());
+    }
+    if (functionType->IsTransferResolved()) {
+        return functionType;
+    }
+    functionType->SetTransferResolved();
+
+    auto *copiedType = checker->CreateETSFunctionType(functionType->Name());
+    bool anyChange = false;
+    for (auto sig : functionType->CallSignatures()) {
+        checker::Signature *newSig;
+        if (newSig = ConvertSignatrue(checker, sig); newSig != sig) {
+            anyChange = true;
+        }
+        copiedType->AddCallSignature(newSig);
+    }
+
+    return anyChange ? copiedType : functionType;
+}
+
+static checker::Type *ConvertETSUnionType(checker::ETSChecker *checker, checker::ETSUnionType *unionType)
+{
+    ArenaVector<checker::Type *> types(checker->Allocator()->Adapter());
+    bool anyChange = false;
+    for (auto *cType : unionType->ConstituentTypes()) {
+        auto *newType = ConvertType(checker, cType);
+        if (newType != cType) {
+            anyChange = true;
+        }
+        types.emplace_back(newType);
+    }
+    return anyChange ? checker->CreateETSUnionType(std::move(types)) : unionType;
+}
+
+static checker::Type *ConvertType(checker::ETSChecker *checker, checker::Type *type)
+{
+    if (type == nullptr) {
+        return type;
+    }
+    if (type->IsETSFunctionType()) {
+        return ConvertETSFunctionType(checker, type->AsETSFunctionType());
+    }
+    if (type->IsETSObjectType()) {
+        return ConvertObjectType(checker, type->AsETSObjectType());
+    }
+    if (type->IsETSUnionType()) {
+        return ConvertETSUnionType(checker, type->AsETSUnionType());
+    }
+    return type;
+}
+
+static void ConvertTypedNode(checker::ETSChecker *checker, ir::Typed<ir::AstNode> *typedNode)
+{
+    typedNode->SetTsType(ConvertType(checker, typedNode->TsType()));
+
+    if (typedNode->Variable() != nullptr) {
+        typedNode->Variable()->SetTsType(ConvertType(checker, typedNode->Variable()->TsType()));
+    }
+}
+
+static ir::AstNode *ConvertFunctionalInterface(public_lib::Context *ctx, ir::AstNode *node)
+{
+    auto *checker = ctx->checker->AsETSChecker();
+
+    if (node->IsMemberExpression()) {
+        auto *memberExpr = node->AsMemberExpression();
+        memberExpr->SetObjectType(ConvertObjectType(checker, memberExpr->ObjType()));
+    }
+
+    if (node->IsTSNonNullExpression()) {
+        auto *tsNonNullExpr = node->AsTSNonNullExpression();
+        tsNonNullExpr->SetOriginalType(ConvertType(checker, tsNonNullExpr->OriginalType()));
+    }
+
+    // if (node->IsMethodDefinition()) {
+    //     return node;
+    // }
+
+    if (node->IsTyped()) {
+        ConvertTypedNode(checker, node->AsTyped());
+        return node;
+    }
+    return node;
 }
 
 bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *program)
@@ -1136,6 +1329,9 @@ bool LambdaConversionPhase::Perform(public_lib::Context *ctx, parser::Program *p
         return node;
     };
     program->Ast()->TransformChildrenRecursively(insertInvokeIfNeeded, Name());
+
+    program->Ast()->TransformChildrenRecursivelyPreorder(
+        [ctx](ir::AstNode *node) { return ConvertFunctionalInterface(ctx, node); }, Name());
 
     return true;
 }

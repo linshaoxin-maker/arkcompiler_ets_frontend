@@ -342,8 +342,10 @@ checker::Type *ETSAnalyzer::Check(ir::ETSFunctionType *node) const
             CreateOptionalSignaturesForFunctionalType(checker, node, genericInterfaceType, optionalParameterIndex);
     }
 
-    node->SetTsType(interfaceType);
-    return interfaceType;
+    auto *functionType = checker->Allocator()->New<ETSFunctionType>(checker->Allocator(), interfaceType);
+
+    node->SetTsType(functionType);
+    return functionType;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ETSLaunchExpression *expr) const
@@ -372,6 +374,9 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
 
     auto *elementType = expr->TypeReference()->GetType(checker);
     checker->ValidateArrayIndex(expr->Dimension(), true);
+    if (elementType->IsETSFunctionType() && elementType->AsETSFunctionType()->IsFunctional()) {
+        elementType = elementType->AsETSFunctionType()->FunctionalInterface();
+    }
     if (!elementType->IsETSPrimitiveType()) {
         if (elementType->IsETSUnionType() && !elementType->AsETSUnionType()->HasNullishType(checker)) {
             checker->LogTypeError({"Union types in array declaration must include a nullish type."}, expr->Start());
@@ -1131,7 +1136,8 @@ checker::Type *ETSAnalyzer::Check(ir::BlockExpression *st) const
 
 checker::Signature *ETSAnalyzer::ResolveSignature(ETSChecker *checker, ir::CallExpression *expr,
                                                   checker::Type *calleeType, bool isFunctionalInterface,
-                                                  bool isUnionTypeWithFunctionalInterface) const
+                                                  bool isUnionTypeWithFunctionalInterface,
+                                                  bool isUserDefinedFunctionalInterface) const
 {
     bool extensionFunctionType = expr->Callee()->IsMemberExpression() && checker->ExtensionETSFunctionType(calleeType);
 
@@ -1142,7 +1148,7 @@ checker::Signature *ETSAnalyzer::ResolveSignature(ETSChecker *checker, ir::CallE
         return ResolveCallExtensionFunction(calleeType->AsETSFunctionType(), checker, expr);
     }
     auto &signatures = ChooseSignatures(checker, calleeType, expr->IsETSConstructorCall(), isFunctionalInterface,
-                                        isUnionTypeWithFunctionalInterface);
+                                        isUnionTypeWithFunctionalInterface, isUserDefinedFunctionalInterface);
     // Remove static signatures if the callee is a member expression and the object is initialized
     if (expr->Callee()->IsMemberExpression() &&
         // NOTE(vpukhov): #20510 member access
@@ -1179,12 +1185,11 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
 
     bool isConstructorCall = expr->IsETSConstructorCall();
     bool isUnionTypeWithFunctionalInterface =
-        calleeType->IsETSUnionType() &&
-        calleeType->AsETSUnionType()->HasObjectType(checker::ETSObjectFlags::FUNCTIONAL_INTERFACE);
-    bool isFunctionalInterface = calleeType->IsETSObjectType() && calleeType->AsETSObjectType()->HasObjectFlag(
-                                                                      // CC-OFFNXT(G.FMT.06-CPP) project code style
-                                                                      checker::ETSObjectFlags::FUNCTIONAL_INTERFACE);
+        calleeType->IsETSUnionType() && calleeType->AsETSUnionType()->IsFunctional();
+    bool isFunctionalInterface = calleeType->IsETSFunctionType() && calleeType->AsETSFunctionType()->IsFunctional();
     bool etsExtensionFuncHelperType = calleeType->IsETSExtensionFuncHelperType();
+    bool isUserDefinedFunctionalInterface =
+        calleeType->IsETSObjectType() && calleeType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL);
 
     if (expr->Callee()->IsArrowFunctionExpression()) {
         calleeType = InitAnonymousLambdaCallee(checker, expr->Callee(), calleeType);
@@ -1192,20 +1197,21 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
     }
 
     if (!isFunctionalInterface && !calleeType->IsETSFunctionType() && !isConstructorCall &&
-        !etsExtensionFuncHelperType && !isUnionTypeWithFunctionalInterface) {
+        !etsExtensionFuncHelperType && !isUnionTypeWithFunctionalInterface && !isUserDefinedFunctionalInterface) {
         checker->LogTypeError({"Type '", calleeType, "' has no call signatures."}, expr->Start());
         return checker->GlobalTypeError();
     }
 
     checker::Signature *signature =
-        ResolveSignature(checker, expr, calleeType, isFunctionalInterface, isUnionTypeWithFunctionalInterface);
+        ResolveSignature(checker, expr, calleeType, isFunctionalInterface, isUnionTypeWithFunctionalInterface,
+                         isUserDefinedFunctionalInterface);
     if (signature == nullptr) {
         return checker->GlobalTypeError();
     }
 
     checker->CheckObjectLiteralArguments(signature, expr->Arguments());
 
-    if (!isFunctionalInterface) {
+    if (!isFunctionalInterface && !isUserDefinedFunctionalInterface) {
         checker::ETSObjectType *calleeObj = ChooseCalleeObj(checker, expr, calleeType, isConstructorCall);
         checker->ValidateSignatureAccessibility(calleeObj, expr, signature, expr->Start());
     }
@@ -1537,6 +1543,17 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     }
 
     // NOTE(vpukhov): #20510 member access
+    if (baseType->IsETSFunctionType() && baseType->AsETSFunctionType()->IsFunctional()) {
+        auto *functionalInterface = baseType->AsETSFunctionType()->FunctionalInterface();
+        if (functionalInterface->IsETSObjectType()) {
+            return expr->SetAndAdjustType(checker, functionalInterface->AsETSObjectType());
+        }
+        if (functionalInterface->IsETSUnionType()) {
+            return expr->AdjustType(checker, expr->CheckUnionMember(checker, functionalInterface->AsETSUnionType()));
+        }
+        UNREACHABLE();
+    }
+
     if (baseType->IsETSEnumType()) {
         return CheckEnumMemberExpression(baseType->AsETSEnumType(), expr);
     }

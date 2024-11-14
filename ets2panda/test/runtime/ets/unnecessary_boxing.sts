@@ -18,4 +18,5 @@
  let y:()=>int = ()=>16 as int
  y = true ? y:():int=>32
  y = true ? ():int=>32:y
- x = true ? x:y
+ // note: ()=>int is not assignable to ()=>long
+ // x = true ? x: y

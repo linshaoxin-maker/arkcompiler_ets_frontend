@@ -19,12 +19,21 @@
 #include "checker/types/type.h"
 #include "checker/types/signature.h"
 #include "ir/base/scriptFunction.h"
+#include "macros.h"
+#include <checker/ETSchecker.h>
 
 namespace ark::es2panda::checker {
 
 class ETSFunctionType : public Type {
 public:
     explicit ETSFunctionType(ETSChecker *checker, util::StringView name, ArenaVector<Signature *> &&signatures);
+
+    // used only for functional interface
+    explicit ETSFunctionType(ArenaAllocator *allocator, ETSObjectType *functionalInterface)
+        : Type(TypeFlag::FUNCTION), callSignatures_(allocator->Adapter()), funcInterface_(functionalInterface)
+    {
+        ASSERT(functionalInterface != nullptr);
+    };
 
     explicit ETSFunctionType(util::StringView name, Signature *signature, ArenaAllocator *allocator)
         : Type(TypeFlag::FUNCTION), callSignatures_(allocator->Adapter()), name_(name), funcInterface_(nullptr)
@@ -51,9 +60,19 @@ public:
         return name_;
     }
 
+    bool IsFunctional() const
+    {
+        return funcInterface_ != nullptr;
+    }
+
     Type *FunctionalInterface() const
     {
         return funcInterface_;
+    }
+
+    void SetFunctionalInterface(Type *const funcInterface)
+    {
+        funcInterface_ = funcInterface;
     }
 
     void AddCallSignature(Signature *signature)
@@ -109,12 +128,20 @@ public:
 
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override
     {
-        funcInterface_->ToAssemblerType(ss);
+        if (LIKELY(IsFunctional())) {
+            funcInterface_->ToAssemblerType(ss);
+        } else {
+            UNREACHABLE();
+        }
     }
 
     void ToDebugInfoType([[maybe_unused]] std::stringstream &ss) const override
     {
-        UNREACHABLE();
+        if (LIKELY(IsFunctional())) {
+            funcInterface_->ToDebugInfoType(ss);
+        } else {
+            UNREACHABLE();
+        }
     }
 
     Signature *FirstAbstractSignature();
@@ -130,11 +157,13 @@ public:
     ETSFunctionType *BoxPrimitives(ETSChecker *checker);
     void IsSubtypeOf(TypeRelation *relation, Type *target) override;
 
+    ETSFunctionType *GetFunctionnalInvokeType();
+
 private:
     ArenaVector<Signature *> callSignatures_;
     util::StringView name_;
     Signature *refSignature_ {};
-    Type *const funcInterface_;
+    Type *funcInterface_;
 };
 }  // namespace ark::es2panda::checker
 

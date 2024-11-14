@@ -697,9 +697,17 @@ Type *ETSChecker::ResolveFunctionalInterfaces(ArenaVector<Signature *> &signatur
 {
     ArenaVector<Type *> types(Allocator()->Adapter());
     for (auto *signature : signatures) {
-        types.push_back(FunctionTypeToFunctionalInterfaceType(signature));
+        auto *functionType =
+            Allocator()->New<ETSFunctionType>(Allocator(), FunctionTypeToFunctionalInterfaceType(signature));
+        types.push_back(functionType);
     }
-    return CreateETSUnionType(std::move(types));
+    Type *interface;
+    if (types.size() == 1) {
+        interface = types[0]->AsETSFunctionType()->FunctionalInterface();
+    } else {
+        interface = CreateETSUnionType(std::move(types));
+    }
+    return interface;
 }
 
 ETSObjectType *ETSChecker::CreatePromiseOf(Type *type)

@@ -43,12 +43,28 @@ Signature *ETSFunctionType::FirstAbstractSignature()
 
 void ETSFunctionType::ToString(std::stringstream &ss, bool precise) const
 {
-    callSignatures_[0]->ToString(ss, nullptr, false, precise);
+    if (!callSignatures_.empty()) {
+        callSignatures_[0]->ToString(ss, nullptr, false, precise);
+    } else if (IsFunctional()) {
+        funcInterface_->ToString(ss, precise);
+    } else {
+        UNREACHABLE();
+    }
 }
 
 void ETSFunctionType::Identical(TypeRelation *relation, Type *other)
 {
     if (!other->IsETSFunctionType()) {
+        return;
+    }
+
+    auto [newThis, newOther] = relation->GetChecker()->AsETSChecker()->RelationConvertFunctional(this, other);
+    if (newThis != this || newOther != other) {
+        if (newOther->IsETSUnionType()) {
+            relation->Result(false);
+            return;
+        }
+        newThis->Identical(relation, newOther);
         return;
     }
 
@@ -76,6 +92,19 @@ bool ETSFunctionType::AssignmentSource(TypeRelation *relation, Type *target)
     if (target->IsETSObjectType() && target == relation->GetChecker()->AsETSChecker()->GlobalETSObjectType()) {
         relation->Result(true);
         return true;
+    }
+
+    if (IsFunctional() || relation->GetChecker()->AsETSChecker()->IsFunctional(target)) {
+        Type *newSource = IsFunctional() ? funcInterface_ : this;
+        Type *newTarget = target;
+        if (target->IsETSFunctionType() && target->AsETSFunctionType()->IsFunctional()) {
+            newTarget = target->AsETSFunctionType()->FunctionalInterface();
+        }
+        if (newTarget->IsETSUnionType()) {
+            newTarget->AssignmentTarget(relation, newSource);
+            return relation->IsTrue();
+        }
+        return newSource->AssignmentSource(relation, newTarget);
     }
 
     relation->Result(false);
@@ -146,6 +175,12 @@ static ETSFunctionType *CoerceToFunctionType(Type *type)
 
 void ETSFunctionType::IsSupertypeOf(TypeRelation *relation, Type *source)
 {
+    auto [newSource, newTarget] = relation->GetChecker()->AsETSChecker()->RelationConvertFunctional(source, this);
+    if (source != newSource || this != newTarget) {
+        newTarget->IsSupertypeOf(relation, newSource);
+        return;
+    }
+
     ETSFunctionType *const targetFnType = this;
     ETSFunctionType *const sourceFnType = CoerceToFunctionType(source);
     if (sourceFnType == nullptr) {
@@ -153,7 +188,7 @@ void ETSFunctionType::IsSupertypeOf(TypeRelation *relation, Type *source)
         return;
     }
 
-    ASSERT(targetFnType->IsETSArrowType() && sourceFnType->IsETSArrowType());
+    ASSERT(targetFnType->IsETSFunctionType() && sourceFnType->IsETSFunctionType());
     Signature *const targetSig = targetFnType->CallSignatures()[0];
     Signature *const sourceSig = sourceFnType->CallSignatures()[0];
 
@@ -177,8 +212,19 @@ void ETSFunctionType::IsSupertypeOf(TypeRelation *relation, Type *source)
     relation->Result(true);
 }
 
+ETSFunctionType *ETSFunctionType::GetFunctionnalInvokeType()
+{
+    ASSERT(funcInterface_ != nullptr && funcInterface_->IsETSObjectType());
+    return funcInterface_->AsETSObjectType()->GetFunctionalInterfaceInvokeType();
+}
+
 void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
 {
+    auto [newSource, newTarget] = relation->GetChecker()->AsETSChecker()->RelationConvertFunctional(source, this);
+    if (newSource != source || newTarget != this) {
+        return newTarget->AssignmentTarget(relation, newSource);
+    }
+
     ETSFunctionType *const targetFnType = this;
     ETSFunctionType *const sourceFnType = CoerceToFunctionType(source);
     if (sourceFnType == nullptr) {
@@ -210,6 +256,8 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
     if (!(targetSig->Function()->IsThrowing() || targetSig->HasSignatureFlag(SignatureFlags::THROWS))) {
         if (match->Function()->IsThrowing() || match->Function()->IsRethrowing() ||
             match->HasSignatureFlag(SignatureFlags::THROWS) || match->HasSignatureFlag(SignatureFlags::RETHROWS)) {
+            // todo: remove this LogTypeError and move to some ToString() method
+            ASSERT(relation->GetNode()!=nullptr);
             relation->GetChecker()->LogTypeError(
                 "Functions that can throw exceptions cannot be assigned to non throwing functions.",
                 relation->GetNode()->Start());
@@ -218,7 +266,7 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
         }
     }
 
-    ASSERT(relation->GetNode() != nullptr);
+    // ASSERT(relation->GetNode() != nullptr);
     relation->Result(true);
 }
 
@@ -230,6 +278,8 @@ Type *ETSFunctionType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [
     for (auto *it : callSignatures_) {
         copiedType->AddCallSignature(it->Copy(allocator, relation, globalTypes));
     }
+
+    copiedType->funcInterface_ = funcInterface_->Instantiate(allocator, relation, globalTypes);
 
     return copiedType;
 }
@@ -250,6 +300,14 @@ ETSFunctionType *ETSFunctionType::Substitute(TypeRelation *relation, const Subst
         copiedType->AddCallSignature(newSig);
         if (newSig != sig) {
             anyChange = true;
+        }
+    }
+
+    if (funcInterface_ != nullptr) {
+        auto newFunctionInterface = funcInterface_->Substitute(relation, substitution);
+        if (newFunctionInterface != funcInterface_) {
+            anyChange = true;
+            copiedType->SetFunctionalInterface(newFunctionInterface);
         }
     }
 
@@ -278,6 +336,11 @@ checker::RelationResult ETSFunctionType::CastFunctionParams(TypeRelation *relati
 
 void ETSFunctionType::Cast(TypeRelation *relation, Type *target)
 {
+    if (IsFunctional()) {
+        funcInterface_->Cast(relation, target);
+        return;
+    }
+
     ASSERT(relation->GetNode()->IsArrowFunctionExpression());
     auto *savedNode = relation->GetNode();
     conversion::Forbidden(relation);
@@ -305,11 +368,12 @@ void ETSFunctionType::Cast(TypeRelation *relation, Type *target)
 
 void ETSFunctionType::IsSubtypeOf(TypeRelation *relation, Type *target)
 {
-    ETSChecker *checker = relation->GetChecker()->AsETSChecker();
-    auto *source = checker->FunctionTypeToFunctionalInterfaceType(callSignatures_[0]);
-
-    if (relation->IsSupertypeOf(target, source)) {
-        relation->Result(true);
+    if (IsFunctional()) {
+        if (target->IsETSFunctionType() && target->AsETSFunctionType()->IsFunctional()) {
+            if (relation->IsSupertypeOf(target->AsETSFunctionType()->FunctionalInterface(), funcInterface_)) {
+                relation->Result(true);
+            }
+        }
         return;
     }
 

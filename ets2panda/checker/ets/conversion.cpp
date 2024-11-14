@@ -154,6 +154,7 @@ bool IsAllowedNarrowingReferenceConversion(TypeRelation *const relation, Type *c
         //    array of components of type TC; and a narrowing reference conversion exists from SC to TC.
         auto *sc = source->AsETSArrayType()->ElementType();
         auto *tc = target->AsETSArrayType()->ElementType();
+        std::tie(sc, tc) = relation->GetChecker()->AsETSChecker()->RelationConvertFunctional(sc, tc);
 
         if (sc->IsETSObjectType() && tc->IsETSObjectType()) {
             relation->Result(false);

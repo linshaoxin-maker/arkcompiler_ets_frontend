@@ -204,6 +204,16 @@ public:
         return id_;
     }
 
+    void SetTransferResolved()
+    {
+        typeFlags_ |= TypeFlag::ETS_FUNCTIONAL_RESOLVED;
+    }
+
+    bool IsTransferResolved() const
+    {
+        return HasTypeFlag(TypeFlag::ETS_FUNCTIONAL_RESOLVED);
+    }
+
     void SetVariable(varbinder::Variable *variable)
     {
         variable_ = variable;
