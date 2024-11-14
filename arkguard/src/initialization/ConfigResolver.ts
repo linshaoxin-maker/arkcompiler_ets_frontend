@@ -92,6 +92,7 @@ class ObOptions {
   enableToplevelObfuscation: boolean = false;
   enableFileNameObfuscation: boolean = false;
   enableExportObfuscation: boolean = false;
+  enableLibObfuscationOptions: boolean = false;
   printKeptNames: boolean = false;
   removeComments: boolean = false;
   compact: boolean = false;
@@ -138,8 +139,8 @@ export class MergedConfig {
   excludeUniversalPaths: RegExp[] = []; // Support excluded paths contain wildcards.
   excludePathSet: Set<string> = new Set();
 
-  merge(other: MergedConfig, collectAllConfigs: boolean): void {
-    if (collectAllConfigs) {
+  merge(other: MergedConfig): void {
+    if (this.options.enableLibObfuscationOptions) {
       this.options.merge(other.options);
     }
     this.reservedPropertyNames.push(...other.reservedPropertyNames);
@@ -193,14 +194,12 @@ export class ObConfigResolver {
   logger: any;
   isHarCompiled: boolean | undefined;
   isTerser: boolean;
-  collectAllConfigs: boolean;
 
   constructor(projectConfig: any, logger: any, isTerser?: boolean) {
     this.sourceObConfig = projectConfig.obfuscationOptions;
     this.logger = logger;
     this.isHarCompiled = projectConfig.compileHar;
     this.isTerser = isTerser;
-    this.collectAllConfigs = false;
   }
 
   public resolveObfuscationConfigs(): MergedConfig {
@@ -331,9 +330,9 @@ export class ObConfigResolver {
 
   // renameFileName, printNameCache, applyNameCache, removeComments and keepComments won't be reserved in obfuscation.txt file.
   static exportedSwitchMap: Map<string, string> = new Map([
-    ['disableObfuscation', ObConfigResolver.KEEP_DTS],
     ['enablePropertyObfuscation', ObConfigResolver.ENABLE_PROPERTY_OBFUSCATION],
     ['enableStringPropertyObfuscation', ObConfigResolver.ENABLE_STRING_PROPERTY_OBFUSCATION],
+    ['enableLibObfuscationOptions', ObConfigResolver.ENABLE_LIB_OBFUSCATION_OPTIONS],
     ['enableToplevelObfuscation', ObConfigResolver.ENABLE_TOPLEVEL_OBFUSCATION],
     ['compact', ObConfigResolver.COMPACT],
     ['removeLog', ObConfigResolver.REMOVE_LOG],
@@ -429,7 +428,7 @@ export class ObConfigResolver {
           continue;
         }
         case OptionType.ENABLE_LIB_OBFUSCATION_OPTIONS: {
-          this.collectAllConfigs = true;
+          configs.options.enableLibObfuscationOptions = true;
           continue;
         }
         case OptionType.COMPACT: {
@@ -713,7 +712,7 @@ export class ObConfigResolver {
 
   private getMergedConfigs(selfConfigs: MergedConfig, dependencyConfigs: MergedConfig): MergedConfig {
     if (dependencyConfigs) {
-      selfConfigs.merge(dependencyConfigs, this.collectAllConfigs);
+      selfConfigs.merge(dependencyConfigs);
     }
     selfConfigs.sortAndDeduplicate();
     return selfConfigs;
@@ -728,7 +727,7 @@ export class ObConfigResolver {
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
-    selfConsumerConfig.merge(dependencyConfigs, this.collectAllConfigs);
+    selfConsumerConfig.merge(dependencyConfigs);
     selfConsumerConfig.sortAndDeduplicate();
     this.writeConsumerConfigFile(selfConsumerConfig, sourceObConfig.exportRulePath);
   }
