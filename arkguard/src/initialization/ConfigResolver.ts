@@ -55,6 +55,7 @@ enum OptionType {
   ENABLE_TOPLEVEL_OBFUSCATION,
   ENABLE_FILENAME_OBFUSCATION,
   ENABLE_EXPORT_OBFUSCATION,
+  ENABLE_LIB_OBFUSCATION_OPTIONS,
   COMPACT,
   REMOVE_LOG,
   REMOVE_COMMENTS,
@@ -137,8 +138,10 @@ export class MergedConfig {
   excludeUniversalPaths: RegExp[] = []; // Support excluded paths contain wildcards.
   excludePathSet: Set<string> = new Set();
 
-  merge(other: MergedConfig): void {
-    this.options.merge(other.options);
+  merge(other: MergedConfig, collectAllConfigs: boolean): void {
+    if (collectAllConfigs) {
+      this.options.merge(other.options);
+    }
     this.reservedPropertyNames.push(...other.reservedPropertyNames);
     this.reservedGlobalNames.push(...other.reservedGlobalNames);
     this.reservedFileNames.push(...other.reservedFileNames);
@@ -190,12 +193,14 @@ export class ObConfigResolver {
   logger: any;
   isHarCompiled: boolean | undefined;
   isTerser: boolean;
+  collectAllConfigs: boolean;
 
   constructor(projectConfig: any, logger: any, isTerser?: boolean) {
     this.sourceObConfig = projectConfig.obfuscationOptions;
     this.logger = logger;
     this.isHarCompiled = projectConfig.compileHar;
     this.isTerser = isTerser;
+    this.collectAllConfigs = false;
   }
 
   public resolveObfuscationConfigs(): MergedConfig {
@@ -316,6 +321,7 @@ export class ObConfigResolver {
   static readonly ENABLE_TOPLEVEL_OBFUSCATION = '-enable-toplevel-obfuscation';
   static readonly ENABLE_FILENAME_OBFUSCATION = '-enable-filename-obfuscation';
   static readonly ENABLE_EXPORT_OBFUSCATION = '-enable-export-obfuscation';
+  static readonly ENABLE_LIB_OBFUSCATION_OPTIONS = '-enable-lib-obfuscation-options';
   static readonly REMOVE_COMMENTS = '-remove-comments';
   static readonly COMPACT = '-compact';
   static readonly REMOVE_LOG = '-remove-log';
@@ -357,6 +363,8 @@ export class ObConfigResolver {
         return OptionType.ENABLE_FILENAME_OBFUSCATION;
       case ObConfigResolver.ENABLE_EXPORT_OBFUSCATION:
         return OptionType.ENABLE_EXPORT_OBFUSCATION;
+      case ObConfigResolver.ENABLE_LIB_OBFUSCATION_OPTIONS:
+        return OptionType.ENABLE_LIB_OBFUSCATION_OPTIONS;
       case ObConfigResolver.REMOVE_COMMENTS:
         return OptionType.REMOVE_COMMENTS;
       case ObConfigResolver.COMPACT:
@@ -418,6 +426,10 @@ export class ObConfigResolver {
         }
         case OptionType.ENABLE_EXPORT_OBFUSCATION: {
           configs.options.enableExportObfuscation = true;
+          continue;
+        }
+        case OptionType.ENABLE_LIB_OBFUSCATION_OPTIONS: {
+          this.collectAllConfigs = true;
           continue;
         }
         case OptionType.COMPACT: {
@@ -648,9 +660,7 @@ export class ObConfigResolver {
     for (const lib of sourceObConfig.dependencies.libraries || []) {
       if (lib.consumerRules && lib.consumerRules.length > 0) {
         for (const path of lib.consumerRules) {
-          const thisLibConfigs = new MergedConfig();
           this.getConfigByPath(path, dependencyConfigs);
-          dependencyConfigs.merge(thisLibConfigs);
         }
       }
     }
@@ -661,9 +671,7 @@ export class ObConfigResolver {
       sourceObConfig.dependencies.hars.length > 0
     ) {
       for (const path of sourceObConfig.dependencies.hars) {
-        const thisHarConfigs = new MergedConfig();
         this.getConfigByPath(path, dependencyConfigs);
-        dependencyConfigs.merge(thisHarConfigs);
       }
     }
   }
@@ -705,7 +713,7 @@ export class ObConfigResolver {
 
   private getMergedConfigs(selfConfigs: MergedConfig, dependencyConfigs: MergedConfig): MergedConfig {
     if (dependencyConfigs) {
-      selfConfigs.merge(dependencyConfigs);
+      selfConfigs.merge(dependencyConfigs, this.collectAllConfigs);
     }
     selfConfigs.sortAndDeduplicate();
     return selfConfigs;
@@ -720,7 +728,7 @@ export class ObConfigResolver {
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
-    selfConsumerConfig.merge(dependencyConfigs);
+    selfConsumerConfig.merge(dependencyConfigs, this.collectAllConfigs);
     selfConsumerConfig.sortAndDeduplicate();
     this.writeConsumerConfigFile(selfConsumerConfig, sourceObConfig.exportRulePath);
   }
