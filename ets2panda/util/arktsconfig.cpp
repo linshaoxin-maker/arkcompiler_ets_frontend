@@ -115,9 +115,24 @@ std::string ArkTsConfig::Pattern::GetSearchRoot() const
 bool ArkTsConfig::Pattern::Match(const std::string &path) const
 {
     ASSERT(fs::path(path).is_absolute());
-    fs::path value = fs::path(value_);
+    const fs::path value = fs::weakly_canonical(value_);
     std::string pattern = value.is_absolute() ? value.string() : (base_ / value).string();
 
+#ifdef PANDA_TARGET_WINDOWS
+    // Backslash escape except for regexp control sequences
+    pattern = std::regex_replace(
+        std::regex_replace(pattern, std::regex(R"(\\)"), R"(\\)"),
+        std::regex(R"(\\[\.])"), ".");
+    // Replace arktsconfig special symbols with regular expressions
+    if (IsPattern()) {
+        // '**' matches any directory nested to any level
+        pattern = std::regex_replace(pattern, std::regex(R"(\*\*\\\\)"), ".*");
+        // '*' matches zero or more characters (excluding directory separators)
+        pattern = std::regex_replace(pattern, std::regex(R"(([^\.])\*)"), R"($1[^\\]*)");
+        // '?' matches any one character (excluding directory separators)
+        pattern = std::regex_replace(pattern, std::regex(R"("\?")"), R"([^\\])");
+    }
+#else
     // Replace arktsconfig special symbols with regular expressions
     if (IsPattern()) {
         // '**' matches any directory nested to any level
@@ -131,6 +146,7 @@ bool ArkTsConfig::Pattern::Match(const std::string &path) const
         // default extensions to match
         pattern += R"(.*(\.ts|\.d\.ts|\.sts)$)";
     }
+#endif // PANDA_TARGET_WINDOWS
     std::smatch m;
     auto res = std::regex_match(path, m, std::regex(pattern));
     return res;
@@ -459,7 +475,7 @@ static std::vector<fs::path> GetSourceList(const std::shared_ptr<ArkTsConfig> &a
     // Collect "include"
     // TSC traverses folders for sources starting from 'include' rather than from 'rootDir', so we do the same
     for (auto &include : includes) {
-        auto traverseRoot = fs::path(include.GetSearchRoot());
+        auto traverseRoot = fs::weakly_canonical(include.GetSearchRoot());
         if (!fs::exists(traverseRoot)) {
             continue;
         }
@@ -471,7 +487,7 @@ static std::vector<fs::path> GetSourceList(const std::shared_ptr<ArkTsConfig> &a
         }
         for (const auto &dirEntry : fs::recursive_directory_iterator(traverseRoot)) {
             if (include.Match(dirEntry.path().string()) && !MatchExcludes(dirEntry, excludes)) {
-                sourceList.emplace_back(dirEntry);
+                sourceList.emplace_back(fs::weakly_canonical(dirEntry));
             }
         }
     }
@@ -484,7 +500,7 @@ static fs::path Relative(const fs::path &src, const fs::path &base)
 {
     fs::path tmpPath = src;
     fs::path relPath;
-    while (!fs::equivalent(tmpPath, base)) {
+    while (!fs::equivalent(fs::weakly_canonical(tmpPath), fs::weakly_canonical(base))) {
         relPath = relPath.empty() ? tmpPath.filename() : tmpPath.filename() / relPath;
         if (tmpPath == tmpPath.parent_path()) {
             return fs::path();

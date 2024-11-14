@@ -29,6 +29,13 @@ namespace fs = std::filesystem;
 namespace fs = std::experimental::filesystem;
 #endif
 #endif
+
+#ifdef PANDA_TARGET_WINDOWS
+constexpr std::string_view importPathDelimiter = "/";
+#else
+constexpr std::string_view importPathDelimiter = ark::os::file::File::GetPathDelim();
+#endif
+
 namespace ark::es2panda::util {
 
 constexpr size_t SUPPORTED_INDEX_FILES_SIZE = 2;
@@ -58,7 +65,7 @@ StringView ImportPathManager::ResolvePath(const StringView &currentModulePath, c
     }
 
     std::string baseUrl;
-    if (importPath.Mutf8()[0] == pathDelimiter_.at(0)) {
+    if (importPath.Mutf8()[0] == importPathDelimiter.at(0)) {
         baseUrl = arktsConfig_->BaseUrl();
         baseUrl.append(importPath.Mutf8(), 0, importPath.Mutf8().length());
         return AppendExtensionOrIndexFileIfOmitted(UString(baseUrl, allocator_).View());
@@ -69,12 +76,12 @@ StringView ImportPathManager::ResolvePath(const StringView &currentModulePath, c
         return AppendExtensionOrIndexFileIfOmitted(importPath);
     }
 
-    const size_t pos = importPath.Mutf8().find(pathDelimiter_);
+    const size_t pos = importPath.Mutf8().find(importPathDelimiter);
     bool containsDelim = (pos != std::string::npos);
     auto rootPart = containsDelim ? importPath.Substr(0, pos) : importPath;
     if (!stdLib_.empty() &&
         (rootPart.Is("std") || rootPart.Is("escompat"))) {  // Get std or escompat path from CLI if provided
-        baseUrl = stdLib_ + pathDelimiter_.at(0) + rootPart.Mutf8();
+        baseUrl = stdLib_ + importPathDelimiter.at(0) + rootPart.Mutf8();
     } else {
         ASSERT(arktsConfig_ != nullptr);
         auto resolvedPath = arktsConfig_->ResolvePath(importPath.Mutf8());
@@ -228,8 +235,8 @@ bool ImportPathManager::IsRelativePath(const StringView &path) const
     std::string currentDirReference = ".";
     std::string parentDirReference = "..";
 
-    currentDirReference.append(pathDelimiter_);
-    parentDirReference.append(pathDelimiter_);
+    currentDirReference.append(importPathDelimiter);
+    parentDirReference.append(importPathDelimiter);
 
     return ((path.Mutf8().find(currentDirReference) == 0) || (path.Mutf8().find(parentDirReference) == 0));
 }
