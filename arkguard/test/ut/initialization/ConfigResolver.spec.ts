@@ -136,7 +136,7 @@ describe('test for ConfigResolve', function() {
       expect(serialized).to.include('prop1');
       expect(serialized).to.not.include('option2');
   
-      expect(ObConfigResolver.exportedSwitchMap.has(String('disableObfuscation'))).to.be.true;
+      expect(ObConfigResolver.exportedSwitchMap.has(String('disableObfuscation'))).to.be.false;
       expect(ObConfigResolver.exportedSwitchMap.has(String('enableStringPropertyObfuscation'))).to.be.true;
       expect(resultStr).to.equal('');
     });

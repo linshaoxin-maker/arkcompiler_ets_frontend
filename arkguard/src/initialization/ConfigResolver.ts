@@ -332,7 +332,6 @@ export class ObConfigResolver {
   static exportedSwitchMap: Map<string, string> = new Map([
     ['enablePropertyObfuscation', ObConfigResolver.ENABLE_PROPERTY_OBFUSCATION],
     ['enableStringPropertyObfuscation', ObConfigResolver.ENABLE_STRING_PROPERTY_OBFUSCATION],
-    ['enableLibObfuscationOptions', ObConfigResolver.ENABLE_LIB_OBFUSCATION_OPTIONS],
     ['enableToplevelObfuscation', ObConfigResolver.ENABLE_TOPLEVEL_OBFUSCATION],
     ['compact', ObConfigResolver.COMPACT],
     ['removeLog', ObConfigResolver.REMOVE_LOG],
