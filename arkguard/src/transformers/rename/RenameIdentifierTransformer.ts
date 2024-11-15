@@ -269,7 +269,6 @@ namespace secharmony {
             return;
           }
 
-          
           // Retrieve the original symbol for the given symbol to ensure we can reuse the mangled name if it already exists.
           // This ensures that the obfuscated name for the declaration is consistent across different references to the same symbol.
           // Example: if we have `class A {}`, and then `declare namespace ns { export { A }; }`, we want both `A` references to be obfuscated as the same name.
@@ -713,7 +712,7 @@ namespace secharmony {
           let hasOriginalObfuscatedName: boolean =
             sym === originalSym || (sym.name === originalSym.name && mangledSymbolNames.has(originalSym));
           if (hasOriginalObfuscatedName) {
-            mangledName = mangledSymbolNames.get(originalSym).mangledName;
+            mangledName = mangledSymbolNames.get(originalSym)?.mangledName;
           } else {
             mangledName = mangledSymbolNames.get(sym)?.mangledName;
           }
