@@ -55,7 +55,6 @@ slotNum = 0x0
 .function any .#~B=B*#B(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -64,7 +63,6 @@ slotNum = 0x0
 .function any .#~B>#B(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -73,7 +71,6 @@ slotNum = 0x0
 .function any .#~C<#foo(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -93,7 +90,6 @@ slotNum = 0x0
 .function any .#~C=C*#(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -102,7 +98,6 @@ slotNum = 0x0
 .function any .#~C>#foo(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -111,7 +106,6 @@ slotNum = 0x0
 .function any .#~C>#foo^1(any a0, any a1, any a2) {
 label_1: 
 label_0: 
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -132,7 +126,6 @@ label_0:
 	sta v0
 	defineclasswithbuffer 0x6, .#~C=#C, _6, 0x0, v0
 	ldobjbyname 0x7, prototype
-	ldundefined
 	returnundefined
 label_2: 
 }
