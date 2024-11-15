@@ -21,7 +21,6 @@ label_0:
 	sta v0
 	defineclasswithbuffer 0x0, .#*@0~C=#C, _2, 0x0, v0
 	ldobjbyname 0x1, prototype
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -45,7 +44,6 @@ label_0:
 	sta v1
 	lda v0
 	callarg1 0x1, v1
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -60,7 +58,6 @@ label_0:
 	sta v1
 	lda v0
 	callarg1 0x1, v1
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -70,7 +67,6 @@ slotNum = 0x1
 label_1: 
 label_0: 
 	definefunc 0x0, .#*#classTest, 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }

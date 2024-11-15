@@ -8,7 +8,6 @@ label_0:
 	stmodulevar 0x0
 	lda.str bundle
 	stmodulevar 0x1
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -22,7 +21,6 @@ label_1:
 label_0: 
 	lda.str none
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -36,7 +34,6 @@ label_1:
 label_0: 
 	lda.str normalized-bundlename
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -64,7 +61,6 @@ label_0:
 	stmodulevar 0x4
 	lda v0
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -82,7 +78,6 @@ label_0:
 	stmodulevar 0x0
 	lda.str package
 	stmodulevar 0x1
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -104,7 +99,6 @@ label_0:
 	throw.undefinedifholewithname CONST_BOOL
 	ldexternalmodulevar 0x3
 	throw.undefinedifholewithname CONST_STRING
-	ldundefined
 	returnundefined
 label_17: 
 }
@@ -128,7 +122,6 @@ label_0:
 	ldobjbyname 0xd, CONST_BOOL
 	lda v1
 	ldobjbyname 0x14, CONST_STRING
-	ldundefined
 	returnundefined
 label_16: 
 }
@@ -228,7 +221,6 @@ label_23:
 	lda v0
 	callarg1 0x22, v1
 label_22: 
-	ldundefined
 	returnundefined
 label_25: 
 }
@@ -238,7 +230,6 @@ slotNum = 0x1
 label_1: 
 label_0: 
 	definefunc 0x0, &myapp/test-import-exec&.#*#testUrlType, 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -267,7 +258,6 @@ label_2:
 	lda v0
 	callarg1 0x4, v1
 label_1: 
-	ldundefined
 	returnundefined
 label_4: 
 }
@@ -393,7 +383,6 @@ label_22:
 	lda v0
 	callarg1 0x39, v1
 label_21: 
-	ldundefined
 	returnundefined
 label_24: 
 }

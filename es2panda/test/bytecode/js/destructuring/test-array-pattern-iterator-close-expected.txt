@@ -14,7 +14,6 @@ label_0:
 	sta v2
 	ldfalse
 	sta v3
-	ldundefined
 label_33: 
 label_25: 
 label_35: 
@@ -37,9 +36,6 @@ label_2:
 label_4: 
 	ldtrue
 	sta v3
-	mov v6, v3
-	mov v4, v3
-	ldundefined
 	jmp label_1
 label_3: 
 	lda v8
@@ -87,9 +83,6 @@ label_7:
 label_9: 
 	ldtrue
 	sta v3
-	mov v6, v3
-	mov v4, v3
-	ldundefined
 	jmp label_6
 label_8: 
 	lda v1
@@ -128,7 +121,6 @@ label_12:
 	callruntime.istrue 0x18
 	jnez label_11
 label_14: 
-	ldtrue
 	ldundefined
 	sta v1
 	ldhole
@@ -176,10 +168,6 @@ label_20:
 	lda v2
 	callruntime.istrue 0x20
 	jnez label_21
-label_22: 
-	ldtrue
-	ldundefined
-	ldhole
 label_31: 
 label_42: 
 	lda v0
@@ -205,7 +193,6 @@ label_19:
 	lda v5
 	throw
 label_11: 
-	ldundefined
 	returnundefined
 label_50: 
 }
