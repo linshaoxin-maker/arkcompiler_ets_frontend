@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-function main(i : int[], ii : int): void {
+function main/* @@ IdentTest */(i : int[], ii : int): void {
     return;
 }
 
-/* @@? 16:14 Error TypeError: 0 or 1 argument are allowed  */
+/* @@@ IdentTest Error TypeError: 0 or 1 argument are allowed  */
