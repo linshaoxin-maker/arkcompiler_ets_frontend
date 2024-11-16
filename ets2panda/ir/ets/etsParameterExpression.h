@@ -17,6 +17,7 @@
 #define ES2PANDA_IR_EXPRESSION_ETS_PARAMETER_EXPRESSION_H
 
 #include "ir/expression.h"
+#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::checker {
 class ETSAnalyzer;
@@ -32,7 +33,8 @@ public:
     NO_COPY_SEMANTIC(ETSParameterExpression);
     NO_MOVE_SEMANTIC(ETSParameterExpression);
 
-    explicit ETSParameterExpression(AnnotatedExpression *identOrSpread, Expression *initializer);
+    explicit ETSParameterExpression(AnnotatedExpression *identOrSpread, Expression *initializer,
+                                    ArenaAllocator *const allocator);
 
     // NOTE (csabahurton): friend relationship can be removed once there are getters for private fields
     friend class checker::ETSAnalyzer;
@@ -95,12 +97,26 @@ public:
         v->Accept(this);
     }
 
+    const ArenaVector<AnnotationUsage *> &Annotations() const
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (auto anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
 private:
     Identifier *ident_;
     Expression *initializer_;
     SpreadElement *spread_ = nullptr;
     util::StringView savedLexer_ = "";
     std::size_t extraValue_ = 0U;
+    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 

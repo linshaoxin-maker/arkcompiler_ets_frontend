@@ -14,11 +14,13 @@
  */
 @interface MyAnno {
     testProperty1: string
+    testProperty2: number
 }
 
-@MyAnno("123", "1")
-class A{}
+interface itf {
+    @MyAnno({testProperty1: "Bob", testProperty2: 1})
+    @MyAnno({testProperty1: "Jim", testProperty2: 0})
+    foo() : void
+}
 
-/* @@? 19:14 Error SyntaxError: Unexpected token, expected: ')'.  */
-/* @@? 19:19 Error SyntaxError: Unexpected token ')'.  */
-/* @@? 19:19 Error SyntaxError: Unexpected token ')'.  */
+/* @@? 22:6 Error TypeError: Duplicate annotations are not allowed. The annotation 'MyAnno' has already been applied to this element.  */

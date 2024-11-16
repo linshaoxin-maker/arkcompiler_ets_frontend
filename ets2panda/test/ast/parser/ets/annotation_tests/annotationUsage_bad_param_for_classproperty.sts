@@ -12,12 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@interface MyAnno1 {
+
+class A{}
+
+@interface MyAnno {
     testProperty1: string
-    testProperty2: number
 }
 
-@MyAnno1({testProperty1: "123", testProperty2: 123})
-let a:string = ""
+class B{
+    @MyAnno({testProperty1: A})
+    x : int, y : int
+}
 
-/* @@? 21:1 Error SyntaxError: Annotations are not allowed on this type of declaration.  */
+/* @@? 23:29 Error SyntaxError: Invalid value for annotation field, expected a constant literal.  */

@@ -81,13 +81,17 @@ AnnotationUsage *AnnotationUsage::Clone(ArenaAllocator *const allocator, AstNode
         if (expr != nullptr) {
             expr->SetParent(clone);
         }
+
         if (parent != nullptr) {
             clone->SetParent(parent);
         }
 
         for (auto *property : properties_) {
-            clone->AddProperty(property);
+            clone->AddProperty(property->Clone(allocator, clone));
         }
+
+        clone->SetRange(range_);
+        clone->SetScope(propertiesScope_);
         return clone;
     }
 

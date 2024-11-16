@@ -12,14 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@interface MyAnno1 {
+@interface MyAnno {
     testProperty1: string
-    testProperty2: number
 }
 
-class A{
-    @MyAnno1({testProperty1: "123", testProperty2: 123})
-    a:string = ""
+MyAnno({testProperty1: ""})
+type t1 = int
+
+function main() : void {
+    MyAnno({testProperty1: ""})
+    type t2 = int
 }
 
-/* @@? 22:5 Error SyntaxError: Annotations are not allowed on this type of declaration.  */
+
+/* @@? 19:1 Error TypeError: Annotation missing '@' symbol before annotation name.  */
+/* @@? 19:1 Error TypeError: This expression is not callable.  */
+/* @@? 23:5 Error TypeError: Annotation missing '@' symbol before annotation name.  */
+/* @@? 23:5 Error TypeError: This expression is not callable.  */
