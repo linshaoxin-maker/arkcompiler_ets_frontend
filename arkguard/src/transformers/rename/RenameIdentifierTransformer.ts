@@ -684,7 +684,7 @@ namespace secharmony {
         let sym: Symbol | undefined = NodeUtils.findSymbolOfIdentifier(checker, node);
         let mangledPropertyNameOfNoSymbolImportExport = '';
         if (!sym) {
-          if (exportObfuscation && openTopLevel && noSymbolIdentifier.has(node.text) && trySearchImportExportSpecifier(node)) {
+          if (exportObfuscation && noSymbolIdentifier.has(node.text) && trySearchImportExportSpecifier(node)) {
             mangledPropertyNameOfNoSymbolImportExport = mangleNoSymbolImportExportPropertyName(node.text);
           } else {
             return node;
@@ -710,7 +710,7 @@ namespace secharmony {
           const originalSym = TypeUtils.getOriginalSymbol(sym, checker);
           // Only those symbols of declaration nodes have mangledNames in mangledSymbolNames
           let hasOriginalObfuscatedName: boolean =
-            sym === originalSym || (sym.name === originalSym.name && mangledSymbolNames.has(originalSym));
+            sym !== originalSym && sym.name === originalSym.name && mangledSymbolNames.has(originalSym);
           if (hasOriginalObfuscatedName) {
             mangledName = mangledSymbolNames.get(originalSym)?.mangledName;
           } else {

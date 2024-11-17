@@ -1016,17 +1016,17 @@ namespace secharmony {
         return;
       }
       let parentScope: Scope = currentScope;
+      let originalSymbol: Symbol = TypeUtils.getOriginalSymbol(sym, checker);
       while (parentScope) {
-        tryAddExportNamesIntoCurrentScope(sym, parentScope);
+        tryAddExportNamesIntoCurrentScope(sym, originalSymbol, parentScope);
         parentScope = parentScope.parent;
       }
     }
 
-    function tryAddExportNamesIntoCurrentScope(sym: Symbol, currentScope: Scope): void {
-      if (!currentScope.exportNames || currentScope.exportNames.has(sym.name)) {
+    function tryAddExportNamesIntoCurrentScope(sym: Symbol, originalSymbol: Symbol, currentScope: Scope): void {
+      if (currentScope.exportNames.has(sym.name)) {
         return;
       }
-      let originalSymbol: Symbol = TypeUtils.getOriginalSymbol(sym, checker);
       let currentDefs: Set<Symbol> = currentScope.defs;
       for (const curDef of currentDefs) {
         let curOriginalSym: Symbol = TypeUtils.getOriginalSymbol(curDef, checker);
