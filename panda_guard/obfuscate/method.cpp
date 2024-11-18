@@ -104,7 +104,8 @@ std::string panda::guard::OuterMethod::GetObfName() const
     return this->obfNameDefine_;
 }
 
-void panda::guard::OuterMethod::Build() {
+void panda::guard::OuterMethod::Build()
+{
     Function::Build();
     if (this->nameInfo_.IsValid()) {
         this->nameDefine_ = this->nameInfo_.ins_->ids[0];
@@ -132,7 +133,8 @@ void panda::guard::OuterMethod::UpdateNameDefine()
     }
 }
 
-bool panda::guard::OuterMethod::IsNameObfuscated() const {
+bool panda::guard::OuterMethod::IsNameObfuscated() const
+{
     return Function::IsNameObfuscated() || this->nameInfo_.IsValid();
 }
 

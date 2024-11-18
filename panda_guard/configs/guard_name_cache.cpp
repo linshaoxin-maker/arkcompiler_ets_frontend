@@ -198,7 +198,6 @@ void panda::guard::NameCache::AddSourceFile(const std::string &filePath,
     cacheInfo.oriSourceFile_ = oriSource;
     cacheInfo.obfSourceFile_ = obfSource;
     newNameCache_.fileCacheInfoMap_.emplace(filePath, cacheInfo);
-
 }
 
 void panda::guard::NameCache::AddNewNameCacheObfFileName(const std::string &origin, const std::string &obfName)
