@@ -29,11 +29,6 @@ public:
         return "EnumPostCheckLoweringPhase";
     }
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
-
-protected:
-    ir::CallExpression *CreateCall(checker::ETSChecker *checker, ir::ClassDefinition *const classDef,
-                                   checker::ETSEnumType::Method (checker::ETSEnumType::*getMethod)() const,
-                                   ir::Expression *argument);
 };
 
 }  // namespace ark::es2panda::compiler

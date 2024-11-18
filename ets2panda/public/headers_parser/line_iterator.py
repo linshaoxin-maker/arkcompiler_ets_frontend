@@ -18,7 +18,6 @@
 """Provides line iterator class."""
 
 from text_tools import find_first_of_characters
-from cpp_keywords import known_macroses
 
 
 class LineIterator:  # pylint: disable=C0115
@@ -81,12 +80,6 @@ class LineIterator:  # pylint: disable=C0115
 
     def is_using(self) -> bool:
         return self.current_line.find("using ") != -1
-
-    def is_known_macros(self) -> bool:
-        for name in known_macroses:
-            if self.current_line.find(name) != -1:
-                return True
-        return False
 
     def is_define_macro(self) -> bool:
         return self.current_line.find("#define ") != -1

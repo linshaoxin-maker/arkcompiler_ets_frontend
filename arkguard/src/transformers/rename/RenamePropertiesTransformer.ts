@@ -45,7 +45,7 @@ import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import {NodeUtils} from '../../utils/NodeUtils';
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
-import { EventList } from '../../utils/PrinterUtils';
+import { EventList, endSingleFileEvent, startSingleFileEvent } from '../../utils/PrinterUtils';
 import {
   isInPropertyWhitelist,
   isReservedProperty,
@@ -76,7 +76,6 @@ namespace secharmony {
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
       let options: NameGeneratorOptions = {};
       let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
-      let currentConstructorParams: Set<string> = new Set<string>();
 
       return renamePropertiesTransformer;
 
@@ -85,30 +84,15 @@ namespace secharmony {
           return node;
         }
 
-        performancePrinter?.singleFilePrinter?.startEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
+        startSingleFileEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = renameProperties(node);
         UpdateMemberMethodName(nameCache, PropCollections.globalMangledTable, classInfoInMemberMethodCache);
         let parentNodes = setParentRecursive(ret, true);
-        performancePrinter?.singleFilePrinter?.endEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
+        endSingleFileEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         return parentNodes;
       }
 
       function renameProperties(node: Node): Node {
-        if (isConstructorDeclaration(node)) {
-          currentConstructorParams.clear();
-        }
-
-        if (NodeUtils.isClassPropertyInConstructorParams(node)) {
-          currentConstructorParams.add((node as Identifier).escapedText.toString());
-          return renameProperty(node, false);
-        }
-
-        if (NodeUtils.isClassPropertyInConstructorBody(node, currentConstructorParams)) {
-          if (currentConstructorParams.has((node as Identifier).escapedText.toString())) {
-            return renameProperty(node, false);
-          }
-        }
-
         if (!NodeUtils.isPropertyNode(node)) {
           return visitEachChild(node, renameProperties, context);
         }

@@ -40,6 +40,7 @@
 #include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
+#include "utils/arena_containers.h"
 #include "varbinder/variable.h"
 #include "varbinder/scope.h"
 #include "varbinder/declaration.h"
@@ -55,7 +56,7 @@ namespace ark::es2panda::checker {
 void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
 {
     auto *const testType = expr->Check(this);
-    auto *const conditionType = ETSBuiltinTypeAsConditionalType(testType);
+    auto *const conditionType = MaybeUnboxConditionalInRelation(testType);
 
     expr->SetTsType(conditionType);
 
@@ -69,18 +70,14 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
         return;
     }
 
-    if (conditionType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (conditionType->IsETSPrimitiveType()) {
         FlagExpressionWithUnboxing(testType, conditionType, expr);
-    }
-
-    if (conditionType->IsETSEnumType()) {
-        expr->AddAstNodeFlags(ir::AstNodeFlags::GENERATE_VALUE_OF);
     }
 }
 
 bool ETSChecker::CheckNonNullish(ir::Expression const *expr)
 {
-    if (expr->TsTypeOrError()->PossiblyETSNullish()) {
+    if (expr->TsType()->PossiblyETSNullish()) {
         LogTypeError("Value is possibly nullish.", expr->Start());
         return false;
     }
@@ -97,7 +94,7 @@ Type *ETSChecker::GetNonNullishType(Type *type)
     }
 
     if (type->IsETSNullType() || type->IsETSUndefinedType()) {
-        return GetGlobalTypesHolder()->GlobalBuiltinNeverType();
+        return GetGlobalTypesHolder()->GlobalETSNeverType();
     }
 
     ArenaVector<Type *> copied(Allocator()->Adapter());
@@ -107,7 +104,7 @@ Type *ETSChecker::GetNonNullishType(Type *type)
         }
         copied.push_back(GetNonNullishType(t));
     }
-    return copied.empty() ? GetGlobalTypesHolder()->GlobalBuiltinNeverType() : CreateETSUnionType(std::move(copied));
+    return copied.empty() ? GetGlobalTypesHolder()->GlobalETSNeverType() : CreateETSUnionType(std::move(copied));
 }
 
 Type *ETSChecker::RemoveNullType(Type *const type)
@@ -121,7 +118,7 @@ Type *ETSChecker::RemoveNullType(Type *const type)
     }
 
     if (type->IsETSNullType()) {
-        return GetGlobalTypesHolder()->GlobalBuiltinNeverType();
+        return GetGlobalTypesHolder()->GlobalETSNeverType();
     }
 
     ASSERT(type->IsETSUnionType());
@@ -133,7 +130,7 @@ Type *ETSChecker::RemoveNullType(Type *const type)
         }
     }
 
-    return copiedTypes.empty() ? GetGlobalTypesHolder()->GlobalBuiltinNeverType()
+    return copiedTypes.empty() ? GetGlobalTypesHolder()->GlobalETSNeverType()
                                : CreateETSUnionType(std::move(copiedTypes));
 }
 
@@ -148,7 +145,7 @@ Type *ETSChecker::RemoveUndefinedType(Type *const type)
     }
 
     if (type->IsETSUndefinedType()) {
-        return GetGlobalTypesHolder()->GlobalBuiltinNeverType();
+        return GetGlobalTypesHolder()->GlobalETSNeverType();
     }
 
     ASSERT(type->IsETSUnionType());
@@ -160,14 +157,14 @@ Type *ETSChecker::RemoveUndefinedType(Type *const type)
         }
     }
 
-    return copiedTypes.empty() ? GetGlobalTypesHolder()->GlobalBuiltinNeverType()
+    return copiedTypes.empty() ? GetGlobalTypesHolder()->GlobalETSNeverType()
                                : CreateETSUnionType(std::move(copiedTypes));
 }
 
 std::pair<Type *, Type *> ETSChecker::RemoveNullishTypes(Type *type)
 {
     if (type->DefinitelyNotETSNullish()) {
-        return {GetGlobalTypesHolder()->GlobalBuiltinNeverType(), type};
+        return {GetGlobalTypesHolder()->GlobalETSNeverType(), type};
     }
 
     if (type->IsETSTypeParameter()) {
@@ -176,7 +173,7 @@ std::pair<Type *, Type *> ETSChecker::RemoveNullishTypes(Type *type)
     }
 
     if (type->IsETSUndefinedType() || type->IsETSNullType()) {
-        return {type, GetGlobalTypesHolder()->GlobalBuiltinNeverType()};
+        return {type, GetGlobalTypesHolder()->GlobalETSNeverType()};
     }
 
     ASSERT(type->IsETSUnionType());
@@ -193,9 +190,9 @@ std::pair<Type *, Type *> ETSChecker::RemoveNullishTypes(Type *type)
         }
     }
 
-    Type *nullishType = nullishTypes.empty() ? GetGlobalTypesHolder()->GlobalBuiltinNeverType()
+    Type *nullishType = nullishTypes.empty() ? GetGlobalTypesHolder()->GlobalETSNeverType()
                                              : CreateETSUnionType(std::move(nullishTypes));
-    Type *notNullishType = notNullishTypes.empty() ? GetGlobalTypesHolder()->GlobalBuiltinNeverType()
+    Type *notNullishType = notNullishTypes.empty() ? GetGlobalTypesHolder()->GlobalETSNeverType()
                                                    : CreateETSUnionType(std::move(notNullishTypes));
     return {nullishType, notNullishType};
 }
@@ -299,11 +296,46 @@ bool Type::PossiblyETSValueTypedExceptNullish() const
         this, [](const Type *t) { return t->IsETSObjectType() && IsValueTypedObjectType(t->AsETSObjectType()); });
 }
 
+bool Type::IsETSArrowType() const
+{
+    return IsETSFunctionType() && AsETSFunctionType()->CallSignatures().size() == 1;
+}
+
+[[maybe_unused]] static bool IsSaneETSReferenceType(Type const *type)
+{
+    static constexpr TypeFlag ETS_SANE_REFERENCE_TYPE =
+        TypeFlag::TYPE_ERROR | TypeFlag::ETS_NULL | TypeFlag::ETS_UNDEFINED | TypeFlag::ETS_OBJECT |
+        TypeFlag::ETS_TYPE_PARAMETER | TypeFlag::WILDCARD | TypeFlag::ETS_NONNULLISH |
+        TypeFlag::ETS_REQUIRED_TYPE_PARAMETER | TypeFlag::ETS_NEVER | TypeFlag::ETS_UNION | TypeFlag::ETS_ARRAY |
+        TypeFlag::FUNCTION;
+
+    // Issues
+    if (type->IsETSVoidType()) {  // NOTE(vpukhov): #19701 void refactoring
+        return true;
+    }
+    if (type->IsETSTypeAliasType()) {  // NOTE(vpukhov): #20561
+        return true;
+    }
+    if (type->IsNeverType()) {  // NOTE(vpukhov): #20562 We use ets/never and ts/never simultaneously
+        return true;
+    }
+    return type->HasTypeFlag(ETS_SANE_REFERENCE_TYPE);
+}
+
+bool Type::IsETSPrimitiveType() const
+{
+    static constexpr TypeFlag ETS_PRIMITIVE =
+        TypeFlag::ETS_NUMERIC | TypeFlag::CHAR | TypeFlag::ETS_BOOLEAN | TypeFlag::ETS_ENUM;
+
+    // Do not modify
+    ASSERT(!HasTypeFlag(ETS_PRIMITIVE) == IsSaneETSReferenceType(this));
+    return HasTypeFlag(ETS_PRIMITIVE);
+}
+
 bool Type::IsETSReferenceType() const
 {
-    return IsETSObjectType() || IsETSArrayType() || IsETSNullType() || IsETSUndefinedType() || IsETSStringType() ||
-           IsETSTypeParameter() || IsETSUnionType() || IsETSNonNullishType() || IsETSBigIntType() ||
-           IsETSFunctionType();
+    // Do not modify
+    return !IsETSPrimitiveType();
 }
 
 bool Type::IsETSUnboxableObject() const
@@ -330,7 +362,7 @@ Type *ETSChecker::GetNonConstantType(Type *type)
         return CreateETSUnionType(ETSUnionType::GetNonConstantTypes(this, type->AsETSUnionType()->ConstituentTypes()));
     }
 
-    if (!type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (!type->IsETSPrimitiveType()) {
         return type;
     }
 
@@ -409,14 +441,55 @@ void ETSChecker::IterateInVariableContext(varbinder::Variable *const var)
     }
 }
 
+Type *ETSChecker::GetTypeFromVariableDeclaration(varbinder::Variable *const var)
+{
+    switch (var->Declaration()->Type()) {
+        case varbinder::DeclType::CLASS: {
+            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
+            BuildBasicClassProperties(classDef);
+            return classDef->TsType();
+        }
+        case varbinder::DeclType::ENUM_LITERAL:
+        case varbinder::DeclType::CONST:
+        case varbinder::DeclType::READONLY:
+        case varbinder::DeclType::LET:
+        case varbinder::DeclType::VAR: {
+            auto *declNode = var->Declaration()->Node();
+            if (var->Declaration()->Node()->IsIdentifier()) {
+                declNode = declNode->Parent();
+            }
+            return declNode->Check(this);
+        }
+        case varbinder::DeclType::FUNC:
+        case varbinder::DeclType::IMPORT: {
+            return var->Declaration()->Node()->Check(this);
+        }
+        case varbinder::DeclType::TYPE_ALIAS: {
+            return GetTypeFromTypeAliasReference(var);
+        }
+        case varbinder::DeclType::INTERFACE: {
+            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
+        }
+        case varbinder::DeclType::ANNOTATIONUSAGE: {
+            return GlobalTypeError();
+        }
+        case varbinder::DeclType::ANNOTATIONDECL: {
+            return GlobalTypeError();
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
 {
     if (IsVariableGetterSetter(var)) {
         return GetTypeOfSetterGetter(var);
     }
 
-    if (var->TsTypeOrError() != nullptr) {
-        return var->TsTypeOrError();
+    if (var->TsType() != nullptr) {
+        return var->TsType();
     }
 
     // NOTE: kbaladurin. forbid usage of imported entities as types without declarations
@@ -431,41 +504,7 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
     checker::ScopeContext scopeCtx(this, var->GetScope());
     IterateInVariableContext(var);
 
-    switch (var->Declaration()->Type()) {
-        case varbinder::DeclType::CLASS: {
-            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
-            BuildBasicClassProperties(classDef);
-            return classDef->TsType();
-        }
-        case varbinder::DeclType::ENUM_LITERAL:
-        case varbinder::DeclType::CONST:
-        case varbinder::DeclType::READONLY:
-        case varbinder::DeclType::LET:
-        case varbinder::DeclType::VAR: {
-            auto *declNode = var->Declaration()->Node();
-
-            if (var->Declaration()->Node()->IsIdentifier()) {
-                declNode = declNode->Parent();
-            }
-
-            return declNode->Check(this);
-        }
-        case varbinder::DeclType::FUNC:
-        case varbinder::DeclType::IMPORT: {
-            return var->Declaration()->Node()->Check(this);
-        }
-        case varbinder::DeclType::TYPE_ALIAS: {
-            return GetTypeFromTypeAliasReference(var);
-        }
-        case varbinder::DeclType::INTERFACE: {
-            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return var->TsType();
+    return GetTypeFromVariableDeclaration(var);
 }
 
 // Determine if unchecked cast is needed and yield guaranteed source type
@@ -506,6 +545,7 @@ Type *ETSChecker::GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *
         case ir::AstNodeType::METHOD_DEFINITION:
             baseProp = node->AsMethodDefinition()->Variable();
             break;
+            // NOTE(vpukhov): should not be a case of unchecked access
         case ir::AstNodeType::CLASS_DEFINITION:
             baseProp = node->AsClassDefinition()->Ident()->Variable();
             break;
@@ -542,6 +582,49 @@ void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifie
     }
 }
 
+bool ETSChecker::IsAllowedTypeAliasRecursion(const ir::TSTypeAliasDeclaration *typeAliasNode,
+                                             std::unordered_set<const ir::TSTypeAliasDeclaration *> &typeAliases)
+{
+    bool isAllowedRerursiveType = true;
+
+    RecursionPreserver<const ir::TSTypeAliasDeclaration> recursionPreserver(typeAliases, typeAliasNode);
+
+    if (*recursionPreserver) {
+        return false;
+    }
+
+    auto typeAliasDeclarationCheck = [this, &typeAliases](ir::ETSTypeReferencePart *part) {
+        if (!part->Name()->IsIdentifier()) {
+            return false;
+        }
+        if (part->Name()->AsIdentifier()->Variable() != nullptr &&
+            part->Name()->AsIdentifier()->Variable()->Declaration() != nullptr &&
+            part->Name()->AsIdentifier()->Variable()->Declaration()->Node() != nullptr &&
+            part->Name()->AsIdentifier()->Variable()->Declaration()->Node()->IsTSTypeAliasDeclaration()) {
+            auto *aliasTypeNode =
+                part->Name()->AsIdentifier()->Variable()->Declaration()->Node()->AsTSTypeAliasDeclaration();
+            return IsAllowedTypeAliasRecursion(aliasTypeNode, typeAliases);
+        }
+
+        return true;
+    };
+
+    if (typeAliasNode->TypeAnnotation()->IsETSTypeReference()) {
+        isAllowedRerursiveType &=
+            typeAliasDeclarationCheck(typeAliasNode->TypeAnnotation()->AsETSTypeReference()->Part());
+    }
+
+    if (isAllowedRerursiveType && typeAliasNode->TypeAnnotation()->IsETSUnionType()) {
+        for (auto &type : typeAliasNode->TypeAnnotation()->AsETSUnionType()->Types()) {
+            if (type->IsETSTypeReference()) {
+                isAllowedRerursiveType &= typeAliasDeclarationCheck(type->AsETSTypeReference()->Part());
+            }
+        }
+    }
+
+    return isAllowedRerursiveType;
+}
+
 Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
 {
     if (var->TsType() != nullptr) {
@@ -549,16 +632,41 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
     }
 
     auto *const aliasTypeNode = var->Declaration()->Node()->AsTSTypeAliasDeclaration();
-    TypeStackElement tse(this, aliasTypeNode, "Circular type alias reference", aliasTypeNode->Start());
+    std::unordered_set<const ir::TSTypeAliasDeclaration *> typeAliases;
+    auto isAllowedRecursion = IsAllowedTypeAliasRecursion(aliasTypeNode, typeAliases);
+
+    TypeStackElement tse(this, aliasTypeNode, "Circular type alias reference", aliasTypeNode->Start(),
+                         isAllowedRecursion);
+
     if (tse.HasTypeError()) {
         var->SetTsType(GlobalTypeError());
         return GlobalTypeError();
     }
-    aliasTypeNode->Check(this);
-    auto *const aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
 
-    var->SetTsType(aliasedType);
-    return aliasedType;
+    auto *typeAliasType = tse.GetElementType();
+
+    if (typeAliasType != nullptr) {
+        typeAliasType->AsETSTypeAliasType()->SetRecursive();
+        return typeAliasType;
+    }
+
+    typeAliasType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), aliasTypeNode);
+    if (aliasTypeNode->TypeParams() != nullptr) {
+        auto [typeParamTypes, ok] = CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams());
+        typeAliasType->AsETSTypeAliasType()->SetTypeArguments(std::move(typeParamTypes));
+        if (ok) {
+            AssignTypeParameterConstraints(aliasTypeNode->TypeParams());
+        }
+    }
+    tse.SetElementType(typeAliasType);
+
+    aliasTypeNode->Check(this);
+    Type *targetType = aliasTypeNode->TypeAnnotation()->GetType(this);
+    typeAliasType->AsETSTypeAliasType()->SetTargetType(targetType);
+    typeAliasType->AsETSTypeAliasType()->ApplySubstitution(Relation());
+
+    var->SetTsType(targetType);
+    return targetType;
 }
 
 Type *ETSChecker::GetTypeFromInterfaceReference(varbinder::Variable *var)
@@ -590,7 +698,7 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
     }
 
     auto *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
-    if (enumDecl->BoxedClass()->TsTypeOrError() == nullptr) {
+    if (enumDecl->BoxedClass()->TsType() == nullptr) {
         BuildBasicClassProperties(enumDecl->BoxedClass());
     }
     if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
@@ -598,9 +706,7 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
         return CreateEnumStringTypeFromEnumDeclaration(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
-        LogTypeError("Invalid enumeration value type.", enumDecl->Start());
-        var->SetTsType(GlobalTypeError());
-        return var->TsTypeOrError();
+        return TypeError(var, "Invalid enumeration value type.", enumDecl->Start());
     }
 }
 
@@ -610,59 +716,114 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     if ((var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsClassDefinition() ||
          var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsTSInterfaceDeclaration()) &&
         HasStatus(CheckerStatus::IN_STATIC_CONTEXT)) {
-        LogTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
-        var->SetTsType(GlobalTypeError());
+        return TypeError(var, FormatMsg({"Cannot make a static reference to the non-static type ", var->Name()}), pos);
     }
 
-    return var->TsTypeOrError();
+    return var->TsType();
 }
 
-bool ETSChecker::IsTypeBuiltinType(const Type *type) const
+bool ETSChecker::CheckDuplicateAnnotations(const ArenaVector<ir::AnnotationUsage *> &annotations)
 {
-    if (!type->IsETSObjectType()) {
-        return false;
-    }
-
-    switch (type->AsETSObjectType()->BuiltInKind()) {
-        case ETSObjectFlags::BUILTIN_BOOLEAN:
-        case ETSObjectFlags::BUILTIN_BYTE:
-        case ETSObjectFlags::BUILTIN_SHORT:
-        case ETSObjectFlags::BUILTIN_CHAR:
-        case ETSObjectFlags::BUILTIN_INT:
-        case ETSObjectFlags::BUILTIN_LONG:
-        case ETSObjectFlags::BUILTIN_FLOAT:
-        case ETSObjectFlags::BUILTIN_DOUBLE: {
-            return true;
-        }
-        default:
+    std::unordered_set<util::StringView> seenAnnotations;
+    for (const auto &anno : annotations) {
+        auto annoName = anno->Ident()->Name();
+        if (seenAnnotations.find(annoName) != seenAnnotations.end()) {
+            LogTypeError({"Duplicate annotations are not allowed. The annotation '", annoName,
+                          "' has already been applied to this element."},
+                         anno->Start());
             return false;
+        }
+        seenAnnotations.insert(annoName);
+    }
+    return true;
+}
+
+void ETSChecker::CheckAnnotationPropertyType(ir::ClassProperty *property)
+{
+    // typeAnnotation check
+    if (!ValidateAnnotationPropertyType(property->TsType())) {
+        LogTypeError({"Invalid annotation field type. Only numeric, boolean, string, enum, or "
+                      "arrays of these types are permitted for annotation fields."},
+                     property->Start());
+    }
+
+    // The type of the Initializer has been check in the parser,
+    // except for the enumeration type, because it is a member expression,
+    // so here is an additional check to the enumeration type.
+    if (property->Value() != nullptr && property->Value()->IsMemberExpression() &&
+        !property->TsType()->IsETSEnumType()) {
+        LogTypeError("Invalid value for annotation field, expected a constant literal.", property->Value()->Start());
     }
 }
 
-Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
+void ETSChecker::CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                               ETSChecker *checker)
 {
-    if (objectType == nullptr) {
+    auto *param = st->Properties().at(0)->AsClassProperty();
+    if (annoDecl->Properties().size() > 1) {
+        checker->LogTypeError({"Annotation '", st->Ident()->Name(), "' requires multiple fields to be specified."},
+                              st->Start());
+    }
+    auto singleField = annoDecl->Properties().at(0)->AsClassProperty();
+    auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(), singleField->TsType(),
+                                          param->Start(), {}, TypeRelationFlag::NO_THROW);
+    if (!ctx.IsAssignable()) {
+        checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
+                               param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                               singleField->TsType(), "'."},
+                              param->Start());
+    }
+}
+
+void ETSChecker::CheckMultiplePropertiesAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                                   ETSChecker *checker,
+                                                   std::unordered_map<util::StringView, ir::ClassProperty *> &fieldMap)
+{
+    for (auto *it : st->Properties()) {
+        auto *param = it->AsClassProperty();
+        auto result = fieldMap.find(param->Id()->Name());
+        if (result == fieldMap.end()) {
+            checker->LogTypeError({"The parameter '", param->Id()->Name(),
+                                   "' does not match any declared property in the annotation '",
+                                   annoDecl->Ident()->Name(), "'."},
+                                  param->Start());
+            continue;
+        }
+        auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(),
+                                              result->second->TsType(), param->Start(), {}, TypeRelationFlag::NO_THROW);
+        if (!ctx.IsAssignable()) {
+            checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
+                                   param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                                   result->second->TsType(), "'."},
+                                  param->Start());
+        }
+        fieldMap.erase(result);
+    }
+}
+
+Type *ETSChecker::MaybeUnboxInRelation(Type *type)
+{
+    if (type == nullptr) {
         return nullptr;
     }
 
-    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->IsETSEnumType()) {
-        return objectType;
+    if (type->IsETSPrimitiveType()) {
+        return type;
     }
 
-    if (!objectType->IsETSObjectType() ||
-        !objectType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+    if (!type->IsETSUnboxableObject()) {
         return nullptr;
     }
 
     auto savedResult = Relation()->IsTrue();
     Relation()->Result(false);
 
-    UnboxingConverter converter = UnboxingConverter(AsETSChecker(), Relation(), objectType, objectType);
+    UnboxingConverter converter = UnboxingConverter(AsETSChecker(), Relation(), type, type);
     Relation()->Result(savedResult);
     return converter.Result();
 }
 
-Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *const objectType)
+Type *ETSChecker::MaybeUnboxConditionalInRelation(Type *const objectType)
 {
     if (objectType->IsTypeError()) {
         return objectType;
@@ -672,24 +833,24 @@ Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *const objectType)
         return nullptr;
     }
 
-    if (auto *unboxed = ETSBuiltinTypeAsPrimitiveType(objectType); unboxed != nullptr) {
+    if (auto *unboxed = MaybeUnboxInRelation(objectType); unboxed != nullptr) {
         return unboxed;
     }
 
     return objectType;
 }
 
-Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *objectType)
+Type *ETSChecker::MaybeBoxInRelation(Type *objectType)
 {
     if (objectType == nullptr) {
         return nullptr;
     }
 
-    if (objectType->IsETSObjectType() && objectType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+    if (objectType->IsETSUnboxableObject()) {
         return objectType;
     }
 
-    if (!objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (!objectType->IsETSPrimitiveType()) {
         return nullptr;
     }
 
@@ -702,51 +863,49 @@ Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *objectType)
     return converter.Result();
 }
 
-Type *ETSChecker::MaybePromotedBuiltinType(Type *type) const
+Type *ETSChecker::MaybeBoxType(Type *type) const
 {
-    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !type->IsETSVoidType()
-               ? checker::BoxingConverter::ETSTypeFromSource(this, type)
-               : type;
+    return type->IsETSPrimitiveType() ? BoxingConverter::Convert(this, type) : type;
 }
 
-Type const *ETSChecker::MaybePromotedBuiltinType(Type const *type) const
+Type *ETSChecker::MaybeUnboxType(Type *type) const
 {
-    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? checker::BoxingConverter::ETSTypeFromSource(this, type) : type;
+    return type->IsETSUnboxableObject() ? UnboxingConverter::Convert(this, type->AsETSObjectType()) : type;
 }
 
-Type *ETSChecker::MaybePrimitiveBuiltinType(Type *type) const
+Type const *ETSChecker::MaybeBoxType(Type const *type) const
 {
-    return type->IsETSObjectType() ? UnboxingConverter::GlobalTypeFromSource(this, type->AsETSObjectType()) : type;
+    return MaybeBoxType(const_cast<Type *>(type));
+}
+
+Type const *ETSChecker::MaybeUnboxType(Type const *type) const
+{
+    return MaybeUnboxType(const_cast<Type *>(type));
 }
 
 ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
 {
-    auto typeKind = TypeKind(ETSBuiltinTypeAsPrimitiveType(boxingType));
+    auto typeKind = TypeKind(MaybeUnboxInRelation(boxingType));
     switch (typeKind) {
-        case TypeFlag::ETS_BOOLEAN: {
+        case TypeFlag::ETS_BOOLEAN:
             return ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN;
-        }
-        case TypeFlag::BYTE: {
+        case TypeFlag::BYTE:
             return ir::BoxingUnboxingFlags::BOX_TO_BYTE;
-        }
-        case TypeFlag::CHAR: {
+        case TypeFlag::CHAR:
             return ir::BoxingUnboxingFlags::BOX_TO_CHAR;
-        }
-        case TypeFlag::SHORT: {
+        case TypeFlag::SHORT:
             return ir::BoxingUnboxingFlags::BOX_TO_SHORT;
-        }
-        case TypeFlag::INT: {
+        case TypeFlag::INT:
             return ir::BoxingUnboxingFlags::BOX_TO_INT;
-        }
-        case TypeFlag::LONG: {
+        case TypeFlag::LONG:
             return ir::BoxingUnboxingFlags::BOX_TO_LONG;
-        }
-        case TypeFlag::FLOAT: {
+        case TypeFlag::FLOAT:
             return ir::BoxingUnboxingFlags::BOX_TO_FLOAT;
-        }
-        case TypeFlag::DOUBLE: {
+        case TypeFlag::DOUBLE:
             return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
-        }
+        case TypeFlag::ETS_INT_ENUM:
+        case TypeFlag::ETS_STRING_ENUM:
+            return ir::BoxingUnboxingFlags::BOX_TO_ENUM;
         default:
             UNREACHABLE();
     }
@@ -756,45 +915,40 @@ ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type const *const unboxingTy
 {
     auto typeKind = TypeKind(unboxingType);
     switch (typeKind) {
-        case TypeFlag::ETS_BOOLEAN: {
+        case TypeFlag::ETS_BOOLEAN:
             return ir::BoxingUnboxingFlags::UNBOX_TO_BOOLEAN;
-        }
-        case TypeFlag::BYTE: {
+        case TypeFlag::BYTE:
             return ir::BoxingUnboxingFlags::UNBOX_TO_BYTE;
-        }
-        case TypeFlag::CHAR: {
+        case TypeFlag::CHAR:
             return ir::BoxingUnboxingFlags::UNBOX_TO_CHAR;
-        }
-        case TypeFlag::SHORT: {
+        case TypeFlag::SHORT:
             return ir::BoxingUnboxingFlags::UNBOX_TO_SHORT;
-        }
-        case TypeFlag::INT: {
+        case TypeFlag::INT:
             return ir::BoxingUnboxingFlags::UNBOX_TO_INT;
-        }
-        case TypeFlag::LONG: {
+        case TypeFlag::LONG:
             return ir::BoxingUnboxingFlags::UNBOX_TO_LONG;
-        }
-        case TypeFlag::FLOAT: {
+        case TypeFlag::FLOAT:
             return ir::BoxingUnboxingFlags::UNBOX_TO_FLOAT;
-        }
-        case TypeFlag::DOUBLE: {
+        case TypeFlag::DOUBLE:
             return ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE;
-        }
+        case TypeFlag::ETS_INT_ENUM:
+        case TypeFlag::ETS_STRING_ENUM:
+            return ir::BoxingUnboxingFlags::UNBOX_TO_ENUM;
         default:
             UNREACHABLE();
     }
 }
 
-void ETSChecker::AddBoxingFlagToPrimitiveType(TypeRelation *relation, Type *target)
+void ETSChecker::MaybeAddBoxingFlagInRelation(TypeRelation *relation, Type *target)
 {
-    auto boxingResult = PrimitiveTypeAsETSBuiltinType(target);
+    auto boxingResult = MaybeBoxInRelation(target);
     if ((boxingResult != nullptr) && !relation->OnlyCheckBoxingUnboxing()) {
         relation->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(boxingResult));
         relation->Result(true);
     }
 }
 
-void ETSChecker::AddUnboxingFlagToPrimitiveType(TypeRelation *relation, Type *source, Type *self)
+void ETSChecker::MaybeAddUnboxingFlagInRelation(TypeRelation *relation, Type *source, Type *self)
 {
     auto unboxingResult = UnboxingConverter(this, relation, source, self).Result();
     if ((unboxingResult != nullptr) && relation->IsTrue() && !relation->OnlyCheckBoxingUnboxing()) {
@@ -808,7 +962,7 @@ void ETSChecker::CheckUnboxedTypeWidenable(TypeRelation *relation, Type *target,
         relation, TypeRelationFlag::ONLY_CHECK_WIDENING |
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
     // NOTE: vpukhov. handle union type
-    auto unboxedType = ETSBuiltinTypeAsPrimitiveType(target);
+    auto unboxedType = MaybeUnboxInRelation(target);
     if (unboxedType == nullptr) {
         return;
     }
@@ -820,8 +974,8 @@ void ETSChecker::CheckUnboxedTypeWidenable(TypeRelation *relation, Type *target,
 
 void ETSChecker::CheckUnboxedTypesAssignable(TypeRelation *relation, Type *source, Type *target)
 {
-    auto *unboxedSourceType = relation->GetChecker()->AsETSChecker()->ETSBuiltinTypeAsPrimitiveType(source);
-    auto *unboxedTargetType = relation->GetChecker()->AsETSChecker()->ETSBuiltinTypeAsPrimitiveType(target);
+    auto *unboxedSourceType = relation->GetChecker()->AsETSChecker()->MaybeUnboxInRelation(source);
+    auto *unboxedTargetType = relation->GetChecker()->AsETSChecker()->MaybeUnboxInRelation(target);
     if (unboxedSourceType == nullptr || unboxedTargetType == nullptr) {
         return;
     }
@@ -841,14 +995,7 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
                       (relation->OnlyCheckBoxingUnboxing() ? TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING
                                                            : TypeRelationFlag::NONE));
 
-    if (source->IsETSEnumType()) {
-        if (target->IsETSObjectType() && target->AsETSObjectType()->IsGlobalETSObjectType()) {
-            relation->Result(true);
-            return;
-        }
-    }
-
-    auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
+    auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->MaybeBoxInRelation(source);
     if (boxedSourceType == nullptr) {
         return;
     }
@@ -859,22 +1006,22 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
     }
     relation->IsAssignableTo(boxedSourceType, target);
     if (relation->IsTrue()) {
-        AddBoxingFlagToPrimitiveType(relation, boxedSourceType);
+        MaybeAddBoxingFlagInRelation(relation, boxedSourceType);
     } else {
-        auto unboxedTargetType = ETSBuiltinTypeAsPrimitiveType(target);
+        auto unboxedTargetType = MaybeUnboxInRelation(target);
         if (unboxedTargetType == nullptr) {
             return;
         }
         NarrowingWideningConverter(this, relation, unboxedTargetType, source);
         if (relation->IsTrue()) {
-            AddBoxingFlagToPrimitiveType(relation, target);
+            MaybeAddBoxingFlagInRelation(relation, target);
         }
     }
 }
 
 void ETSChecker::CheckUnboxedSourceTypeWithWideningAssignable(TypeRelation *relation, Type *source, Type *target)
 {
-    auto *unboxedSourceType = relation->GetChecker()->AsETSChecker()->ETSBuiltinTypeAsPrimitiveType(source);
+    auto *unboxedSourceType = relation->GetChecker()->AsETSChecker()->MaybeUnboxInRelation(source);
     if (unboxedSourceType == nullptr) {
         return;
     }

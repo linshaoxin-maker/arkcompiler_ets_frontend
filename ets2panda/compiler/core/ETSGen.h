@@ -393,8 +393,7 @@ public:
     void ApplyConversion(const ir::AstNode *node, const checker::Type *targetType);
     void ApplyCast(const ir::AstNode *node, const checker::Type *targetType);
     void ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnboxingFlags targetType);
-    void EmitUnboxingConversion(const ir::AstNode *node);
-    checker::Type *EmitBoxedType(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node);
+    void EmitBoxingConversion(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node);
     void EmitBoxingConversion(const ir::AstNode *node);
     void SwapBinaryOpArgs(const ir::AstNode *node, VReg lhs);
     VReg MoveAccToReg(const ir::AstNode *node);
@@ -665,8 +664,6 @@ public:
     ~ETSGen() override = default;
     NO_COPY_SEMANTIC(ETSGen);
     NO_MOVE_SEMANTIC(ETSGen);
-
-    void EmitUnboxEnum(const ir::AstNode *node, const checker::Type *enumType);
 
 private:
     const VReg dummyReg_ = VReg::RegStart();

@@ -18,10 +18,8 @@
 """This module provides structures, to save some info while parsing headers."""
 
 import os
-import sys
 from typing import Any, Dict
 from file_tools import print_to_yaml
-from log_tools import info_log
 
 statistics: Dict[str, Dict[str, Any]] = {}
 custom_yamls: Dict[str, Dict[str, Any]] = {}
@@ -60,16 +58,16 @@ def init_collections(lib_gen_folder: str) -> None:  # pylint: disable=C
 
 
 def add_to_statistics(key: str, data: Any) -> None:
-    if isinstance(statistics[key]["collection"], set):
-        statistics[key]["collection"].add(data)
-    elif isinstance(statistics[key]["collection"], list):
-        statistics[key]["collection"].append(data)
+    if isinstance(statistics[key]["collection"], set): # CC-OFF(G.TYP.07) dict key exist
+        statistics[key]["collection"].add(data) # CC-OFF(G.TYP.07) dict key exist
+    elif isinstance(statistics[key]["collection"], list): # CC-OFF(G.TYP.07) dict key exist
+        statistics[key]["collection"].append(data) # CC-OFF(G.TYP.07) dict key exist
     else:
         raise RuntimeError("Unreachable")
 
 
 def add_to_custom_yamls(yaml_name: str, key: str, data: Any) -> None:
-    custom_yamls[yaml_name]["collection"][key].append(data)
+    custom_yamls[yaml_name]["collection"][key].append(data) # CC-OFF(G.TYP.07) dict key exist
 
 
 def save_custom_yamls() -> None:
@@ -80,9 +78,8 @@ def save_custom_yamls() -> None:
     for _, value in custom_yamls.items():
         yaml_file = value["yaml_file"]
         print_to_yaml(yaml_file, value["collection"])
-        info_log(f"Saved custom yaml: '{yaml_file}'")
 
-        statistics["generated_yamls"]["collection"].add(
+        statistics["generated_yamls"]["collection"].add( # CC-OFF(G.TYP.07) dict key exist
             os.path.basename(yaml_file)
         )
 
@@ -91,8 +88,6 @@ def save_statistics() -> None:
     logs_path = os.path.join(LIB_GEN_FOLDER, "./gen/logs")
     if not os.path.exists(logs_path):
         os.makedirs(logs_path)
-
-    info_log(f"Parsed {len(custom_yamls['pathsToHeaders']['collection']['paths'])} / {len(sys.argv[3:])} headers.")
 
     for _, value in statistics.items():
         with os.fdopen(os.open(value["log_file"], os.O_WRONLY | os.O_CREAT, mode=511), "w", encoding="utf-8") as f:

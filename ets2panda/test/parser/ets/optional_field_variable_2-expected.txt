@@ -391,7 +391,7 @@
                         },
                         "right": {
                           "type": "UndefinedLiteral",
-                          "value": undefined,
+                          "value": "undefined",
                           "loc": {
                             "start": {
                               "line": 22,
@@ -447,7 +447,7 @@
                                       "type": "VariableDeclarator",
                                       "id": {
                                         "type": "Identifier",
-                                        "name": "gensym$_4",
+                                        "name": "gensym%%_4",
                                         "decorators": [],
                                         "loc": {
                                           "start": {
@@ -536,7 +536,7 @@
                                       "operator": "==",
                                       "left": {
                                         "type": "Identifier",
-                                        "name": "gensym$_4",
+                                        "name": "gensym%%_4",
                                         "decorators": [],
                                         "loc": {
                                           "start": {
@@ -576,7 +576,7 @@
                                     },
                                     "consequent": {
                                       "type": "UndefinedLiteral",
-                                      "value": undefined,
+                                      "value": "undefined",
                                       "loc": {
                                         "start": {
                                           "line": 1,
@@ -592,7 +592,7 @@
                                       "type": "MemberExpression",
                                       "object": {
                                         "type": "Identifier",
-                                        "name": "gensym$_4",
+                                        "name": "gensym%%_4",
                                         "decorators": [],
                                         "loc": {
                                           "start": {

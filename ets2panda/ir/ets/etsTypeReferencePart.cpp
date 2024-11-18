@@ -110,18 +110,26 @@ checker::Type *ETSTypeReferencePart::HandleInternalTypes(checker::ETSChecker *co
         return checker->GlobalETSNullType();
     }
 
+    if (ident->Name() == compiler::Signatures::NEVER_TYPE_NAME) {
+        return checker->GlobalETSNeverType();
+    }
+
     if (ident->Name() == compiler::Signatures::READONLY_TYPE_NAME ||
         ident->Name() == compiler::Signatures::REQUIRED_TYPE_NAME) {
         return checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
     }
 
     if (ident->Name() == compiler::Signatures::PARTIAL_TYPE_NAME) {
-        auto *const baseType = checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
+        auto *baseType = checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
         if (baseType->IsETSObjectType() && !baseType->AsETSObjectType()->TypeArguments().empty()) {
-            checker::InstantiationContext ctx(checker, baseType->AsETSObjectType(), typeParams_, Start());
-            return ctx.Result();
+            // we treat Partial<A<T,D>> class as a different copy from A<T,D> now,
+            // but not a generic type param for Partial<>
+            for (auto &typeRef : typeParams_->Params()) {
+                checker::InstantiationContext ctx(checker, baseType->AsETSObjectType(),
+                                                  typeRef->AsETSTypeReference()->Part()->typeParams_, Start());
+                baseType = ctx.Result();
+            }
         }
-
         return baseType;
     }
 
@@ -135,7 +143,7 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
             SetTsType(HandleInternalTypes(checker, name_->AsIdentifier()));
         }
 
-        if (TsTypeOrError() == nullptr) {
+        if (TsType() == nullptr) {
             checker::Type *baseType = checker->GetReferencedTypeBase(name_);
 
             ASSERT(baseType != nullptr);
@@ -150,7 +158,7 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
         checker::Type *baseType = prev_->GetType(checker);
         SetTsType(checker->GetReferencedTypeFromBase(baseType, name_));
     }
-    return TsTypeOrError();
+    return TsType();
 }
 
 ETSTypeReferencePart *ETSTypeReferencePart::Clone(ArenaAllocator *const allocator, AstNode *const parent)

@@ -50,7 +50,7 @@ export class TsUtils {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly testMode: boolean,
     private readonly advancedClassChecks: boolean,
-    private readonly useSdkLogic: boolean,
+    private readonly useRtLogic: boolean,
     private readonly arkts2: boolean
   ) {}
 
@@ -62,7 +62,7 @@ export class TsUtils {
   }
 
   isNumberLikeType(tsType: ts.Type): boolean {
-    if (!this.useSdkLogic && tsType.isUnion()) {
+    if (this.useRtLogic && tsType.isUnion()) {
       for (const tsCompType of tsType.types) {
         if ((tsCompType.flags & ts.TypeFlags.NumberLike) === 0) {
           return false;
@@ -334,8 +334,7 @@ export class TsUtils {
     }
 
     // Avoid type recursion in heritage by caching checked types.
-    // eslint-disable-next-line no-param-reassign
-    (checkedBaseTypes ||= new Set<ts.Type>()).add(tsType);
+    (checkedBaseTypes = checkedBaseTypes || new Set<ts.Type>()).add(tsType);
 
     for (const tsTypeDecl of tsType.symbol.declarations) {
       const isClassOrInterfaceDecl = ts.isClassDeclaration(tsTypeDecl) || ts.isInterfaceDeclaration(tsTypeDecl);
@@ -935,7 +934,7 @@ export class TsUtils {
   }
 
   getNonNullableType(t: ts.Type): ts.Type {
-    const isNullableUnionType = this.useSdkLogic ? t.isUnion() : TsUtils.isNullableUnionType(t);
+    const isNullableUnionType = this.useRtLogic ? TsUtils.isNullableUnionType(t) : t.isUnion();
     if (isNullableUnionType) {
       return t.getNonNullableType();
     }
@@ -1006,9 +1005,9 @@ export class TsUtils {
       // eslint-disable-next-line no-nested-ternary
       const rhsSym = ts.isCallExpression(rhsExpr) ?
         this.getSymbolOfCallExpression(rhsExpr) :
-        this.useSdkLogic ?
-          this.tsTypeChecker.getSymbolAtLocation(rhsExpr) :
-          this.trueSymbolAtLocation(rhsExpr);
+        this.useRtLogic ?
+          this.trueSymbolAtLocation(rhsExpr) :
+          this.tsTypeChecker.getSymbolAtLocation(rhsExpr);
       if (rhsSym && this.isLibrarySymbol(rhsSym)) {
         return true;
       }
@@ -1188,7 +1187,7 @@ export class TsUtils {
 
   isStdSymbolAPI(symbol: ts.Symbol): boolean {
     const parentName = this.getParentSymbolName(symbol);
-    if (this.useSdkLogic) {
+    if (!this.useRtLogic) {
       const name = parentName ? parentName : symbol.escapedName;
       return name === SYMBOL || name === SYMBOL_CONSTRUCTOR;
     }
@@ -1196,7 +1195,7 @@ export class TsUtils {
   }
 
   isSymbolIterator(symbol: ts.Symbol): boolean {
-    if (this.useSdkLogic) {
+    if (!this.useRtLogic) {
       const name = symbol.name;
       const parName = this.getParentSymbolName(symbol);
       return (parName === SYMBOL || parName === SYMBOL_CONSTRUCTOR) && name === ITERATOR;
@@ -1846,9 +1845,9 @@ export class TsUtils {
       return false;
     }
 
-    const isEts = this.useSdkLogic ?
-      getScriptKind(sourceFile) === ts.ScriptKind.ETS :
-      !!isEtsFileCb && isEtsFileCb(sourceFile);
+    const isEts = this.useRtLogic ?
+      !!isEtsFileCb && isEtsFileCb(sourceFile) :
+      getScriptKind(sourceFile) === ts.ScriptKind.ETS;
     return (
       isEts &&
       sourceFile.isDeclarationFile &&
@@ -1862,7 +1861,7 @@ export class TsUtils {
     const modifiers = ts.getModifiers(decl);
     return (
       !!modifiers &&
-      (this.useSdkLogic && TsUtils.hasModifier(modifiers, ts.SyntaxKind.ReadonlyKeyword) ||
+      (!this.useRtLogic && TsUtils.hasModifier(modifiers, ts.SyntaxKind.ReadonlyKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.PublicKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.PrivateKeyword))
@@ -1938,6 +1937,117 @@ export class TsUtils {
         if (ts.isArrayBindingPattern(x.name) || ts.isObjectBindingPattern(x.name)) {
           return TsUtils.destructuringDeclarationHasSpreadOperator(x.name);
         }
+      }
+      return false;
+    });
+  }
+
+  // Check if the destructuring assignment has default values
+  static destructuringAssignmentHasDefaultValue(node: ts.AssignmentPattern): boolean {
+    if (ts.isArrayLiteralExpression(node)) {
+      return node.elements.some((x) => {
+        if (ts.isBinaryExpression(x) && x.right) {
+          return true;
+        }
+        if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) {
+          return TsUtils.destructuringAssignmentHasDefaultValue(x);
+        }
+        return false;
+      });
+    }
+
+    return node.properties.some((x) => {
+      if (ts.isShorthandPropertyAssignment(x) && x.equalsToken) {
+        return true;
+      }
+      if (
+        ts.isPropertyAssignment(x) &&
+        (ts.isObjectLiteralExpression(x.initializer) || ts.isArrayLiteralExpression(x.initializer))
+      ) {
+        return TsUtils.destructuringAssignmentHasDefaultValue(x.initializer);
+      }
+      return false;
+    });
+  }
+
+  // Check if the destructuring declaration has default values
+  static destructuringDeclarationHasDefaultValue(node: ts.BindingPattern): boolean {
+    return node.elements.some((x) => {
+      if (ts.isBindingElement(x)) {
+        if (x.initializer) {
+          return true;
+        }
+        if (ts.isArrayBindingPattern(x.name) || ts.isObjectBindingPattern(x.name)) {
+          return TsUtils.destructuringDeclarationHasDefaultValue(x.name);
+        }
+      }
+      return false;
+    });
+  }
+
+  // Check that the dimensions of the destruct array are the same
+  static isSameDimension(arr: ts.Node): boolean | undefined {
+    if (!ts.isArrayLiteralExpression(arr)) {
+      return true;
+    }
+    let hasOneDimensional: boolean = false;
+    let hasMultipleDimensions: boolean = false;
+    const arrElements = arr.elements;
+    let maxlen: number = 0;
+    let minlen: number = 1000;
+    for (let i = 0; i < arrElements.length; i++) {
+      const e = arrElements[i] as ts.Node;
+      if (!ts.isArrayLiteralExpression(e)) {
+        hasOneDimensional = true;
+      } else {
+        hasMultipleDimensions = true;
+        if (hasOneDimensional && hasMultipleDimensions) {
+          return false;
+        }
+        if (!this.isSameDimension(e)) {
+          return false;
+        }
+        maxlen = Math.max(e.elements.length, maxlen);
+        minlen = Math.min(e.elements.length, minlen);
+      }
+    }
+    if (hasOneDimensional && hasMultipleDimensions) {
+      return false;
+    } else if (hasOneDimensional && !hasMultipleDimensions) {
+      return true;
+    } else if (!hasOneDimensional && hasMultipleDimensions && maxlen === minlen) {
+      return true;
+    }
+    return false;
+  }
+
+  // if ArrayLiteralExpression has empty element, will be marked as not fixable
+  static checkArrayLiteralHasEmptyElement(node: ts.ArrayLiteralExpression): boolean {
+    return node.elements.some((x) => {
+      if (ts.isOmittedExpression(x)) {
+        return true;
+      }
+      if (ts.isArrayLiteralExpression(x)) {
+        if (x.elements.length === 0) {
+          return true;
+        }
+        return this.checkArrayLiteralHasEmptyElement(x);
+      }
+      return false;
+    });
+  }
+
+  // if ArrayBindingPattern has empty element, will be marked as not fixable
+  static checkArrayBindingHasEmptyElement(node: ts.ArrayBindingPattern): boolean {
+    return node.elements.some((x) => {
+      if (ts.isOmittedExpression(x)) {
+        return true;
+      }
+      if (ts.isBindingElement(x) && ts.isArrayBindingPattern(x.name)) {
+        if (x.name.elements.length === 0) {
+          return true;
+        }
+        return this.checkArrayBindingHasEmptyElement(x.name);
       }
       return false;
     });
@@ -2333,7 +2443,7 @@ export class TsUtils {
 
     if (isFromPrivateIdentifierOrSdk) {
       // eslint-disable-next-line no-param-reassign
-      classType ??= this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
+      classType = classType ?? this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
       const proceedClassTypeResult = this.proceedClassType(targetMember, classType, isFromPrivateIdentifier);
       if (proceedClassTypeResult) {
         return proceedClassTypeResult;
@@ -2344,7 +2454,7 @@ export class TsUtils {
   }
 
   private isFromPrivateIdentifierOrSdk(isFromPrivateIdentifier: boolean): boolean {
-    return !this.useSdkLogic || isFromPrivateIdentifier;
+    return this.useRtLogic || isFromPrivateIdentifier;
   }
 
   private static isIdentifierOrPrivateIdentifier(node?: ts.PropertyName): node is ts.Identifier | ts.PrivateIdentifier {
@@ -2539,30 +2649,90 @@ export class TsUtils {
 
   static declarationNameExists(srcFile: ts.SourceFile, name: string): boolean {
     return srcFile.statements.some((stmt) => {
-      if (!ts.isImportDeclaration(stmt)) {
-        return (
-          TsUtils.isDeclarationStatement(stmt) &&
-          stmt.name !== undefined &&
-          ts.isIdentifier(stmt.name) &&
-          stmt.name.text === name
-        );
-      }
+      return (
+        TsUtils.checkDeclarationInBlockStatement(stmt, name) ||
+        TsUtils.checkImportDeclaration(stmt, name) ||
+        TsUtils.checkDeclarationInLoopStatement(stmt, name) ||
+        TsUtils.checkDeclarationInVariableStatement(stmt, name) ||
+        TsUtils.checkGeneralDeclaration(stmt, name)
+      );
+    });
+  }
 
+  static checkDeclarationInBlockStatement(stmt: ts.Statement, name: string): boolean {
+    if (ts.isBlock(stmt)) {
+      return stmt.statements.some((innerStmt) => {
+        return (
+          TsUtils.checkDeclarationInVariableStatement(innerStmt, name) ||
+          TsUtils.checkGeneralDeclaration(innerStmt, name)
+        );
+      });
+    }
+    return false;
+  }
+
+  static checkImportDeclaration(stmt: ts.Statement, name: string): boolean {
+    if (ts.isImportDeclaration(stmt)) {
       if (!stmt.importClause) {
         return false;
       }
-
-      if (!stmt.importClause.namedBindings) {
-        return stmt.importClause.name?.text === name;
+      if (stmt.importClause.namedBindings) {
+        if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
+          return stmt.importClause.namedBindings.name.text === name;
+        }
+        return stmt.importClause.namedBindings.elements.some((x) => {
+          return x.name.text === name;
+        });
       }
+      return stmt.importClause.name?.text === name;
+    }
+    return false;
+  }
 
-      if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
-        return stmt.importClause.namedBindings.name.text === name;
+  static checkDeclarationInLoopStatement(stmt: ts.Statement, name: string): boolean {
+    if (
+      ts.isForStatement(stmt) ||
+      ts.isWhileStatement(stmt) ||
+      ts.isDoStatement(stmt) ||
+      ts.isForOfStatement(stmt) ||
+      ts.isForInStatement(stmt)
+    ) {
+      if (ts.isBlock(stmt.statement)) {
+        return stmt.statement.statements.some((innerStmt) => {
+          return (
+            TsUtils.checkDeclarationInVariableStatement(innerStmt, name) ||
+            TsUtils.checkGeneralDeclaration(innerStmt, name)
+          );
+        });
       }
-      return stmt.importClause.namedBindings.elements.some((x) => {
-        return x.name.text === name;
+    }
+    return false;
+  }
+
+  static checkDeclarationInVariableStatement(stmt: ts.Statement, name: string): boolean {
+    if (ts.isVariableStatement(stmt)) {
+      return stmt.declarationList.declarations.some((decl) => {
+        return decl.name.getText() === name;
       });
-    });
+    }
+    return false;
+  }
+
+  static checkGeneralDeclaration(stmt: ts.Statement, name: string): boolean {
+    if (ts.isFunctionDeclaration(stmt)) {
+      return (
+        stmt.body!.statements.some((innerStmt) => {
+          return TsUtils.checkDeclarationInVariableStatement(innerStmt, name);
+        }) ||
+        stmt.name !== undefined && ts.isIdentifier(stmt.name) && stmt.name.text === name
+      );
+    }
+    return (
+      TsUtils.isDeclarationStatement(stmt) &&
+      stmt.name !== undefined &&
+      ts.isIdentifier(stmt.name) &&
+      stmt.name.text === name
+    );
   }
 
   static generateUniqueName(nameGenerator: NameGenerator, srcFile: ts.SourceFile): string | undefined {
@@ -2614,6 +2784,7 @@ export class TsUtils {
 
   isShareableEntity(node: ts.Node): boolean {
     const decl = this.getDeclarationNode(node);
+    // CC-OFFNXT(no_explicit_any) std lib
     const typeNode = (decl as any)?.type;
     return typeNode && !TsUtils.isFunctionLikeDeclaration(decl!) ?
       this.isSendableTypeNode(typeNode, true) :
@@ -2840,6 +3011,8 @@ export class TsUtils {
   }
 
   static isAmbientNode(node: ts.Node): boolean {
+
+    /* CC-OFFNXT(no_explicit_any) std lib */
     // Ambient flag is not exposed, so we apply dirty hack to make it visible
     return !!(node.flags & (ts.NodeFlags as any).Ambient);
   }

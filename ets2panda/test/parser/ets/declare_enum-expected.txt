@@ -607,7 +607,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -740,7 +740,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -845,7 +845,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1040,7 +1040,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1399,7 +1399,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1818,7 +1818,7 @@
                     }
                   }
                 },
-                "declare": true
+                "declare": true,
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -2474,7 +2474,7 @@
                     }
                   }
                 },
-                "declare": true
+                "declare": true,
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -2761,7 +2761,7 @@
                     }
                   }
                 },
-                "declare": true
+                "declare": true,
                 "throwMarker": "throws",
                 "loc": {
                   "start": {

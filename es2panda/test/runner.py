@@ -719,6 +719,7 @@ class CompilerProjectTest(Test):
         self.project = project
         self.test_paths = test_paths
         self.files_info_path = os.path.join(os.path.join(self.projects_path, self.project), 'filesInfo.txt')
+        self.protoBin_file_path = ""
         # Skip execution if --dump-assembly exists in flags
         self.requires_execution = "--dump-assembly" not in self.flags
         self.file_record_mapping = None
@@ -735,6 +736,8 @@ class CompilerProjectTest(Test):
             os.remove(self.files_info_path)
         if path.exists(self.generated_abc_inputs_path):
             shutil.rmtree(self.generated_abc_inputs_path)
+        if path.exists(self.protoBin_file_path):
+            os.remove(self.protoBin_file_path)
 
     def get_file_absolute_path_and_name(self, runner):
         sub_path = self.path[len(self.projects_path):]
@@ -851,6 +854,11 @@ class CompilerProjectTest(Test):
 
     def gen_es2abc_cmd(self, runner, input_file, output_file):
         es2abc_cmd = runner.cmd_prefix + [runner.es2panda]
+        if "--cache-file" in self.flags and len(self.test_paths) == 1:
+            self.flags.remove("--cache-file")
+            protoBin_path = self.test_paths[0].rsplit('.', 1)[0] + ".protoBin"
+            self.protoBin_file_path = protoBin_path
+            es2abc_cmd.append('--cache-file=%s' % (protoBin_path))
         es2abc_cmd.extend(self.flags)
         es2abc_cmd.extend(['%s%s' % ("--output=", output_file)])
         es2abc_cmd.append(input_file)
@@ -904,13 +912,26 @@ class CompilerProjectTest(Test):
             else:
                 self.flags.append("--merge-abc")
 
-        es2abc_cmd = self.gen_es2abc_cmd(runner, '@' + self.files_info_path, output_abc_name)
+        if "--cache-file" in self.flags and len(self.test_paths) == 1:
+            es2abc_cmd = self.gen_es2abc_cmd(runner, self.test_paths[0], output_abc_name)
+        else:
+            es2abc_cmd = self.gen_es2abc_cmd(runner, '@' + self.files_info_path, output_abc_name)
         compile_context_info_path = path.join(path.join(self.projects_path, self.project), "compileContextInfo.json")
         if path.exists(compile_context_info_path):
             es2abc_cmd.append("%s%s" % ("--compile-context-info=", compile_context_info_path))
         process = run_subprocess_with_beta3(self, es2abc_cmd)
         self.path = exec_file_path
-        out, err = process.communicate()
+        out, err = [None, None]
+
+        # Check single-thread execution timeout when required
+        if "--file-threads=0" in self.flags:
+            try:
+                out, err = process.communicate(timeout=60)
+            except:
+                process.kill()
+                print("Generating the abc file timed out.")
+        else:
+            out, err = process.communicate()
 
         # restore merge-abc flag
         if "merge_abc_consistence_check" in self.path and "--merge-abc" not in self.flags:
@@ -1797,7 +1818,7 @@ class TestVersionControl(Test):
         Test.__init__(self, test_path, flags)
         self.beta_version_default = 3
         self.version_with_sub_version_list = [12]
-        self.target_api_version_list = ["9", "10", "11", "12"]
+        self.target_api_version_list = ["9", "10", "11", "12", "15"]
         self.target_api_sub_version_list = ["beta1", "beta2", "beta3"]
         self.specific_api_version_list = ["API11", "API12beta3"]
         self.output = None
@@ -1926,8 +1947,6 @@ class TestVersionControl(Test):
     def get_path_to_compile_asm_output_expected(self, is_support, target_api_version):
         path_expected = None
         for specific_api_version in self.specific_api_version_list:
-            if self.compare_two_versions(target_api_version, specific_api_version) > 0:
-                continue
             path_expected = self.get_path_to_expected(
                 is_support, "compile", target_api_version, specific_api_version, "asm"
             )
@@ -2184,6 +2203,13 @@ def add_directory_for_version_control(runners, args):
         "bytecode_feature",
         "version_control/API12beta3/bytecode_feature/import_target",
     )
+    runner.add_directory(
+        "version_control/API15/bytecode_feature",
+        "js",
+        [],
+        "API15",
+        "bytecode_feature",
+    )
     runners.append(runner)
 
     abc_tests_prepare = AbcTestCasesPrepare(args)
@@ -2336,6 +2362,8 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/js/module-record-field-name-option.js", "js",
                                                 ["--module", "--module-record-field-name=abc"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/annotations", "ts", ["--module", "--enable-annotations"]))
+    compiler_test_infos.append(CompilerTestInfo("compiler/generateCache-projects", "ts",
+                                                ["--merge-abc", "--file-threads=0", "--cache-file"]))
     # Following directories of test cases are for dump-assembly comparison only, and is not executed.
     # Check CompilerProjectTest for more details.
     compiler_test_infos.append(CompilerTestInfo("optimizer/ts/branch-elimination/projects", "ts",
@@ -2489,7 +2517,8 @@ def main():
         runner.run()
         failed_tests += runner.summarize()
 
-    # TODO: exit 1 when we have failed tests after all tests are fixed
+    if failed_tests > 0:
+        exit(1)
     exit(0)
 
 

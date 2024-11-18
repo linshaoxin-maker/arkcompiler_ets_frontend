@@ -99,7 +99,6 @@ export class TypeScriptLinter {
 
   currentErrorLine: number;
   currentWarningLine: number;
-  walkedComments: Set<number>;
   libraryTypeCallDiagnosticChecker: LibraryTypeCallDiagnosticChecker;
   supportedStdCallApiChecker: SupportedStdCallApiChecker;
 
@@ -116,7 +115,6 @@ export class TypeScriptLinter {
   static ideMode: boolean = false;
   static testMode: boolean = false;
   static useRelaxedRules = false;
-  static useSdkLogic = false;
   static advancedClassChecks = false;
 
   static initGlobals(): void {
@@ -150,29 +148,29 @@ export class TypeScriptLinter {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly enableAutofix: boolean,
     private readonly arkts2: boolean,
+    private readonly useRtLogic: boolean,
     private readonly cancellationToken?: ts.CancellationToken,
     private readonly incrementalLintInfo?: IncrementalLintInfo,
     private readonly tscStrictDiagnostics?: Map<string, ts.Diagnostic[]>,
     private readonly reportAutofixCb?: ReportAutofixCallback,
     private readonly isEtsFileCb?: IsEtsFileCallback,
-    compatibleSdkVersion?: string,
+    compatibleSdkVersion?: number,
     compatibleSdkVersionStage?: string
   ) {
     this.tsUtils = new TsUtils(
       this.tsTypeChecker,
       TypeScriptLinter.testMode,
       TypeScriptLinter.advancedClassChecks,
-      TypeScriptLinter.useSdkLogic,
+      useRtLogic,
       this.arkts2
     );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
-    this.walkedComments = new Set<number>();
     this.libraryTypeCallDiagnosticChecker = new LibraryTypeCallDiagnosticChecker(
       TypeScriptLinter.filteredDiagnosticMessages
     );
     this.supportedStdCallApiChecker = new SupportedStdCallApiChecker(this.tsUtils, this.tsTypeChecker);
-    this.compatibleSdkVersion = Number(compatibleSdkVersion) || DEFAULT_COMPATIBLE_SDK_VERSION;
+    this.compatibleSdkVersion = compatibleSdkVersion ?? DEFAULT_COMPATIBLE_SDK_VERSION;
     this.compatibleSdkVersionStage = compatibleSdkVersionStage || DEFAULT_COMPATIBLE_SDK_VERSION_STAGE;
     this.initEtsHandlers();
     this.initCounters();
@@ -651,10 +649,7 @@ export class TypeScriptLinter {
   private checkForLoopDestructuring(forInit: ts.ForInitializer): void {
     if (ts.isVariableDeclarationList(forInit) && forInit.declarations.length === 1) {
       const varDecl = forInit.declarations[0];
-      if (
-        !TypeScriptLinter.useSdkLogic &&
-        (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name))
-      ) {
+      if (this.useRtLogic && (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name))) {
         this.incrementCounters(varDecl, FaultID.DestructuringDeclaration);
       }
     }
@@ -774,7 +769,7 @@ export class TypeScriptLinter {
     const decorators = ts.getDecorators(node);
     this.filterOutDecoratorsDiagnostics(
       decorators,
-      TypeScriptLinter.useSdkLogic ? NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC : NON_INITIALIZABLE_PROPERTY_DECORATORS,
+      this.useRtLogic ? NON_INITIALIZABLE_PROPERTY_DECORATORS : NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC,
       { begin: propName.getStart(), end: propName.getStart() },
       PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE
     );
@@ -1055,7 +1050,7 @@ export class TypeScriptLinter {
   private handleMissingReturnType(
     funcLikeDecl: ts.FunctionLikeDeclaration | ts.MethodSignature
   ): [boolean, ts.TypeNode | undefined] {
-    if (!TypeScriptLinter.useSdkLogic && funcLikeDecl.type) {
+    if (this.useRtLogic && funcLikeDecl.type) {
       return [false, funcLikeDecl.type];
     }
 
@@ -1209,7 +1204,8 @@ export class TypeScriptLinter {
 
   private processBinaryAssignment(node: ts.Node, tsLhsExpr: ts.Expression, tsRhsExpr: ts.Expression): void {
     if (ts.isObjectLiteralExpression(tsLhsExpr)) {
-      this.incrementCounters(node, FaultID.DestructuringAssignment);
+      const autofix = this.autofixer?.fixObjectLiteralExpressionDestructAssignment(node as ts.BinaryExpression);
+      this.incrementCounters(node, FaultID.DestructuringAssignment, autofix);
     } else if (ts.isArrayLiteralExpression(tsLhsExpr)) {
       // Array destructuring is allowed only for Arrays/Tuples and without spread operator.
       const rhsType = this.tsTypeChecker.getTypeAtLocation(tsRhsExpr);
@@ -1224,7 +1220,8 @@ export class TypeScriptLinter {
         hasNestedObjectDestructuring ||
         TsUtils.destructuringAssignmentHasSpreadOperator(tsLhsExpr)
       ) {
-        this.incrementCounters(node, FaultID.DestructuringAssignment);
+        const autofix = this.autofixer?.fixArrayBindingPatternAssignment(node as ts.BinaryExpression, isArrayOrTuple);
+        this.incrementCounters(node, FaultID.DestructuringAssignment, autofix);
       }
     }
 
@@ -1299,7 +1296,7 @@ export class TypeScriptLinter {
   private handleVariableDeclaration(node: ts.Node): void {
     const tsVarDecl = node as ts.VariableDeclaration;
     if (
-      TypeScriptLinter.useSdkLogic ||
+      !this.useRtLogic ||
       ts.isVariableDeclarationList(tsVarDecl.parent) && ts.isVariableStatement(tsVarDecl.parent.parent)
     ) {
       this.handleDeclarationDestructuring(tsVarDecl);
@@ -1323,13 +1320,9 @@ export class TypeScriptLinter {
   private handleDeclarationDestructuring(decl: ts.VariableDeclaration | ts.ParameterDeclaration): void {
     const faultId = ts.isVariableDeclaration(decl) ? FaultID.DestructuringDeclaration : FaultID.DestructuringParameter;
     if (ts.isObjectBindingPattern(decl.name)) {
-      this.incrementCounters(decl, faultId);
+      const autofix = this.autofixer?.fixObjectBindingPatternDeclarations(decl, faultId);
+      this.incrementCounters(decl, faultId, autofix);
     } else if (ts.isArrayBindingPattern(decl.name)) {
-      if (!TypeScriptLinter.useRelaxedRules) {
-        this.incrementCounters(decl, faultId);
-        return;
-      }
-
       // Array destructuring is allowed only for Arrays/Tuples and without spread operator.
       const rhsType = this.tsTypeChecker.getTypeAtLocation(decl.initializer ?? decl.name);
       const isArrayOrTuple =
@@ -1339,11 +1332,13 @@ export class TypeScriptLinter {
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(decl.name);
 
       if (
+        !TypeScriptLinter.useRelaxedRules ||
         !isArrayOrTuple ||
         hasNestedObjectDestructuring ||
         TsUtils.destructuringDeclarationHasSpreadOperator(decl.name)
       ) {
-        this.incrementCounters(decl, faultId);
+        const autofix = this.autofixer?.fixArrayBindingPatternDeclarations(decl, isArrayOrTuple);
+        this.incrementCounters(decl, faultId, autofix);
       }
     }
   }
@@ -2195,7 +2190,7 @@ export class TypeScriptLinter {
       this.libraryTypeCallDiagnosticChecker,
       inLibCall
     );
-    if (hasFiltered) {
+    if (this.useRtLogic && hasFiltered) {
       this.filterOutDiagnostics(
         { begin: callExpr.getStart(), end: callExpr.getEnd() },
         OBJECT_IS_POSSIBLY_UNDEFINED_ERROR_CODE
@@ -2314,7 +2309,7 @@ export class TypeScriptLinter {
 
     const hasSingleTypeArgument = !!typeRef.typeArguments && typeRef.typeArguments.length === 1;
     let argType;
-    if (TypeScriptLinter.useSdkLogic) {
+    if (!this.useRtLogic) {
       const firstTypeArg = !!typeRef.typeArguments && hasSingleTypeArgument && typeRef.typeArguments[0];
       argType = firstTypeArg && this.tsTypeChecker.getTypeFromTypeNode(firstTypeArg);
     } else {
@@ -2353,9 +2348,7 @@ export class TypeScriptLinter {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
       if (
         spreadExprType &&
-        (!TypeScriptLinter.useSdkLogic ||
-          ts.isCallLikeExpression(node.parent) ||
-          ts.isArrayLiteralExpression(node.parent)) &&
+        (this.useRtLogic || ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
         this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)
       ) {
         return;
@@ -2567,7 +2560,7 @@ export class TypeScriptLinter {
      * We use a dirty hack to retrieve list of parsed comment directives by accessing
      * internal properties of SourceFile node.
      */
-
+    /* CC-OFFNXT(no_explicit_any) std lib */
     // Handle comment directive '@ts-nocheck'
     const pragmas = (sourceFile as any).pragmas;
     if (pragmas && pragmas instanceof Map) {
@@ -2578,6 +2571,7 @@ export class TypeScriptLinter {
          * The value is either a single entry or an array of entries.
          * Wrap up single entry with array to simplify processing.
          */
+        /* CC-OFFNXT(no_explicit_any) std lib */
         const noCheckEntries: any[] = Array.isArray(noCheckPragma) ? noCheckPragma : [noCheckPragma];
         for (const entry of noCheckEntries) {
           this.processNoCheckEntry(entry);
@@ -2585,6 +2579,7 @@ export class TypeScriptLinter {
       }
     }
 
+    /* CC-OFFNXT(no_explicit_any) std lib */
     // Handle comment directives '@ts-ignore' and '@ts-expect-error'
     const commentDirectives = (sourceFile as any).commentDirectives;
     if (commentDirectives && Array.isArray(commentDirectives)) {
@@ -2609,7 +2604,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private processNoCheckEntry(entry: any): void {
+  private processNoCheckEntry(entry: any): void { // CC-OFF(no_explicit_any) std lib
     if (entry.range?.kind === undefined || entry.range?.pos === undefined || entry.range?.end === undefined) {
       return;
     }
@@ -2818,7 +2813,6 @@ export class TypeScriptLinter {
       this.autofixer = new Autofixer(this.tsTypeChecker, this.tsUtils, sourceFile, this.cancellationToken);
     }
 
-    this.walkedComments.clear();
     this.sourceFile = sourceFile;
     this.fileExportSendableDeclCaches = undefined;
     this.visitSourceFile(this.sourceFile);

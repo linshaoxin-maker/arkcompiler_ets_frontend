@@ -16,11 +16,17 @@
 
 
 """Module provides system functions like logging and open files."""
+import logging
 import os
+import sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s:[%(name)s]: %(message)s", force=True)
+logging.root.name = "h_parser"
 
 LOGGING = 0
 DEBUG_LOGGING = 0
 INFO_LOGGING = 1
+DEBUG_LOGGING = 0
 WARNING_LOGGING = 1
 ERROR_LOGGIN = 1
 PARSING_LOGGING = 0
@@ -35,46 +41,29 @@ def init_log(lib_gen_folder: str) -> None:
     os.makedirs(os.path.join(LIB_GEN_FOLDER, "./gen/logs"), exist_ok=True)
 
 
-def debug_log(msg: str) -> None:
-    if DEBUG_LOGGING:
-        print(msg)
-
-
-def console_log(msg: str) -> None:
-    if LOGGING:
-        print(msg)
-
-
 def info_log(msg: str) -> None:
     if INFO_LOGGING:
-        print(msg)
+        logging.info(msg)
+
+
+def debug_log(msg: str) -> None:
+    if DEBUG_LOGGING:
+        logging.debug(msg)
 
 
 def warning_log(msg: str) -> None:
-    path = os.path.join(LIB_GEN_FOLDER, "./gen/logs/warning_logs.txt")
     if WARNING_LOGGING:
-        with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, mode=511), "a", encoding="utf-8") as f:
-            f.write("Warning! " + msg + "\n")
+        logging.warning(msg)
+
+
+def parsing_failed_msg(file: str) -> None:
+    logging.info("NON FATAL ERROR: Headers parser failed on {file}.\n"
+                 "To reproduce locally: run 'ninja gen_yamls' and check "
+                 "<es2panda_lib::binary_root>/gen/logs/error_logs.txt")
 
 
 def error_log(msg: str) -> None:
     path = os.path.join(LIB_GEN_FOLDER, "./gen/logs/error_logs.txt")
     if ERROR_LOGGIN:
         with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, mode=511), "a", encoding="utf-8") as f:
-            f.write(msg)
-
-
-def parsing_log(msg: str) -> None:
-    if PARSING_LOGGING:
-        print(msg)
-
-
-def tmp_log(msg: str) -> None:
-    print(msg)
-
-
-def dump_to_file(file_name: str, msg: str) -> None:
-    path = LIB_GEN_FOLDER + file_name
-    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT, mode=511), "w", encoding="utf-8") as f:
-        f.write(msg)
-    console_log("Data dumped to '" + path + "'")
+            f.write(msg + "\n")

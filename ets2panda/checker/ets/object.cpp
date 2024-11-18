@@ -297,7 +297,7 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
     if (param->DefaultType() != nullptr) {
         traverseReferenced(param->DefaultType());
         // NOTE: #14993 ensure default matches constraint
-        paramType->SetDefaultType(MaybePromotedBuiltinType(param->DefaultType()->GetType(this)));
+        paramType->SetDefaultType(MaybeBoxType(param->DefaultType()->GetType(this)));
     }
 }
 
@@ -1019,7 +1019,7 @@ void ETSChecker::CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &c
 void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
 {
     classDef->SetClassDefinitionChecked();
-    auto *classType = classDef->TsTypeOrError()->AsETSObjectType();
+    auto *classType = classDef->TsType()->AsETSObjectType();
     if (classType->SuperType() != nullptr) {
         classType->SuperType()->GetDeclNode()->Check(this);
     }
@@ -1059,6 +1059,34 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     TransformProperties(classType);
 
+    CheckClassAnnotations(classDef);
+    CheckClassMembers(classDef);
+
+    if (classDef->IsGlobal() || classType->SuperType() == nullptr) {
+        return;
+    }
+
+    CheckConstructors(classDef, classType);
+    CheckValidInheritance(classType, classDef);
+    CheckConstFields(classType);
+    CheckGetterSetterProperties(classType);
+    CheckInvokeMethodsLegitimacy(classType);
+}
+
+void ETSChecker::CheckClassAnnotations(ir::ClassDefinition *classDef)
+{
+    if (!CheckDuplicateAnnotations(classDef->Annotations())) {
+        return;
+    }
+    for (auto *it : classDef->Annotations()) {
+        if (!it->IsClassProperty()) {
+            it->Check(this);
+        }
+    }
+}
+
+void ETSChecker::CheckClassMembers(ir::ClassDefinition *classDef)
+{
     for (auto *it : classDef->Body()) {
         if (it->IsClassProperty()) {
             it->Check(this);
@@ -1070,16 +1098,6 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
             it->Check(this);
         }
     }
-
-    if (classDef->IsGlobal() || classType->SuperType() == nullptr) {
-        return;
-    }
-
-    CheckConstructors(classDef, classType);
-    CheckValidInheritance(classType, classDef);
-    CheckConstFields(classType);
-    CheckGetterSetterProperties(classType);
-    CheckInvokeMethodsLegitimacy(classType);
 }
 
 void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType)
@@ -1356,7 +1374,7 @@ void ETSChecker::CheckInnerClassMembers(const ETSObjectType *classType)
 bool ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
 {
     auto *const expressionType = expr->Check(this);
-    auto const *const unboxedExpressionType = ETSBuiltinTypeAsPrimitiveType(expressionType);
+    auto const *const unboxedExpressionType = MaybeUnboxInRelation(expressionType);
 
     Type const *const indexType = ApplyUnaryOperatorPromotion(expressionType);
 
@@ -1382,11 +1400,7 @@ bool ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
 
     if (indexType == nullptr || !indexType->HasTypeFlag(TypeFlag::ETS_ARRAY_INDEX)) {
         std::stringstream message("");
-        if (expressionType->IsNonPrimitiveType()) {
-            message << expressionType->Variable()->Name();
-        } else {
-            expressionType->ToString(message);
-        }
+        expressionType->ToString(message);
 
         LogTypeError(
             "Type '" + message.str() +
@@ -1430,7 +1444,7 @@ std::optional<int32_t> ETSChecker::GetTupleElementAccessValue(const Type *const 
 bool ETSChecker::ValidateTupleIndex(const ETSTupleType *const tuple, ir::MemberExpression *const expr)
 {
     auto *const expressionType = expr->Property()->Check(this);
-    auto const *const unboxedExpressionType = ETSBuiltinTypeAsPrimitiveType(expressionType);
+    auto const *const unboxedExpressionType = MaybeUnboxInRelation(expressionType);
 
     if (expressionType->IsETSObjectType() && (unboxedExpressionType != nullptr)) {
         expr->AddBoxingUnboxingFlags(GetUnboxingFlag(unboxedExpressionType));
@@ -1518,7 +1532,7 @@ void ETSChecker::CheckCyclicConstructorCall(Signature *signature)
     if (!funcBody->Statements().empty() && funcBody->Statements()[0]->IsExpressionStatement() &&
         funcBody->Statements()[0]->AsExpressionStatement()->GetExpression()->IsCallExpression() &&
         funcBody->Statements()[0]
-            ->AsExpressionStatement()
+            ->AsExpressionStatement()  // CC-OFF(G.FMT.06-CPP,G.FMT.02-CPP) project code style
             ->GetExpression()
             ->AsCallExpression()
             ->Callee()
@@ -1597,6 +1611,7 @@ varbinder::Variable *ETSChecker::ResolveInstanceExtension(const ir::MemberExpres
     // clang-format off
     auto *globalFunctionVar = Scope()
                                 ->FindInGlobal(memberExpr->Property()->AsIdentifier()->Name(),
+                                                // CC-OFFNXT(G.FMT.06-CPP) project code style
                                                 varbinder::ResolveBindingOptions::STATIC_METHODS)
                                 .variable;
     // clang-format on
@@ -1647,7 +1662,7 @@ PropertySearchFlags ETSChecker::GetInitialSearchFlags(const ir::MemberExpression
                 return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS | SETTER_FLAGS;
             }
 
-            auto const *targetType = assignmentExpr->Left()->TsTypeOrError();
+            auto const *targetType = assignmentExpr->Left()->TsType();
             if (targetType->IsETSObjectType() &&
                 targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
                 return FUNCTIONAL_FLAGS;
@@ -1972,13 +1987,18 @@ void ETSChecker::CheckProperties(ETSObjectType *classType, ir::ClassDefinition *
             return;
         }
 
+        if (it->Declaration()->Type() == varbinder::DeclType::LET &&
+            found->Declaration()->Type() == varbinder::DeclType::READONLY) {
+            return;
+        }
+
         if (it->TsType()->IsETSFunctionType()) {
             auto getter = it->TsType()->AsETSFunctionType()->FindGetter();
-            if (getter != nullptr && getter->ReturnType() == found->TsType()) {
+            if (getter != nullptr && Relation()->IsIdenticalTo(getter->ReturnType(), found->TsType())) {
                 return;
             }
             auto setter = it->TsType()->AsETSFunctionType()->FindSetter();
-            if (setter != nullptr && setter->Params().front()->TsType() == found->TsType()) {
+            if (setter != nullptr && Relation()->IsIdenticalTo(setter->ReturnType(), found->TsType())) {
                 return;
             }
         }

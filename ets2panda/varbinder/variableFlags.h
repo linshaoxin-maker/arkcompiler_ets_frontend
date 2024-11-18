@@ -20,6 +20,7 @@
 #include "util/enumbitops.h"
 
 namespace ark::es2panda::varbinder {
+// CC-OFFNXT(G.PRE.06) solid logic
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARATION_KINDS(_)             \
     _(VAR, VarDecl)                      \
@@ -32,6 +33,8 @@ namespace ark::es2panda::varbinder {
     _(IMPORT, ImportDecl)                \
     _(DYNAMIC_IMPORT, DynamicImportDecl) \
     _(EXPORT, ExportDecl)                \
+    _(ANNOTATIONDECL, AnnotationDecl)    \
+    _(ANNOTATIONUSAGE, AnnotationUsage)  \
     /* TS */                             \
     _(TYPE_ALIAS, TypeAliasDecl)         \
     _(NAMESPACE, NameSpaceDecl)          \
@@ -45,26 +48,30 @@ namespace ark::es2panda::varbinder {
 
 enum class DeclType {
     NONE,
+// CC-OFFNXT(G.PRE.02) name part
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_TYPES(decl_kind, class_name) decl_kind,
     DECLARATION_KINDS(DECLARE_TYPES)
 #undef DECLARE_TYPES
 };
 
+// CC-OFFNXT(G.PRE.06) solid logic
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SCOPE_TYPES(_)                           \
-    _(PARAM, ParamScope)                         \
-    _(CATCH_PARAM, CatchParamScope)              \
-    _(FUNCTION_PARAM, FunctionParamScope)        \
-    _(CATCH, CatchScope)                         \
-    _(CLASS, ClassScope)                         \
-    _(LOCAL, LocalScope)                         \
-    _(LOCAL_WITH_ALIAS, LocalScopeWithTypeAlias) \
-    /* Variable Scopes */                        \
-    _(LOOP, LoopScope)                           \
-    _(LOOP_DECL, LoopDeclarationScope)           \
-    _(FUNCTION, FunctionScope)                   \
-    _(GLOBAL, GlobalScope)                       \
+#define SCOPE_TYPES(_)                            \
+    _(PARAM, ParamScope)                          \
+    _(CATCH_PARAM, CatchParamScope)               \
+    _(FUNCTION_PARAM, FunctionParamScope)         \
+    _(CATCH, CatchScope)                          \
+    _(CLASS, ClassScope)                          \
+    _(ANNOTATION, AnnotationScope)                \
+    _(ANNOTATIONPARAMSCOPE, AnnotationParamScope) \
+    _(LOCAL, LocalScope)                          \
+    _(LOCAL_WITH_ALIAS, LocalScopeWithTypeAlias)  \
+    /* Variable Scopes */                         \
+    _(LOOP, LoopScope)                            \
+    _(LOOP_DECL, LoopDeclarationScope)            \
+    _(FUNCTION, FunctionScope)                    \
+    _(GLOBAL, GlobalScope)                        \
     _(MODULE, ModuleScope)
 
 enum class ScopeType {
@@ -156,6 +163,8 @@ enum class VariableFlags : uint64_t {
 
     BUILTIN_TYPE = 1ULL << 31ULL,
     CAPTURED_MODIFIED = 1ULL << 32ULL,
+    ANNOTATIONDECL = 1ULL << 33ULL,
+    ANNOTATIONUSAGE = 1ULL << 34ULL,
 
     HOIST_VAR = HOIST | VAR,
     CLASS_OR_INTERFACE = CLASS | INTERFACE,

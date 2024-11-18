@@ -67,9 +67,14 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
     if (typeArgument->IsWildcardType()) {
         return true;
     }
+    if (typeArgument->IsTypeError()) {
+        return true;
+    }
+    // NOTE(vpukhov): #19701 void refactoring
     ASSERT(IsReferenceType(typeArgument) || typeArgument->IsETSVoidType());
     auto *constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
     bool retVal = false;
+    // NOTE(vpukhov): #19701 void refactoring
     if (typeArgument->IsETSVoidType()) {
         retVal = Relation()->IsSupertypeOf(constraint, GlobalETSUndefinedType());
     } else if (typeArgument->IsETSFunctionType()) {
@@ -158,8 +163,8 @@ bool ETSChecker::EnhanceSubstitutionForReadonly(const ArenaVector<Type *> &typeP
 bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParams, Type *paramType, Type *argumentType,
                                             Substitution *substitution)
 {
-    if (argumentType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        argumentType = PrimitiveTypeAsETSBuiltinType(argumentType);
+    if (argumentType->IsETSPrimitiveType()) {
+        argumentType = MaybeBoxInRelation(argumentType);
     }
     if (paramType->IsETSTypeParameter()) {
         auto *const tparam = paramType->AsETSTypeParameter();
@@ -317,7 +322,7 @@ bool ETSChecker::CheckOptionalLambdaFunction(ir::Expression *argument, Signature
 
         if (ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
             CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
-            if (arrowFuncExpr->TsTypeOrError() != nullptr) {
+            if (arrowFuncExpr->TsType() != nullptr) {
                 arrowFuncExpr->Check(this);
                 return true;
             }
@@ -401,6 +406,9 @@ bool ETSChecker::CheckInvokable(Signature *substitutedSig, ir::Expression *argum
                                 TypeRelationFlag flags)
 {
     auto *argumentType = argument->Check(this);
+    if (argumentType->IsTypeError()) {
+        return true;
+    }
     auto *targetType = substitutedSig->Params()[index]->TsType();
 
     auto const invocationCtx =
@@ -922,7 +930,8 @@ Signature *ETSChecker::ChooseMostSpecificSignature(ArenaVector<Signature *> &sig
         if (signatures.size() > 1 && std::any_of(signatures.begin(), signatures.end(), [signatures](const auto *param) {
                 return param->RestVar()->TsType() != signatures.front()->RestVar()->TsType();
             })) {
-            ThrowTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+            LogTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+            return nullptr;
         }
         // Else return the signature with the rest parameter
         auto restParamSignature = std::find_if(signatures.begin(), signatures.end(),
@@ -1008,8 +1017,8 @@ void ETSChecker::CheckObjectLiteralArguments(Signature *signature, ArenaVector<i
 
 checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition *method)
 {
-    if (method->TsTypeOrError() != nullptr) {
-        return method->TsTypeOrError()->AsETSFunctionType();
+    if (method->TsType() != nullptr) {
+        return method->TsType()->AsETSFunctionType();
     }
 
     bool isConstructSig = method->IsConstructor();
@@ -1093,7 +1102,7 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
         signature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR);
     }
 
-    if (signature->Owner()->GetDeclNode()->IsFinal() || func->IsFinal()) {
+    if ((signature->Owner() != nullptr && signature->Owner()->GetDeclNode()->IsFinal()) || func->IsFinal()) {
         signature->AddSignatureFlag(SignatureFlags::FINAL);
     }
 
@@ -1126,12 +1135,10 @@ Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func)
         if (func->IsAsyncFunc()) {
             auto implicitPromiseVoid = [this]() {
                 const auto &promiseGlobal = GlobalBuiltinPromiseType()->AsETSObjectType();
-                auto promiseType =
-                    promiseGlobal->Instantiate(Allocator(), Relation(), GetGlobalTypesHolder())->AsETSObjectType();
-                promiseType->AddTypeFlag(checker::TypeFlag::GENERIC);
-                promiseType->TypeArguments().clear();
-                promiseType->TypeArguments().emplace_back(GlobalVoidType());
-                return promiseType;
+                auto substitutuon = NewSubstitution();
+                ETSChecker::EmplaceSubstituted(substitutuon, promiseGlobal->TypeArguments()[0]->AsETSTypeParameter(),
+                                               GlobalVoidType());
+                return promiseGlobal->Substitute(Relation(), substitutuon);
             };
 
             returnType = implicitPromiseVoid();
@@ -1197,7 +1204,7 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
 
                 paramVar->SetTsType(paramTypeAnnotation->GetType(this));
             } else {
-                paramVar->SetTsType(paramIdent->TsTypeOrError());
+                paramVar->SetTsType(paramIdent->TsType());
             }
             signatureInfo->params.push_back(paramVar->AsLocalVariable());
             ++signatureInfo->minArgCount;
@@ -1304,7 +1311,8 @@ static void AddSignatureFlags(const ir::ScriptFunction *const func, Signature *c
         signature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR);
     }
 
-    if (func->Signature()->Owner()->GetDeclNode()->IsFinal() || func->IsFinal()) {
+    if ((func->Signature()->Owner() != nullptr && func->Signature()->Owner()->GetDeclNode()->IsFinal()) ||
+        func->IsFinal()) {
         signature->AddSignatureFlag(SignatureFlags::FINAL);
     }
 
@@ -1451,7 +1459,7 @@ bool ETSChecker::CheckThrowMarkers(Signature *source, Signature *target)
     if ((source->Function()->IsRethrowing() && target->Function()->IsThrowing()) ||
         (!source->Function()->IsThrowing() &&
          (target->Function()->IsRethrowing() || target->Function()->IsThrowing()))) {
-        ThrowTypeError(
+        LogTypeError(
             "A method that overrides or hides another method cannot change throw or rethrow clauses of the "
             "overridden "
             "or hidden method.",
@@ -1623,7 +1631,7 @@ void ETSChecker::CheckOverride(Signature *signature)
 
 Signature *ETSChecker::GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef)
 {
-    if (methodDef->TsTypeOrError()->IsTypeError()) {
+    if (methodDef->TsType()->IsTypeError()) {
         return nullptr;
     }
     ASSERT(methodDef->TsType() && methodDef->TsType()->IsETSFunctionType());
@@ -1759,9 +1767,15 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // A method declaration d1 with return type R1 is return-type-substitutable for another method d2 with return
     // type R2 if any of the following is true:
 
+    // NOTE(vpukhov): void type leaks into type arguments, so we have to check the original signature if the return type
+    // is parametrized or not to use a proper subtyping check. To be replaced with IsETSPrimitiveType after #19701.
+    auto const hasPrimitiveReturnType = [](Signature *s) {
+        bool origIsRef = s->Function()->Signature()->ReturnType()->IsETSReferenceType();
+        ASSERT(origIsRef == s->ReturnType()->IsETSReferenceType());
+        return !origIsRef;
+    };
     // - If R1 is a primitive type then R2 is identical to R1.
-    if (r1->HasTypeFlag(TypeFlag::ETS_PRIMITIVE | TypeFlag::ETS_INT_ENUM | TypeFlag::ETS_STRING_ENUM |
-                        TypeFlag::ETS_VOID)) {
+    if (hasPrimitiveReturnType(s1) || hasPrimitiveReturnType(s2)) {
         return Relation()->IsIdenticalTo(r2, r1);
     }
 
@@ -1769,11 +1783,13 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // subtype of R2.
     ASSERT(IsReferenceType(r1));
 
+    // Starting from this line, everything should be be restored to IsSupertypeOf check, to be reverted in #18866
     if (Relation()->IsSupertypeOf(r2, r1)) {
         return true;
     }
 
     return s2->Function()->ReturnTypeAnnotation()->IsETSTypeReference() &&
+           s2->Function()->ReturnTypeAnnotation()->GetType(this)->IsETSTypeParameter() &&
            Relation()->IsSupertypeOf(
                s2->Function()->ReturnTypeAnnotation()->GetType(this)->AsETSTypeParameter()->GetConstraintType(), r1);
 }
@@ -1835,7 +1851,6 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     if (!asyncFunc->Signature()->HasSignatureFlag(SignatureFlags::NEED_RETURN_TYPE)) {
         // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
         auto *objectId = AllocNode<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, Allocator());
-        objectId->SetReference();
         VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
         returnTypeAnn =
             AllocNode<ir::ETSTypeReference>(AllocNode<ir::ETSTypeReferencePart>(objectId, nullptr, nullptr));
@@ -1935,6 +1950,7 @@ ir::MethodDefinition *ETSChecker::CreateMethod(const util::StringView &name, ir:
     // clang-format off
     auto *const func = AllocNode<ir::ScriptFunction>(
         Allocator(), ir::ScriptFunction::ScriptFunctionData {
+            // CC-OFFNXT(G.FMT.05-CPP) project codestyle clang format off
             body, ir::FunctionSignature(nullptr, std::move(params), returnType), flags, modifiers});
     // clang-format on
     func->SetScope(scope);

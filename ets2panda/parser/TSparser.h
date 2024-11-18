@@ -98,7 +98,7 @@ private:
     bool ParsePotentialNonNullExpression(ir::Expression **returnExpression, lexer::SourcePosition startLoc) override;
     bool IsNamedFunctionExpression() override;
     ir::Identifier *ParsePrimaryExpressionIdent(ExpressionParseFlags flags) override;
-    void ValidateArrowFunctionRestParameter(ir::SpreadElement *restElement) override;
+    bool ValidateArrowFunctionRestParameter(ir::SpreadElement *restElement) override;
     ir::Decorator *ParseDecorator() override;
     void AddDecorators(ir::AstNode *node, ArenaVector<ir::Decorator *> &decorators) override;
     ir::TSTypeAliasDeclaration *ParseTypeAliasDeclaration() override;
@@ -119,7 +119,7 @@ private:
                              ir::Expression *propName, ir::ScriptFunction *func) override;
     bool IsModifierKind(const lexer::Token &token) override;
     void CheckIfTypeParameterNameIsReserved() override;
-    void ThrowErrorIfStaticConstructor(ir::ModifierFlags flags) override;
+    void CheckIfStaticConstructor(ir::ModifierFlags flags) override;
     std::tuple<bool, bool, bool> ParseComputedClassFieldOrIndexSignature(ir::Expression **propName) override;
     ir::TypeNode *ParseFunctionReturnType(ParserStatus status) override;
     std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> ParseFunctionBody(
@@ -140,7 +140,7 @@ private:
     void ThrowIllegalContinueError() override;
     void ThrowIfBodyEmptyError(ir::Statement *consequent) override;
     void ThrowMultipleDefaultError() override;
-    void ThrowIllegalNewLineErrorAfterThrow() override;
+    void LogIllegalNewLineErrorAfterThrow() override;
     // NOLINTNEXTLINE(google-default-arguments)
     ir::ExportDefaultDeclaration *ParseExportDefaultDeclaration(const lexer::SourcePosition &startLoc,
                                                                 bool isExportEquals = false) override;

@@ -22,6 +22,7 @@
 #include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsStringLiteralType.h"
 #include "ir/ets/etsTuple.h"
+#include "ir/ets/etsNeverType.h"
 #include "ir/ets/etsNullishTypes.h"
 #include "ir/statements/functionDeclaration.h"
 #include "ir/expressions/functionExpression.h"
@@ -58,7 +59,7 @@ public:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_AST_NODE_CHECK_METHOD(nodeType1, nodeType2, baseClass, reinterpretClass) \
-    DECLARE_CLASSES(nodeType1, baseClass);
+    DECLARE_CLASSES(nodeType1, baseClass);  // CC-OFF(G.PRE.09) code gen
 
     AST_NODE_REINTERPRET_MAPPING(DECLARE_AST_NODE_CHECK_METHOD)
 #undef DECLARE_AST_NODE_CHECK_METHOD

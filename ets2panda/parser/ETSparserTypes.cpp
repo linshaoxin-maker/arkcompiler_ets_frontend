@@ -170,15 +170,18 @@ ir::TypeNode *ETSParser::ParseWildcardType(TypeAnnotationParsingOptions *options
     const auto varianceEndLoc = Lexer()->GetToken().End();
     const auto varianceModifier = ParseTypeVarianceModifier(options);
 
-    auto *typeReference = [this, &varianceModifier, options]() -> ir::ETSTypeReference * {
-        if (varianceModifier == ir::ModifierFlags::OUT &&
-            (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_GREATER_THAN ||
-             Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA)) {
-            // unbounded 'out'
+    bool isUnboundOut = varianceModifier == ir::ModifierFlags::OUT &&
+                        (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_GREATER_THAN ||
+                         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA);
+    ir::ETSTypeReference *typeReference = nullptr;
+    if (!isUnboundOut) {
+        auto reference = ParseTypeReference(options);
+        if (reference == nullptr) {  // Error processing.
             return nullptr;
         }
-        return ParseTypeReference(options)->AsETSTypeReference();
-    }();
+
+        typeReference = reference->AsETSTypeReference();
+    }
 
     auto *wildcardType = AllocNode<ir::ETSWildcardType>(typeReference, varianceModifier);
     wildcardType->SetRange({varianceStartLoc, typeReference == nullptr ? varianceEndLoc : typeReference->End()});
@@ -190,7 +193,7 @@ ir::TypeNode *ETSParser::ParseFunctionType()
 {
     auto startLoc = Lexer()->GetToken().Start();
     auto fullParams = ParseFunctionParams();
-
+    // CC-OFFNXT(G.FMT.14-CPP) project code style
     auto *const returnTypeAnnotation = [this]() -> ir::TypeNode * {
         ExpectToken(lexer::TokenType::PUNCTUATOR_ARROW);
         TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
@@ -314,13 +317,15 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         }
 
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("Comma is mandatory between elements in a tuple type declaration");
+            // tuple_type_3_neg.sts
+            LogSyntaxError("Comma is mandatory between elements in a tuple type declaration");
+            Lexer()->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
         }
     }
 
     Lexer()->NextToken();  // eat ']'
 
-    tupleType->SetTypeAnnotationsList(tupleTypeList);
+    tupleType->SetTypeAnnotationsList(std::move(tupleTypeList));
     const auto endLoc = Lexer()->GetToken().End();
     tupleType->SetRange({startLoc, endLoc});
 
@@ -336,12 +341,12 @@ ir::TypeNode *ETSParser::ParsePotentialFunctionalType(TypeAnnotationParsingOptio
          Lexer()->Lookahead() == lexer::LEX_CHAR_COLON || Lexer()->Lookahead() == lexer::LEX_CHAR_QUESTION)) {
         GetContext().Status() |= ParserStatus::ALLOW_DEFAULT_VALUE;
         auto typeAnnotation = ParseFunctionType();
+        GetContext().Status() ^= ParserStatus::ALLOW_DEFAULT_VALUE;
         if (typeAnnotation == nullptr) {  // Error processing.
             return nullptr;
         }
 
         typeAnnotation->SetStart(startLoc);
-        GetContext().Status() ^= ParserStatus::ALLOW_DEFAULT_VALUE;
         return typeAnnotation;
     }
 
@@ -448,7 +453,7 @@ ir::TypeNode *ETSParser::ParseThisType(TypeAnnotationParsingOptions *options)
     return thisType;
 }
 
-ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+ir::TypeNode *ETSParser::ParseTypeAnnotationNoPreferParam(TypeAnnotationParsingOptions *options)
 {
     bool const reportError = ((*options) & TypeAnnotationParsingOptions::REPORT_ERROR) != 0;
 
@@ -476,9 +481,10 @@ ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *optio
 
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
             if (reportError) {
-                ThrowExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
+            } else {
+                return nullptr;
             }
-            return nullptr;
         }
 
         Lexer()->NextToken();  // eat ']'
@@ -492,6 +498,24 @@ ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *optio
     }
 
     return typeAnnotation;
+}
+
+ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+{
+    // if there is prefix readonly parameter type, change the return result to ETSTypeReference, like Readonly<>
+    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_READONLY) {
+        auto startPos = Lexer()->GetToken().Start();
+        Lexer()->NextToken();  // eat 'readonly'
+        ir::TypeNode *typeAnnotation = ParseTypeAnnotationNoPreferParam(options);
+        if (!typeAnnotation->IsTSArrayType() && !typeAnnotation->IsETSTuple()) {
+            ThrowSyntaxError("'readonly' type modifier is only permitted on array and tuple types.");
+        }
+        typeAnnotation->SetStart(startPos);
+        typeAnnotation->AddModifier(ir::ModifierFlags::READONLY_PARAMETER);
+        return typeAnnotation;
+    }
+
+    return ParseTypeAnnotationNoPreferParam(options);
 }
 
 }  // namespace ark::es2panda::parser

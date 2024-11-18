@@ -145,6 +145,7 @@ bool Token::IsTsParamToken(TokenType type)
     return (type == TokenType::PUNCTUATOR_COLON || type == TokenType::PUNCTUATOR_QUESTION_MARK);
 }
 
+// CC-OFFNXT(huge_method,huge_cyclomatic_complexity,G.FUN.01-CPP) big switch-case, solid logic
 const char *TokenToString(TokenType type)  // NOLINT(readability-function-size)
 {
     switch (type) {
@@ -450,6 +451,8 @@ const char *TokenToString(TokenType type)  // NOLINT(readability-function-size)
             return "$$";
         case TokenType::KEYW_OVERRIDE:
             return "override";
+        case TokenType::KEYW_NATIVE:
+            return "native";
         case TokenType::LITERAL_IDENT:
             return "identification literal";
         case TokenType::LITERAL_NUMBER:

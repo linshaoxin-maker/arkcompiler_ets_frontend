@@ -34,3 +34,7 @@ DisplayNames_constructor
 DisplayNames_of
 DisplayNames_resolvedOptions
 DisplayNames_supportedLocalesOf
+
+#20257
+Math_abs
+String_toLocaleUpperCase

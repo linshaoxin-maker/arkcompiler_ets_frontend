@@ -33,6 +33,7 @@ enum class AstNodeFlags {
     GENERATE_VALUE_OF = 1U << 4U,
     GENERATE_GET_NAME = 1U << 5U,  // Transform the Enum[enumVar] MemberExpression to enumVar.getName() call
     RECHECK = 1U << 6U,
+    /* do not introduce new flags. all the existing to be removed */
 };
 
 enum class ModifierFlags : uint32_t {
@@ -63,6 +64,9 @@ enum class ModifierFlags : uint32_t {
     DEFAULT_EXPORT = 1U << 23U,
     EXPORT_TYPE = 1U << 24U,
     SUPER_OWNER = 1U << 26U,
+    ANNOTATION_DECLARATION = 1U << 27U,
+    ANNOTATION_USAGE = 1U << 28U,
+    READONLY_PARAMETER = 1U << 29U,
     ACCESS = PUBLIC | PROTECTED | PRIVATE | INTERNAL,
     ALL = STATIC | ASYNC | ACCESS | DECLARE | READONLY | ABSTRACT,
     ALLOWED_IN_CTOR_PARAMETER = ACCESS | READONLY,

@@ -39,6 +39,7 @@ bool AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *rela
         if (!AssignmentContext(relation, currentArrayElem,
                                currentArrayElem->Check(relation->GetChecker()->AsETSChecker()), target->ElementType(),
                                currentArrayElem->Start(), {}, TypeRelationFlag::NO_THROW)
+                 // CC-OFFNXT(G.FMT.06-CPP,G.FMT.02-CPP) project code style
                  .IsAssignable()) {
             relation->GetChecker()->LogTypeError(
                 {"Array element at index ", index, " with type '", currentArrayElementType,
@@ -86,10 +87,10 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParame
                 return;
             }
 
-            if (paramType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+            if (paramType->IsETSPrimitiveType()) {
                 checker_->Relation()->SetNode(it);
 
-                auto *const boxedTypeArg = checker_->PrimitiveTypeAsETSBuiltinType(paramType);
+                auto *const boxedTypeArg = checker_->MaybeBoxInRelation(paramType);
                 ASSERT(boxedTypeArg);
                 paramType = boxedTypeArg->Instantiate(checker_->Allocator(), checker_->Relation(),
                                                       checker_->GetGlobalTypesHolder());
@@ -127,6 +128,7 @@ static void CheckInstantiationConstraints(ETSChecker *checker, ArenaVector<Type 
         if (typeArg->IsTypeError()) {
             continue;
         }
+        // NOTE(vpukhov): #19701 void refactoring
         ASSERT(typeArg->IsETSReferenceType() || typeArg->IsETSVoidType());
         auto constraint = typeParam->GetConstraintType()->Substitute(relation, substitution);
         if (!relation->IsAssignableTo(typeArg, constraint)) {

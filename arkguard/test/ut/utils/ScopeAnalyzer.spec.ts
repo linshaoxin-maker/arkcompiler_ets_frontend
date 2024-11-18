@@ -15,9 +15,8 @@
 
 import {ListUtil} from '../../../src/utils/ListUtil';
 import {describe, it} from 'mocha';
-import {assert} from 'chai';
+import {assert, expect} from 'chai';
 import * as fs from 'fs';
-import sinon from 'sinon';
 import {TypeUtils} from '../../../src/utils/TypeUtils';
 import {
   Label,
@@ -31,7 +30,8 @@ import {
   isFunctionScope,
   isGlobalScope,
   isInterfaceScope,
-  isObjectLiteralScope
+  isObjectLiteralScope,
+  getNameWithScopeLoc
 } from '../../../src/utils/ScopeAnalyzer';
 import { ScriptTarget, SourceFile, createSourceFile, isSourceFile, Symbol, __String, Declaration, JSDocTagInfo,
    SymbolDisplayPart, SymbolFlags, TypeChecker, LabeledStatement, Identifier, SyntaxKind,
@@ -480,8 +480,35 @@ describe('ScopeAnalyzer ut', function () {
           });
         });
       });
+
+      describe('analyzeClassLike', function () {
+        let filePath = 'test/ut/utils/ScopeAnalyzer/analyzeClassLike.ts';
+        it('should collect symbol of class property parameters', function () {
+          InitScopeManager(filePath);
+          const rootScope = scopeManager.getRootScope();
+          const classScope = rootScope.children[0];
+          const nameSet = new Set();
+          classScope.defs.forEach((symbol) => {
+            nameSet.add(symbol.escapedName);
+          })
+          expect(nameSet.has('prop1')).to.be.true;
+          expect(nameSet.has('__constructor')).to.be.true;
+          expect(nameSet.has('para1')).to.be.true;
+          expect(nameSet.has('para2')).to.be.true;
+          expect(nameSet.has('para3')).to.be.true;
+          expect(nameSet.has('para4')).to.be.true;
+        });
+      });
     });
   });
+
+  describe('unit test for getNameWithScopeLoc', function () {
+    const sourceFileContent: string = `
+     let a = 1;
+    `;
+    const sourceFile: SourceFile = createSourceFile('test.ts', sourceFileContent, ScriptTarget.ES2015, true);
+    let scope: Scope = new Scope("testScope", sourceFile, ScopeKind.GLOBAL);
+    const scopeName: string = getNameWithScopeLoc(scope, "testName");
+    assert.equal(scopeName, "testScope#testName");
+  });
 });
-
-

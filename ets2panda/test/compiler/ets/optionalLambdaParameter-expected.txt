@@ -273,7 +273,7 @@
                                 "type": "VariableDeclarator",
                                 "id": {
                                   "type": "Identifier",
-                                  "name": "gensym$_4",
+                                  "name": "gensym%%_4",
                                   "decorators": [],
                                   "loc": {
                                     "start": {
@@ -334,7 +334,7 @@
                                 "operator": "==",
                                 "left": {
                                   "type": "Identifier",
-                                  "name": "gensym$_4",
+                                  "name": "gensym%%_4",
                                   "decorators": [],
                                   "loc": {
                                     "start": {
@@ -374,7 +374,7 @@
                               },
                               "consequent": {
                                 "type": "UndefinedLiteral",
-                                "value": undefined,
+                                "value": "undefined",
                                 "loc": {
                                   "start": {
                                     "line": 1,
@@ -390,7 +390,7 @@
                                 "type": "CallExpression",
                                 "callee": {
                                   "type": "Identifier",
-                                  "name": "gensym$_4",
+                                  "name": "gensym%%_4",
                                   "decorators": [],
                                   "loc": {
                                     "start": {
@@ -579,7 +579,7 @@
                             "arguments": [
                               {
                                 "type": "UndefinedLiteral",
-                                "value": undefined,
+                                "value": "undefined",
                                 "loc": {
                                   "start": {
                                     "line": 1,

@@ -84,7 +84,7 @@ void ReturnStatement::SetReturnType(checker::ETSChecker *checker, checker::Type 
             relation->SetNode(argument_);
             relation->SetFlags(checker::TypeRelationFlag::NONE);
 
-            argumentType = checker->PrimitiveTypeAsETSBuiltinType(argumentType);
+            argumentType = checker->MaybeBoxInRelation(argumentType);
             if (argumentType == nullptr) {
                 checker->LogTypeError("Invalid return statement expression", argument_->Start());
                 return;
@@ -102,5 +102,19 @@ void ReturnStatement::SetArgument(Expression *arg)
     if (argument_ != nullptr) {
         argument_->SetParent(this);
     }
+}
+
+ReturnStatement *ReturnStatement::Clone(ArenaAllocator *const allocator, AstNode *const parent)
+{
+    ir::ReturnStatement *clone = allocator->New<ir::ReturnStatement>();
+    if (clone != nullptr) {
+        clone->SetParent(parent);
+        if (argument_ != nullptr) {
+            clone->SetArgument(argument_->Clone(allocator, clone)->AsExpression());
+        }
+        clone->returnType_ = returnType_;
+        clone->SetRange(Range());
+    }
+    return clone;
 }
 }  // namespace ark::es2panda::ir

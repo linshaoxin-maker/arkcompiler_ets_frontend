@@ -47,6 +47,7 @@ public:
           defaultImports_(Allocator()->Adapter()),
           dynamicImports_(Allocator()->Adapter()),
           reExportImports_(Allocator()->Adapter()),
+          reexportedNames_(Allocator()->Adapter()),
           dynamicImportVars_(Allocator()->Adapter()),
           importSpecifiers_(Allocator()->Adapter()),
           selectiveExportAliasMultimap_(Allocator()->Adapter())
@@ -107,6 +108,8 @@ public:
 
     void IdentifierAnalysis() override;
     void BuildClassDefinition(ir::ClassDefinition *classDef) override;
+    void BuildObjectExpression(ir::ObjectExpression *obj);
+    void BuildETSTypeReference(ir::ETSTypeReference *typeRef);
     void BuildClassProperty(const ir::ClassProperty *prop) override;
     void LookupIdentReference(ir::Identifier *ident) override;
     bool BuildInternalName(ir::ScriptFunction *scriptFunc) override;
@@ -117,7 +120,15 @@ public:
     void BuildInterfaceDeclaration(ir::TSInterfaceDeclaration *decl);
     void BuildMemberExpression(ir::MemberExpression *memberExpr);
     void BuildMethodDefinition(ir::MethodDefinition *methodDef);
+    void BuildAnnotationUsage(ir::AnnotationUsage *annoUsage);
     void BuildImportDeclaration(ir::ETSImportDeclaration *decl);
+    void ValidateReexportDeclaration(ir::ETSReExportDeclaration *decl);
+    void ValidateReexports();
+    bool ReexportPathMatchesImportPath(const ir::ETSReExportDeclaration *const reexport,
+                                       const ir::ETSImportDeclaration *const import) const;
+    Variable *ValidateImportSpecifier(const ir::ImportSpecifier *const specifier,
+                                      const ir::ETSImportDeclaration *const import,
+                                      std::vector<ir::ETSImportDeclaration *> viewedReExport);
     void BuildETSNewClassInstanceExpression(ir::ETSNewClassInstanceExpression *classInstance);
     bool DetectNameConflict(const util::StringView localName, Variable *const var, Variable *const otherVar,
                             const ir::StringLiteral *const importPath, bool overloadAllowed);
@@ -204,23 +215,7 @@ public:
     }
 
     /* Returns the list of programs belonging to the same compilation unit based on a program path */
-    ArenaVector<parser::Program *> GetProgramList(const util::StringView &path) const
-    {
-        for (const auto &extRecords : globalRecordTable_.Program()->ExternalSources()) {
-            for (const auto &program : extRecords.second) {
-                if (program->AbsoluteName() == path) {
-                    return extRecords.second;
-                }
-
-                // in case of importing a package folder, the path could not be resolved to a specific file
-                if (program->IsPackageModule() && program->SourceFileFolder() == path) {
-                    return extRecords.second;
-                }
-            }
-        }
-
-        return ArenaVector<parser::Program *>(Allocator()->Adapter());
-    }
+    ArenaVector<parser::Program *> GetProgramList(const util::StringView &path) const;
 
     bool IsDynamicModuleVariable(const Variable *var) const;
     bool IsDynamicNamespaceVariable(const Variable *var) const;
@@ -302,6 +297,7 @@ private:
     ArenaVector<ir::ETSImportDeclaration *> defaultImports_;
     ArenaVector<ir::ETSImportDeclaration *> dynamicImports_;
     ArenaVector<ir::ETSReExportDeclaration *> reExportImports_;
+    ArenaSet<util::StringView> reexportedNames_;
     DynamicImportVariables dynamicImportVars_;
     ir::Identifier *thisParam_ {};
     ArenaVector<std::pair<util::StringView, util::StringView>> importSpecifiers_;
