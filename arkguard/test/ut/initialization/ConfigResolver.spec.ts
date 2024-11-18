@@ -88,68 +88,13 @@ describe('test for ConfigResolve', function() {
       config2.keepComments = ['comment2'];
       config2.excludePathSet.add('path2');
   
-      config1.merge(config2);
+      config1.mergeWhileList(config2);
+      config1.mergeObfuscationRules(config2);
   
       expect(config1.reservedPropertyNames).to.deep.equal(['prop1', 'prop2']);
       expect(config1.reservedGlobalNames).to.deep.equal(['global1', 'global2']);
       expect(config1.keepComments).to.deep.equal(['comment1', 'comment2']);
       expect(config1.excludePathSet).to.deep.equal(new Set(['path1', 'path2']));
-    });
-
-    it('should merge all configs', () => {
-      const config1 = new MergedConfig();
-      config1.options.enableLibObfuscationOptions = true;
-  
-      const config2 = new MergedConfig();
-      config2.options.enablePropertyObfuscation = true;
-      config2.options.enableStringPropertyObfuscation = true;
-      config2.options.enableToplevelObfuscation = true;
-      config2.options.compact = true;
-      config2.options.removeLog = true;
-      config2.reservedPropertyNames = ['prop2'];
-      config2.reservedGlobalNames = ['global2'];
-      config2.keepComments = ['comment2'];
-      config2.excludePathSet.add('path2');
-  
-      config1.merge(config2);
-  
-      expect(config1.options.enablePropertyObfuscation).to.be.true;
-      expect(config1.options.enableStringPropertyObfuscation).to.be.true;
-      expect(config1.options.enableToplevelObfuscation).to.be.true;
-      expect(config1.options.compact).to.be.true;
-      expect(config1.options.removeLog).to.be.true;
-      expect(config1.reservedPropertyNames).to.deep.equal(['prop2']);
-      expect(config1.reservedGlobalNames).to.deep.equal(['global2']);
-      expect(config1.keepComments).to.deep.equal(['comment2']);
-      expect(config1.excludePathSet).to.deep.equal(new Set(['path2']));
-    });
-
-    it('should merge only keep configs', () => {
-      const config1 = new MergedConfig();
-      config1.options.enableLibObfuscationOptions = false;
-  
-      const config2 = new MergedConfig();
-      config2.options.enablePropertyObfuscation = true;
-      config2.options.enableStringPropertyObfuscation = true;
-      config2.options.enableToplevelObfuscation = true;
-      config2.options.compact = true;
-      config2.options.removeLog = true;
-      config2.reservedPropertyNames = ['prop2'];
-      config2.reservedGlobalNames = ['global2'];
-      config2.keepComments = ['comment2'];
-      config2.excludePathSet.add('path2');
-  
-      config1.merge(config2);
-  
-      expect(config1.options.enablePropertyObfuscation).to.be.false;
-      expect(config1.options.enableStringPropertyObfuscation).to.be.false;
-      expect(config1.options.enableToplevelObfuscation).to.be.false;
-      expect(config1.options.compact).to.be.false;
-      expect(config1.options.removeLog).to.be.false;
-      expect(config1.reservedPropertyNames).to.deep.equal(['prop2']);
-      expect(config1.reservedGlobalNames).to.deep.equal(['global2']);
-      expect(config1.keepComments).to.deep.equal(['comment2']);
-      expect(config1.excludePathSet).to.deep.equal(new Set(['path2']));
     });
   
     it('should sort and deduplicate arrays correctly', () => {
@@ -921,6 +866,150 @@ describe('test for ConfigResolve', function() {
         fs.unlinkSync(systemApiPath);
       });
     });
+
+    describe('getMergedConfigs', function() {
+      it('should merge all configs', () => {
+        const config1 = new MergedConfig();
+        config1.options.enableLibObfuscationOptions = true;
+    
+        const config2 = new MergedConfig();
+        config2.options.enablePropertyObfuscation = true;
+        config2.options.enableStringPropertyObfuscation = true;
+        config2.options.enableToplevelObfuscation = true;
+        config2.options.compact = true;
+        config2.options.removeLog = true;
+        config2.reservedPropertyNames = ['prop2'];
+        config2.reservedGlobalNames = ['global2'];
+        config2.keepComments = ['comment2'];
+        config2.excludePathSet.add('path2');
+    
+        const projectConfig = {
+          obfuscationOptions: { option1: 'value1' },
+          compileHar: false
+        };
+        const logger = console;
+        const isTerser = false;
+        let newObConfigResolver = new ObConfigResolver(projectConfig, logger, isTerser);
+        const res: MergedConfig = newObConfigResolver.getMergedConfigsForTest(config1, config2);
+    
+        expect(res.options.enablePropertyObfuscation).to.be.true;
+        expect(res.options.enableStringPropertyObfuscation).to.be.true;
+        expect(res.options.enableToplevelObfuscation).to.be.true;
+        expect(res.options.compact).to.be.true;
+        expect(res.options.removeLog).to.be.true;
+        expect(res.reservedPropertyNames).to.deep.equal(['prop2']);
+        expect(res.reservedGlobalNames).to.deep.equal(['global2']);
+        expect(res.keepComments).to.deep.equal(['comment2']);
+        expect(res.excludePathSet).to.deep.equal(new Set(['path2']));
+      });
+  
+      it('should merge only keep configs', () => {
+        const config1 = new MergedConfig();
+        config1.options.enableLibObfuscationOptions = false;
+    
+        const config2 = new MergedConfig();
+        config2.options.enablePropertyObfuscation = true;
+        config2.options.enableStringPropertyObfuscation = true;
+        config2.options.enableToplevelObfuscation = true;
+        config2.options.compact = true;
+        config2.options.removeLog = true;
+        config2.reservedPropertyNames = ['prop2'];
+        config2.reservedGlobalNames = ['global2'];
+        config2.keepComments = ['comment2'];
+        config2.excludePathSet.add('path2');
+    
+        const projectConfig = {
+          obfuscationOptions: { option1: 'value1' },
+          compileHar: false
+        };
+        const logger = console;
+        const isTerser = false;
+        let newObConfigResolver = new ObConfigResolver(projectConfig, logger, isTerser);
+        const res: MergedConfig = newObConfigResolver.getMergedConfigsForTest(config1, config2);
+    
+        expect(res.options.enablePropertyObfuscation).to.be.false;
+        expect(res.options.enableStringPropertyObfuscation).to.be.false;
+        expect(res.options.enableToplevelObfuscation).to.be.false;
+        expect(res.options.compact).to.be.false;
+        expect(res.options.removeLog).to.be.false;
+        expect(res.reservedPropertyNames).to.deep.equal(['prop2']);
+        expect(res.reservedGlobalNames).to.deep.equal(['global2']);
+        expect(res.keepComments).to.deep.equal(['comment2']);
+        expect(res.excludePathSet).to.deep.equal(new Set(['path2']));
+      });
+    });
+
+    describe('genConsumerConfigFilesForTest', function (){
+      it('should merge all configs', () => {
+        const config1 = new MergedConfig();
+        config1.options.enableLibObfuscationOptions = true;
+    
+        const config2 = new MergedConfig();
+        config2.options.enablePropertyObfuscation = true;
+        config2.options.enableStringPropertyObfuscation = true;
+        config2.options.enableToplevelObfuscation = true;
+        config2.options.compact = true;
+        config2.options.removeLog = true;
+        config2.reservedPropertyNames = ['prop2'];
+        config2.reservedGlobalNames = ['global2'];
+        config2.keepComments = ['comment2'];
+        config2.excludePathSet.add('path2');
+    
+        const projectConfig = {
+          obfuscationOptions: { option1: 'value1' },
+          compileHar: false
+        };
+        const logger = console;
+        const isTerser = false;
+        let newObConfigResolver = new ObConfigResolver(projectConfig, logger, isTerser);
+        const res: MergedConfig = newObConfigResolver.getMergedConfigsForTest(config1, config2);
+    
+        expect(res.options.enablePropertyObfuscation).to.be.true;
+        expect(res.options.enableStringPropertyObfuscation).to.be.true;
+        expect(res.options.enableToplevelObfuscation).to.be.true;
+        expect(res.options.compact).to.be.true;
+        expect(res.options.removeLog).to.be.true;
+        expect(res.reservedPropertyNames).to.deep.equal(['prop2']);
+        expect(res.reservedGlobalNames).to.deep.equal(['global2']);
+        expect(res.keepComments).to.deep.equal(['comment2']);
+        expect(res.excludePathSet).to.deep.equal(new Set(['path2']));
+      });
+  
+      it('should merge only keep configs', () => {
+        const config1 = new MergedConfig();
+        config1.options.enableLibObfuscationOptions = false;
+    
+        const config2 = new MergedConfig();
+        config2.options.enablePropertyObfuscation = true;
+        config2.options.enableStringPropertyObfuscation = true;
+        config2.options.enableToplevelObfuscation = true;
+        config2.options.compact = true;
+        config2.options.removeLog = true;
+        config2.reservedPropertyNames = ['prop2'];
+        config2.reservedGlobalNames = ['global2'];
+        config2.keepComments = ['comment2'];
+        config2.excludePathSet.add('path2');
+    
+        const projectConfig = {
+          obfuscationOptions: { option1: 'value1' },
+          compileHar: false
+        };
+        const logger = console;
+        const isTerser = false;
+        let newObConfigResolver = new ObConfigResolver(projectConfig, logger, isTerser);
+        const res: MergedConfig = newObConfigResolver.getMergedConfigsForTest(config1, config2);
+    
+        expect(res.options.enablePropertyObfuscation).to.be.false;
+        expect(res.options.enableStringPropertyObfuscation).to.be.false;
+        expect(res.options.enableToplevelObfuscation).to.be.false;
+        expect(res.options.compact).to.be.false;
+        expect(res.options.removeLog).to.be.false;
+        expect(res.reservedPropertyNames).to.deep.equal(['prop2']);
+        expect(res.reservedGlobalNames).to.deep.equal(['global2']);
+        expect(res.keepComments).to.deep.equal(['comment2']);
+        expect(res.excludePathSet).to.deep.equal(new Set(['path2']));
+      });
+    });
   });
   
   describe('collectResevedFileNameInIDEConfig', () => {
@@ -1071,7 +1160,8 @@ describe('test for ConfigResolve', function() {
         keepUniversalPaths: [/test\.js$/],
         excludeUniversalPaths: [/exclude\.js$/],
         excludePathSet: new Set(),
-        merge: () => {},
+        mergeWhileList: () => {},
+        mergeObfuscationRules: () => {},
         sortAndDeduplicate: () => {},
         serializeMergedConfig: () => {
           return JSON.stringify(this);
@@ -1102,7 +1192,8 @@ describe('test for ConfigResolve', function() {
         keepUniversalPaths: [],
         excludeUniversalPaths: [],
         excludePathSet: new Set(),
-        merge: () => {},
+        mergeWhileList: () => {},
+        mergeObfuscationRules: () => {},
         sortAndDeduplicate: () => {},
         serializeMergedConfig: () => {
           return JSON.stringify(this);
