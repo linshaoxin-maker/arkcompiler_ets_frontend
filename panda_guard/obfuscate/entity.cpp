@@ -93,6 +93,16 @@ void panda::guard::Entity::WritePropertyCache()
 {
 }
 
+std::string panda::guard::Entity::GetName() const
+{
+    return this->name_;
+}
+
+std::string panda::guard::Entity::GetObfName() const
+{
+    return this->obfName_;
+}
+
 bool panda::guard::TopLevelOptionEntity::NeedUpdate(const Entity &entity)
 {
     bool needUpdate = true;
@@ -123,7 +133,7 @@ void panda::guard::TopLevelOptionEntity::RefreshNeedUpdate()
 
 void panda::guard::TopLevelOptionEntity::WritePropertyCache(const panda::guard::Entity &entity)
 {
-    if (!entity.obfuscated || entity.name_.empty() || entity.obfName_.empty() || (entity.scope_ != TOP_LEVEL)) {
+    if (!entity.obfuscated || entity.GetName().empty() || entity.GetObfName().empty() || (entity.scope_ != TOP_LEVEL)) {
         return;
     }
 
@@ -134,10 +144,10 @@ void panda::guard::TopLevelOptionEntity::WritePropertyCache(const panda::guard::
 
     if (entity.IsExport()) {
         if (options->EnableExport()) {
-            GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.name_, entity.obfName_);
+            GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.GetName(), entity.GetObfName());
         }
     } else {
-        GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.name_, entity.obfName_);
+        GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.GetName(), entity.GetObfName());
     }
 }
 
@@ -168,7 +178,7 @@ void panda::guard::PropertyOptionEntity::RefreshNeedUpdate()
 
 void panda::guard::PropertyOptionEntity::WritePropertyCache(const panda::guard::Entity &entity)
 {
-    if (!entity.obfuscated || entity.name_.empty() || entity.obfName_.empty()) {
+    if (!entity.obfuscated || entity.GetName().empty() || entity.GetObfName().empty()) {
         return;
     }
 
@@ -179,10 +189,10 @@ void panda::guard::PropertyOptionEntity::WritePropertyCache(const panda::guard::
 
     if (entity.IsExport()) {
         if (options->EnableExport()) {
-            GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.name_, entity.obfName_);
+            GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.GetName(), entity.GetObfName());
         }
     } else {
-        GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.name_, entity.obfName_);
+        GuardContext::GetInstance()->GetNameCache()->AddObfPropertyName(entity.GetName(), entity.GetObfName());
     }
 }
 

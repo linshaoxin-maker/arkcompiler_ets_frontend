@@ -98,7 +98,7 @@ bool panda::guard::StringUtil::IsAnonymousNameSpaceName(const std::string &name)
 bool panda::guard::StringUtil::IsPrefixMatched(const std::string &str, const std::string &prefix,
                                                size_t start /* = 0 */)
 {
-    if(start > str.size() || start + prefix.size() > str.size()) {
+    if (start > str.size() || start + prefix.size() > str.size()) {
         return false;
     }
     return str.compare(start, prefix.size(), prefix) == 0;
@@ -164,7 +164,7 @@ void panda::guard::StringUtil::RemoveSlashFromBothEnds(std::string &str)
 
 bool panda::guard::StringUtil::IsNumber(const std::string &str)
 {
-    return std::all_of(str.begin(), str.end(), [](const char &ch){
+    return std::all_of(str.begin(), str.end(), [](const char &ch) {
         if ((ch == '-') || ((ch >= '0') && (ch <= '9'))) {
             return true;
         }

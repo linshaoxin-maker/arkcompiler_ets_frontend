@@ -113,7 +113,7 @@ void panda::guard::Class::CreateMethods(const pandasm::LiteralArray &literalArra
 
     const auto &staticMethodIndexLiteral = literalArray.literals_[staticMethodIndexLiteralIndex];
     PANDA_GUARD_ASSERT_PRINT(staticMethodIndexLiteral.tag_ != panda::panda_file::LiteralTag::INTEGER,
-        TAG << "bad tag for staticMethodIndex");
+                             TAG << "bad tag for staticMethodIndex");
 
     const uint32_t staticMethodIndex = std::get<uint32_t>(staticMethodIndexLiteral.value_);
     const size_t methodCount = methodItemCount / LITERAL_METHOD_GROUP_LEN;
@@ -129,14 +129,14 @@ void panda::guard::Class::CreateMethod(const pandasm::LiteralArray &literalArray
     const size_t methodNameLiteralIndex = index + 1;
     const auto &methodNameLiteral = literalArray.literals_[methodNameLiteralIndex];
     PANDA_GUARD_ASSERT_PRINT(methodNameLiteral.tag_ != panda::panda_file::LiteralTag::STRING,
-        TAG << "bad tag for methodName");
+                             TAG << "bad tag for methodName");
 
     const std::string methodName = std::get<std::string>(methodNameLiteral.value_);
     LOG(INFO, PANDAGUARD) << TAG << "methodName:" << methodName;
 
     const size_t methodIdxLiteralIndex = methodNameLiteralIndex + LITERAL_ITEM_LEN;
     PANDA_GUARD_ASSERT_PRINT(methodIdxLiteralIndex >= literalArray.literals_.size(),
-        TAG << "methodIdxLiteralIndex offset overflow");
+                             TAG << "methodIdxLiteralIndex offset overflow");
     const auto &[tag_, value_] = literalArray.literals_[methodIdxLiteralIndex];
     PANDA_GUARD_ASSERT_PRINT(tag_ != panda::panda_file::LiteralTag::METHOD, TAG << "bad tag for methodIdx");
 
@@ -206,8 +206,8 @@ void panda::guard::Class::WriteFileCache(const std::string &filePath)
     }
 
     GuardContext::GetInstance()->
-            GetNameCache()->
-            AddObfIdentifierName(filePath, this->GetNameCacheScope(), this->obfName_);
+        GetNameCache()->
+        AddObfIdentifierName(filePath, this->GetNameCacheScope(), this->obfName_);
 }
 
 void panda::guard::Class::WritePropertyCache()

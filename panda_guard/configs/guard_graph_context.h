@@ -22,7 +22,7 @@
 namespace panda::guard {
     class GraphContext {
     public:
-        explicit GraphContext(const panda_file::File &file): file_(file)
+        explicit GraphContext(const panda_file::File &file) : file_(file)
         {
         };
 

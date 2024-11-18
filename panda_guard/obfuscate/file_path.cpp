@@ -30,21 +30,22 @@ namespace {
     constexpr size_t FILEPATH_ITEM_MAX_PART_NUM = 2;
 
     const std::vector<std::string_view> PATH_PREFIX_LIST = {
-            BUNDLE_PREFIX,
-            PACKAGE_PREFIX,
-            NORMALIZED_LOCAL_PREFIX
+        BUNDLE_PREFIX,
+        PACKAGE_PREFIX,
+        NORMALIZED_LOCAL_PREFIX
     };
 
-    bool FindPrefix(const std::string &name, std::string &prefix) {
+    bool FindPrefix(const std::string &name, std::string &prefix)
+    {
         return std::any_of(
-                PATH_PREFIX_LIST.begin(), PATH_PREFIX_LIST.end(),
-                [&](const std::string_view &elem) {
-                    bool ret = panda::guard::StringUtil::IsPrefixMatched(name, elem.data());
-                    if (ret) {
-                        prefix = elem;
-                    }
-                    return ret;
-                });
+            PATH_PREFIX_LIST.begin(), PATH_PREFIX_LIST.end(),
+            [&](const std::string_view &elem) {
+                bool ret = panda::guard::StringUtil::IsPrefixMatched(name, elem.data());
+                if (ret) {
+                    prefix = elem;
+                }
+                return ret;
+            });
     }
 }
 

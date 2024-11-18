@@ -122,7 +122,8 @@ namespace {
         obfConfig.sourceMapsPath = panda::guard::JsonUtil::GetStringValue(&configObj, SOURCE_MAPS_PATH);
         obfConfig.entryPackageInfo = panda::guard::JsonUtil::GetStringValue(&configObj, ENTRY_PACKAGE_INFO);
         obfConfig.defaultNameCachePath = panda::guard::JsonUtil::GetStringValue(&configObj, DEFAULT_NAME_CACHE_PATH);
-        obfConfig.skippedRemoteHarList = panda::guard::JsonUtil::GetArrayStringValue(&configObj, SKIPPED_REMOTE_HAR_LIST);
+        obfConfig.skippedRemoteHarList = panda::guard::JsonUtil::GetArrayStringValue(&configObj,
+                                                                                     SKIPPED_REMOTE_HAR_LIST);
         obfConfig.useNormalizedOHMUrl = panda::guard::JsonUtil::GetBoolValue(&configObj, USE_NORMALIZED_OHM_URL);
 
         auto rulesObj = panda::guard::JsonUtil::GetJsonObject(&configObj, OBFUSCATION_RULES);
@@ -386,13 +387,15 @@ const std::string &panda::guard::GuardOptions::GetSourceName(const std::string &
     return item->second;
 }
 
-bool panda::guard::GuardOptions::IsSkippedRemoteHar(const std::string &pkgName) const {
+bool panda::guard::GuardOptions::IsSkippedRemoteHar(const std::string &pkgName) const
+{
     return std::any_of(obfConfig_.skippedRemoteHarList.begin(), obfConfig_.skippedRemoteHarList.end(),
                        [&](const std::string &remoteHar) {
                            return StringUtil::IsSuffixMatched(remoteHar, pkgName);
                        });
 }
 
-bool panda::guard::GuardOptions::UseNormalizedOhmUrl() const {
+bool panda::guard::GuardOptions::UseNormalizedOhmUrl() const
+{
     return obfConfig_.useNormalizedOHMUrl;
 }

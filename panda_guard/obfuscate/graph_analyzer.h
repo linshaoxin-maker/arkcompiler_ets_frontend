@@ -38,9 +38,11 @@ namespace panda::guard {
          * Get Related instruction of DefineMethod
          * @param inIns in put ins: definemethod
          * @param defineIns ins info of define method
+         * @param nameIns ins info of name define
          */
         static void HandleDefineMethod(const InstructionInfo &inIns,
-                                       InstructionInfo &defineIns);
+                                       InstructionInfo &defineIns,
+                                       InstructionInfo &nameIns);
     };
 }
 

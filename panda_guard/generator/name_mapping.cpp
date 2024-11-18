@@ -140,7 +140,7 @@ void panda::guard::NameMapping::AddNameMapping(const std::string &name)
 
 void panda::guard::NameMapping::AddNameMapping(const std::set<std::string> &nameList)
 {
-    for (const auto &name : nameList) {
+    for (const auto &name: nameList) {
         AddNameMapping(name);
     }
 }
@@ -156,7 +156,7 @@ void panda::guard::NameMapping::AddFileNameMapping(const std::string &name)
 
 void panda::guard::NameMapping::AddFileNameMapping(const std::set<std::string> &nameList)
 {
-    for (const auto &name : nameList) {
+    for (const auto &name: nameList) {
         AddFileNameMapping(name);
     }
 }

@@ -23,7 +23,7 @@ namespace panda::guard {
     class FilePathItem final : public Entity, public IExtractNames {
     public:
         FilePathItem(Program *program, std::string literalArrayIdx)
-                : Entity(program), refFilePath_(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), refFilePath_(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -43,7 +43,7 @@ namespace panda::guard {
     class RegularImportItem final : public Entity, public IExtractNames {
     public:
         RegularImportItem(Program *program, std::string literalArrayIdx)
-                : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -74,7 +74,7 @@ namespace panda::guard {
     class NameSpaceImportItem final : public Entity, public IExtractNames {
     public:
         NameSpaceImportItem(Program *program, std::string literalArrayIdx)
-                : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -100,7 +100,7 @@ namespace panda::guard {
     class LocalExportItem final : public Entity, public IExtractNames {
     public:
         LocalExportItem(Program *program, std::string literalArrayIdx)
-                : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -129,7 +129,7 @@ namespace panda::guard {
     class IndirectExportItem final : public Entity, public IExtractNames {
     public:
         IndirectExportItem(Program *program, std::string literalArrayIdx)
-                : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
+            : Entity(program), literalArrayIdx_(std::move(literalArrayIdx))
         {
         }
 
@@ -160,7 +160,7 @@ namespace panda::guard {
     class ModuleRecord final : public Entity, public IExtractNames {
     public:
         ModuleRecord(Program *program, std::string name)
-                : Entity(program), name_(std::move(name))
+            : Entity(program), name_(std::move(name))
         {
         }
 

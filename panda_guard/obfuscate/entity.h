@@ -136,6 +136,16 @@ namespace panda::guard {
          */
         virtual void WriteNameCache(const std::string &filePath);
 
+        /**
+         * origin name of Entity
+         */
+        virtual std::string GetName() const;
+
+        /**
+         * obf name of Entity
+         */
+        virtual std::string GetObfName() const;
+
     protected:
         /**
          * Build Entity

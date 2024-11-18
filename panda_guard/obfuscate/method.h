@@ -55,18 +55,31 @@ namespace panda::guard {
          */
         void SetContentNeedUpdate(bool toUpdate);
 
+        std::string GetName() const override;
+
+        std::string GetObfName() const override;
+
+        void Build() override;
+
     protected:
+        void Update() override;
+
         void WriteFileCache(const std::string &filePath) override;
 
         void WritePropertyCache() override;
 
-    private:
-        void InitNameCacheScope() override;
+        bool IsNameObfuscated() const override;
 
+    private:
         void RefreshNeedUpdate() override;
+
+        void UpdateNameDefine();
 
     public:
         std::string className_;
+        std::string nameDefine_;
+        std::string obfNameDefine_;
+        InstructionInfo nameInfo_{};
     };
 
     class PropertyMethod final : public Function {

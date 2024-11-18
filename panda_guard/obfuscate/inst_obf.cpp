@@ -27,20 +27,13 @@ namespace {
         inst.UpdateInsName(false);
     };
 
-    constexpr auto PROCESSOR_STSUPERBYNAME = [](InstructionInfo &inst) {
-        if (!GuardContext::GetInstance()->GetGuardOptions()->EnableProperty()) {
-            return;
-        }
-        inst.UpdateInsName();
-    };
-
     constexpr auto PROCESSOR_DEFAULT_LDA_STR = [](InstructionInfo &inst) {
         InstructionInfo outInfo;
         GraphAnalyzer::GetLdaStr(inst, outInfo);
         if (!outInfo.IsValid()) {
             return;
         }
-        outInfo.UpdateInsName();
+        outInfo.UpdateInsName(false);
     };
 
     constexpr auto PROCESSOR_FILE_PATH_LDA_STR = [](InstructionInfo &inst) {
@@ -52,31 +45,14 @@ namespace {
         outInfo.UpdateInsFileName();
     };
 
-    constexpr auto PROCESSOR_STSUPERBYVALUE = [](InstructionInfo &inst) {
-        if (!GuardContext::GetInstance()->GetGuardOptions()->EnableProperty()) {
-            return;
-        }
-        InstructionInfo outInfo;
-        GraphAnalyzer::GetLdaStr(inst, outInfo);
-        if (!outInfo.IsValid()) {
-            return;
-        }
-        outInfo.UpdateInsName();
-    };
-
     const ProcessorMap INST_PROCESSOR_MAP = {
-            {panda::pandasm::Opcode::LDOBJBYNAME,                   PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::THROW_UNDEFINEDIFHOLEWITHNAME, PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::LDSUPERBYNAME,                 PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::STSUPERBYNAME,                 PROCESSOR_STSUPERBYNAME},
-            {panda::pandasm::Opcode::LDOBJBYVALUE,                  PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,     PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::ISIN,                          PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::LDSUPERBYVALUE,                PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::STSUPERBYVALUE,                PROCESSOR_STSUPERBYVALUE},
-            {panda::pandasm::Opcode::STOWNBYNAME,                   PROCESSOR_DEFAULT},
-            {panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,       PROCESSOR_DEFAULT_LDA_STR},
-            {panda::pandasm::Opcode::DYNAMICIMPORT,                 PROCESSOR_FILE_PATH_LDA_STR}
+        {panda::pandasm::Opcode::LDOBJBYNAME,                   PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::THROW_UNDEFINEDIFHOLEWITHNAME, PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::LDSUPERBYNAME,                 PROCESSOR_DEFAULT},
+        {panda::pandasm::Opcode::LDOBJBYVALUE,                  PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::ISIN,                          PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::LDSUPERBYVALUE,                PROCESSOR_DEFAULT_LDA_STR},
+        {panda::pandasm::Opcode::DYNAMICIMPORT,                 PROCESSOR_FILE_PATH_LDA_STR},
     };
 }
 

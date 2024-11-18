@@ -41,7 +41,7 @@ namespace {
     constexpr std::string_view INSTANCE_INITIALIZER_TAG = ">#instance_initializer";
     constexpr std::string_view CONSOLE_INS_VAR = "console";
     constexpr std::string_view ANONYMOUS_FUNCTION_NAME = "^0"; // first anonymous function name
-    constexpr size_t STOBJBYVALUE_ACC_INDEX_2 = 2;
+    constexpr size_t STOBJBYVALUE_ACC_INDEX = 2;
 
     const std::map<char, panda::guard::FunctionType> FUNCTION_TYPE_MAP = {
         {'>', panda::guard::FunctionType::INSTANCE_FUNCTION},
@@ -53,8 +53,10 @@ namespace {
     };
     const OpcodeList PROPERTY_TYPE_LIST_NORMAL = {
         panda::pandasm::Opcode::STOBJBYNAME,
+        panda::pandasm::Opcode::STSUPERBYNAME,
         panda::pandasm::Opcode::DEFINEPROPERTYBYNAME,
         panda::pandasm::Opcode::STOBJBYVALUE,
+        panda::pandasm::Opcode::STSUPERBYVALUE,
     };
 
     /**
@@ -440,7 +442,8 @@ bool panda::guard::Function::IsPropertyIns(const InstructionInfo &info)
 
 void panda::guard::Function::GetPropertyNameInfo(const InstructionInfo &info, InstructionInfo &nameInfo) const
 {
-    if (info.ins_->opcode != pandasm::Opcode::STOBJBYVALUE) {
+    if (info.ins_->opcode != pandasm::Opcode::STOBJBYVALUE &&
+        info.ins_->opcode != pandasm::Opcode::STSUPERBYVALUE) {
         nameInfo = info;
         return;
     }
@@ -453,7 +456,7 @@ void panda::guard::Function::GetPropertyNameInfo(const InstructionInfo &info, In
 
     // e.g. this[0] = 'property'
     LOG(INFO, PANDAGUARD) << TAG << "try to find property in acc";
-    GraphAnalyzer::GetLdaStr(info, nameInfo, STOBJBYVALUE_ACC_INDEX_2);
+    GraphAnalyzer::GetLdaStr(info, nameInfo, STOBJBYVALUE_ACC_INDEX);
 }
 
 void panda::guard::Function::UpdateName(const Node &node)
@@ -580,7 +583,7 @@ void panda::guard::Function::Update()
 
 void panda::guard::Function::WriteNameCache(const std::string &filePath)
 {
-    if (!IsWhiteListOrAnonymousFunction(this->idx_)) {
+    if (IsNameObfuscated()) {
         this->WriteFileCache(filePath);
         this->WritePropertyCache();
     }
@@ -611,4 +614,9 @@ void panda::guard::Function::WriteFileCache(const std::string &filePath)
 void panda::guard::Function::WritePropertyCache()
 {
     TopLevelOptionEntity::WritePropertyCache(*this);
+}
+
+bool panda::guard::Function::IsNameObfuscated() const
+{
+    return !IsWhiteListOrAnonymousFunction(this->idx_);
 }

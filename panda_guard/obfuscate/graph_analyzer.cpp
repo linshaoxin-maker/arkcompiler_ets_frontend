@@ -60,6 +60,18 @@ namespace {
         IntrinsicId::STSUPERBYVALUE_IMM16_V8_V8,
         IntrinsicId::STSUPERBYVALUE_IMM8_V8_V8,
     };
+    const InstIdFilterList INST_ID_LIST_STOWNBYNAME = {
+        IntrinsicId::STOWNBYNAME_IMM16_ID16_V8,
+        IntrinsicId::STOWNBYNAME_IMM8_ID16_V8,
+    };
+    const InstIdFilterList INST_ID_LIST_STOWNBYNAMEWITHNAMESET = {
+        IntrinsicId::STOWNBYNAMEWITHNAMESET_IMM16_ID16_V8,
+        IntrinsicId::STOWNBYNAMEWITHNAMESET_IMM8_ID16_V8,
+    };
+    const InstIdFilterList INST_ID_LIST_STOWNBYVALUE = {
+        IntrinsicId::STOWNBYVALUE_IMM16_V8_V8,
+        IntrinsicId::STOWNBYVALUE_IMM8_V8_V8,
+    };
     const InstIdFilterList INST_ID_LIST_STOWNBYVALUEWITHNAMESET = {
         IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM16_V8_V8,
         IntrinsicId::STOWNBYVALUEWITHNAMESET_IMM8_V8_V8,
@@ -118,6 +130,10 @@ namespace {
             {1, INST_ID_LIST_STSUPERBYVALUE}
         },
         {
+            panda::pandasm::Opcode::STOWNBYVALUE,
+            {1, INST_ID_LIST_STOWNBYVALUE}
+        },
+        {
             panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,
             {1, INST_ID_LIST_STOWNBYVALUEWITHNAMESET}
         }
@@ -131,6 +147,13 @@ namespace {
         INST_ID_LIST_DEFINECLASSWITHBUFFER,
         INST_ID_LIST_CREATEOBJECTWITHBUFFER,
         INST_ID_LIST_LDOBJBYNAME,
+    };
+    const std::vector<InstIdFilterList> METHOD_NAME_INST_ID_LIST = {
+        INST_ID_LIST_DEFINEGETTERSETTERBYVALUE,
+        INST_ID_LIST_STOWNBYNAME,
+        INST_ID_LIST_STOWNBYNAMEWITHNAMESET,
+        INST_ID_LIST_STOWNBYVALUE,
+        INST_ID_LIST_STOWNBYVALUEWITHNAMESET,
     };
 
     /**
@@ -304,10 +327,18 @@ void GraphAnalyzer::GetLdaStr(const InstructionInfo &inIns, InstructionInfo &out
     FillInstInfo(inIns, targetInst, outIns);
 }
 
-void GraphAnalyzer::HandleDefineMethod(const InstructionInfo &inIns, InstructionInfo &defineIns)
+void GraphAnalyzer::HandleDefineMethod(const InstructionInfo &inIns,
+                                       InstructionInfo &defineIns, InstructionInfo &nameIns)
 {
     const panda::compiler::Inst *inst;
     VisitGraph(inIns, INST_ID_LIST_DEFINEMETHOD, inst);
+
+    for (const auto &userIns: inst->GetUsers()) {
+        if (IsInstIdMatched(userIns.GetInst(), METHOD_NAME_INST_ID_LIST)) {
+            FillInstInfo(inIns, userIns.GetInst(), nameIns);
+            break;
+        }
+    }
 
     do {
         inst = inst->GetInput(0).GetInst();

@@ -70,8 +70,6 @@ namespace panda::guard {
 
         void CreateOuterMethod(const InstructionInfo &info);
 
-        void CreateOuterMethodWithIns(const InstructionInfo &methodInsInfo, const InstructionInfo &defineInsInfo);
-
         void CreateObject(const InstructionInfo &info, Scope scope);
 
         void CreateObjectOuterProperty(const InstructionInfo &info);
@@ -91,6 +89,8 @@ namespace panda::guard {
         void UpdateRecordTable();
 
         void UpdateFileNameDefine();
+
+        static void GetMethodNameInfo(const InstructionInfo &info, InstructionInfo &nameInfo);
 
     public:
         ModuleRecord moduleRecord_;

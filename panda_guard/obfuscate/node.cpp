@@ -23,12 +23,34 @@
 #include "graph_analyzer.h"
 
 namespace {
+    using OpcodeList = std::vector<panda::pandasm::Opcode>;
+
     constexpr std::string_view TAG = "[Node]";
     constexpr std::string_view ENTRY_FUNC_NAME = ".func_main_0";
     constexpr std::string_view NORMALIZED_OHM_DELIMITER = "&";
     constexpr std::string_view PATH_DELIMITER = "/";
     constexpr std::string_view PACKAGE_MODULES_PREFIX = "pkg_modules";
     constexpr std::string_view PKG_NAME_PREFIX = "pkgName@";
+
+    const OpcodeList METHOD_NAME_DIRECT_LIST = {
+        panda::pandasm::Opcode::STOWNBYNAME,
+        panda::pandasm::Opcode::STOWNBYNAMEWITHNAMESET,
+    };
+
+    const OpcodeList METHOD_NAME_INDIRECT_LIST = {
+        panda::pandasm::Opcode::DEFINEGETTERSETTERBYVALUE,
+        panda::pandasm::Opcode::STOWNBYVALUE,
+        panda::pandasm::Opcode::STOWNBYVALUEWITHNAMESET,
+    };
+
+    bool InOpcodeList(const panda::guard::InstructionInfo &info, const OpcodeList &list)
+    {
+        return std::any_of(
+            list.begin(), list.end(),
+            [&](const auto &elem) {
+                return elem == info.ins_->opcode;
+            });
+    }
 }
 
 void panda::guard::Node::Build()
@@ -124,18 +146,10 @@ void panda::guard::Node::CreateOuterMethod(const InstructionInfo &info)
     }
 
     InstructionInfo defineInsInfo;
-    GraphAnalyzer::HandleDefineMethod(info, defineInsInfo);
-    this->CreateOuterMethodWithIns(info, defineInsInfo);
-}
+    InstructionInfo nameInsInfo;
+    GraphAnalyzer::HandleDefineMethod(info, defineInsInfo, nameInsInfo);
 
-void panda::guard::Node::CreateOuterMethodWithIns(const panda::guard::InstructionInfo &methodInsInfo,
-                                                  const panda::guard::InstructionInfo &defineInsInfo)
-{
-    if (!methodInsInfo.IsValid()) {
-        return;
-    }
-
-    const std::string methodIdx = methodInsInfo.ins_->ids[0];
+    const std::string methodIdx = info.ins_->ids[0];
     std::string literalArrayIdx;
     if (defineInsInfo.ins_->opcode == pandasm::Opcode::DEFINECLASSWITHBUFFER) {
         literalArrayIdx = defineInsInfo.ins_->ids[1];
@@ -144,7 +158,8 @@ void panda::guard::Node::CreateOuterMethodWithIns(const panda::guard::Instructio
     }
 
     OuterMethod outerMethod(this->program_, methodIdx);
-    outerMethod.insInfo_ = methodInsInfo;
+    outerMethod.insInfo_ = info;
+    GetMethodNameInfo(nameInsInfo, outerMethod.nameInfo_);
     outerMethod.Init();
 
     if (this->classTable_.find(literalArrayIdx) != this->classTable_.end()) {
@@ -447,13 +462,27 @@ void panda::guard::Node::UpdateSourceFile(const std::string &file)
 bool panda::guard::Node::FindPkgName(const panda::pandasm::Record &record, std::string &pkgName)
 {
     return std::any_of(
-            record.field_list.begin(), record.field_list.end(),
-            [&](const panda::pandasm::Field &field) -> bool {
-                bool found = field.name.rfind(PKG_NAME_PREFIX, 0) == 0;
-                if (found) {
-                    pkgName = field.name.substr(PKG_NAME_PREFIX.size(),
-                                                field.name.size() - PKG_NAME_PREFIX.size());
-                }
-                return found;
-            });
+        record.field_list.begin(), record.field_list.end(),
+        [&](const panda::pandasm::Field &field) -> bool {
+            bool found = field.name.rfind(PKG_NAME_PREFIX, 0) == 0;
+            if (found) {
+                pkgName = field.name.substr(PKG_NAME_PREFIX.size(),
+                                            field.name.size() - PKG_NAME_PREFIX.size());
+            }
+            return found;
+        });
+}
+
+void panda::guard::Node::GetMethodNameInfo(const panda::guard::InstructionInfo &info,
+                                           panda::guard::InstructionInfo &nameInfo)
+{
+    if (!info.IsValid()) {
+        return;
+    }
+
+    if (InOpcodeList(info, METHOD_NAME_DIRECT_LIST)) {
+        nameInfo = info;
+    } else if (InOpcodeList(info, METHOD_NAME_INDIRECT_LIST)) {
+        GraphAnalyzer::GetLdaStr(info, nameInfo);
+    }
 }

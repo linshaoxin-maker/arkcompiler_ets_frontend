@@ -106,6 +106,8 @@ namespace panda::guard {
 
         virtual bool IsWhiteListOrAnonymousFunction(const std::string &functionIdx) const;
 
+        virtual bool IsNameObfuscated() const;
+
     private:
         pandasm::Function &GetOriginFunction();
 

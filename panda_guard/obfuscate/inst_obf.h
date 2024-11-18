@@ -22,6 +22,7 @@ namespace panda::guard {
     class InstObf {
     public:
         InstObf() = delete;
+
         ~InstObf() = delete;
         NO_COPY_SEMANTIC(InstObf);
 

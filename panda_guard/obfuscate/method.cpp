@@ -61,11 +61,6 @@ void panda::guard::Method::WritePropertyCache()
     PropertyOptionEntity::WritePropertyCache(*this);
 }
 
-void panda::guard::OuterMethod::InitNameCacheScope()
-{
-    this->nameCacheScope_ = this->name_;
-}
-
 void panda::guard::OuterMethod::RefreshNeedUpdate()
 {
     this->contentNeedUpdate_ = PropertyOptionEntity::NeedUpdate(*this);
@@ -80,7 +75,7 @@ void panda::guard::OuterMethod::RefreshNeedUpdate()
 void panda::guard::OuterMethod::WriteFileCache(const std::string &filePath)
 {
     GuardContext::GetInstance()->GetNameCache()->AddObfMemberMethodName(
-        filePath, this->nameCacheScope_ + this->GetLines(), this->obfName_);
+        filePath, this->nameDefine_ + this->GetLines(), this->obfNameDefine_);
 }
 
 void panda::guard::OuterMethod::WritePropertyCache()
@@ -97,6 +92,48 @@ void panda::guard::OuterMethod::SetContentNeedUpdate(bool toUpdate)
                           << (this->contentNeedUpdate_ ? "true" : "false");
     LOG(INFO, PANDAGUARD) << TAG << "Set outerMethod nameNeedUpdate: "
                           << (this->nameNeedUpdate_ ? "true" : "false");
+}
+
+std::string panda::guard::OuterMethod::GetName() const
+{
+    return this->nameDefine_;
+}
+
+std::string panda::guard::OuterMethod::GetObfName() const
+{
+    return this->obfNameDefine_;
+}
+
+void panda::guard::OuterMethod::Build() {
+    Function::Build();
+    if (this->nameInfo_.IsValid()) {
+        this->nameDefine_ = this->nameInfo_.ins_->ids[0];
+    } else {
+        this->nameDefine_ = this->name_;
+    }
+}
+
+void panda::guard::OuterMethod::Update()
+{
+    Function::Update();
+    if (this->contentNeedUpdate_) {
+        this->UpdateNameDefine();
+    }
+}
+
+void panda::guard::OuterMethod::UpdateNameDefine()
+{
+    if (this->nameInfo_.IsValid()) {
+        this->obfNameDefine_ = GuardContext::GetInstance()->GetNameMapping()->GetName(this->nameDefine_);
+        this->nameInfo_.ins_->ids[0] = this->obfNameDefine_;
+        this->program_->prog_->strings.emplace(this->obfNameDefine_);
+    } else {
+        this->obfNameDefine_ = this->obfName_;
+    }
+}
+
+bool panda::guard::OuterMethod::IsNameObfuscated() const {
+    return Function::IsNameObfuscated() || this->nameInfo_.IsValid();
 }
 
 void panda::guard::PropertyMethod::RefreshNeedUpdate()
