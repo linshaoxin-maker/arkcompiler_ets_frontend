@@ -139,7 +139,7 @@ export class MergedConfig {
   excludeUniversalPaths: RegExp[] = []; // Support excluded paths contain wildcards.
   excludePathSet: Set<string> = new Set();
 
-  mergeWhileList(other: MergedConfig): void {
+  mergeKeepOptions(other: MergedConfig): void {
     this.reservedPropertyNames.push(...other.reservedPropertyNames);
     this.reservedGlobalNames.push(...other.reservedGlobalNames);
     this.reservedFileNames.push(...other.reservedFileNames);
@@ -152,8 +152,9 @@ export class MergedConfig {
     });
   }
 
-  mergeObfuscationRules(other: MergedConfig): void {
+  mergeAllRules(other: MergedConfig): void {
     this.options.merge(other.options);
+    this.mergeKeepOptions(other);
   }
 
   sortAndDeduplicate(): void {
@@ -659,7 +660,9 @@ export class ObConfigResolver {
     for (const lib of sourceObConfig.dependencies.libraries || []) {
       if (lib.consumerRules && lib.consumerRules.length > 0) {
         for (const path of lib.consumerRules) {
-          this.getConfigByPath(path, dependencyConfigs);
+          const thisLibConfigs = new MergedConfig();
+          this.getConfigByPath(path, thisLibConfigs);
+          dependencyConfigs.mergeAllRules(thisLibConfigs);
         }
       }
     }
@@ -670,7 +673,9 @@ export class ObConfigResolver {
       sourceObConfig.dependencies.hars.length > 0
     ) {
       for (const path of sourceObConfig.dependencies.hars) {
-        this.getConfigByPath(path, dependencyConfigs);
+        const thisHarConfigs = new MergedConfig();
+        this.getConfigByPath(path, thisHarConfigs);
+        dependencyConfigs.mergeAllRules(thisHarConfigs);
       }
     }
   }
@@ -712,9 +717,10 @@ export class ObConfigResolver {
 
   private getMergedConfigs(selfConfigs: MergedConfig, dependencyConfigs: MergedConfig): MergedConfig {
     if (dependencyConfigs) {
-      selfConfigs.mergeWhileList(dependencyConfigs);
       if (selfConfigs.options.enableLibObfuscationOptions) {
-        selfConfigs.mergeObfuscationRules(dependencyConfigs);
+        selfConfigs.mergeAllRules(dependencyConfigs);
+      } else {
+        selfConfigs.mergeKeepOptions(dependencyConfigs);
       }
     }
     selfConfigs.sortAndDeduplicate();
@@ -730,10 +736,7 @@ export class ObConfigResolver {
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
-    selfConsumerConfig.mergeWhileList(dependencyConfigs);
-    if (selfConsumerConfig.options.enableLibObfuscationOptions) {
-      selfConsumerConfig.mergeObfuscationRules(dependencyConfigs);
-    }
+    selfConsumerConfig.mergeAllRules(dependencyConfigs);
     selfConsumerConfig.sortAndDeduplicate();
     this.writeConsumerConfigFile(selfConsumerConfig, sourceObConfig.exportRulePath);
   }
