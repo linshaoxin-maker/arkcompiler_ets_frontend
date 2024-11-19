@@ -32,7 +32,6 @@ import type {
  */
 export function getSourceMapGenerator(sourceFile: string): SourceMapGenerator {
   if (!sourceFile) {
-    //return undefined;
     return null;
   }
 
