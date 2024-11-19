@@ -939,7 +939,7 @@ describe('test for ConfigResolve', function() {
     });
 
     describe('genConsumerConfigFilesForTest', function (){
-      it('should merge all configs', () => {
+      it('should merge all configs: enableLibObfuscationOptions is true', () => {
         const config1 = new MergedConfig();
         config1.options.enableLibObfuscationOptions = true;
     
@@ -980,7 +980,7 @@ describe('test for ConfigResolve', function() {
         fs.unlinkSync(sourceObConfig.exportRulePath);
       });
   
-      it('should merge all configs', () => {
+      it('should merge all configs: enableLibObfuscationOptions is false', () => {
         const config1 = new MergedConfig();
         config1.options.enableLibObfuscationOptions = false;
     
