@@ -50,7 +50,8 @@ namespace secharmony {
   const createShorthandPropertyTransformerFactory = function (option: IOptions): TransformerFactory<Node> {
     let profile: INameObfuscationOption = option.mNameObfuscation;
     if (!profile || !profile.mEnable) {
-      return null;
+      //return null;
+      return context => node => node;
     }
 
     return shorthandPropertyTransformFactory;
