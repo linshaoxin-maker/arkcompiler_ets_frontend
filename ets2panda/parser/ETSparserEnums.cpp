@@ -210,6 +210,26 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
     return enumDeclaration;
 }
 
+ir::Expression *ETSParser::ParseNumberEnumExpression()
+{
+    std::function<void(ir::AstNode *)> validateIntLiteral = [this, &validateIntLiteral](ir::AstNode *node) {
+        if (node->IsIdentifier()) {
+            LogSyntaxError(INVALID_ENUM_TYPE, node->Start());
+        }
+        if (node->IsExpression() && node->AsExpression()->IsLiteral() &&
+            (!node->IsNumberLiteral() ||
+             !node->AsNumberLiteral()->Number().CanGetValue<checker::ETSIntEnumType::ValueType>())) {
+            LogSyntaxError(INVALID_ENUM_VALUE, node->Start());
+        }
+        node->Iterate(validateIntLiteral);
+    };
+
+    ir::Expression *intExpression {};
+    intExpression = ParseExpression();
+    validateIntLiteral(intExpression);
+    return intExpression;
+}
+
 bool ETSParser::ParseNumberEnumEnd()
 {
     bool isBreak = false;
@@ -240,60 +260,30 @@ bool ETSParser::ParseNumberEnumEnd()
     return isBreak;
 }
 
-bool ETSParser::ParseNumberEnumHelper()
-{
-    bool minusSign = false;
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PLUS) {
-        Lexer()->NextToken();
-    } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MINUS) {
-        minusSign = true;
-        Lexer()->NextToken();
-    }
-
-    if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_NUMBER) {
-        // enum15.sts; will be zero by default
-        LogSyntaxError(INVALID_ENUM_TYPE);
-        Lexer()->GetToken().SetTokenType(lexer::TokenType::LITERAL_NUMBER);
-        Lexer()->GetToken().SetTokenStr(ERROR_LITERAL);
-    }
-    return minusSign;
-}
-
 void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 {
-    checker::ETSIntEnumType::ValueType currentValue {};
+    // Default enum number value
+    ir::Expression *currentNumberExpr = AllocNode<ir::NumberLiteral>(lexer::Number(0));
 
     // Lambda to parse enum member (maybe with initializer)
-    auto const parseMember = [this, &members, &currentValue]() {
+    auto const parseMember = [this, &members, &currentNumberExpr]() {
         auto *const ident = ExpectIdentifier(false, true);
 
-        ir::NumberLiteral *ordinal;
+        ir::Expression *ordinal;
         lexer::SourcePosition endLoc;
 
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
             // Case when user explicitly set the value for enumeration constant
-
-            bool minusSign = false;
-
             Lexer()->NextToken();
-            minusSign = ParseNumberEnumHelper();
 
-            ordinal = ParseNumberLiteral()->AsNumberLiteral();
-            if (minusSign) {
-                ordinal->Number().Negate();
-            }
-            if (!ordinal->Number().CanGetValue<checker::ETSIntEnumType::ValueType>()) {
-                ThrowSyntaxError(INVALID_ENUM_VALUE);
-            }
-
-            currentValue = ordinal->Number().GetValue<checker::ETSIntEnumType::ValueType>();
+            ordinal = ParseNumberEnumExpression();
+            currentNumberExpr = ordinal->Clone(Allocator(), nullptr)->AsExpression();
 
             endLoc = ordinal->End();
         } else {
             // Default enumeration constant value. Equal to 0 for the first item and = previous_value + 1 for all
             // the others.
-
-            ordinal = AllocNode<ir::NumberLiteral>(lexer::Number(currentValue));
+            ordinal = currentNumberExpr;
 
             endLoc = ident->End();
         }
@@ -302,7 +292,11 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
         member->SetRange({ident->Start(), endLoc});
         members.emplace_back(member);
 
-        ++currentValue;
+        // Increment the value by one
+        auto incrementNode = AllocNode<ir::NumberLiteral>(lexer::Number(1));
+        ir::Expression *dummyNode = currentNumberExpr->Clone(Allocator(), nullptr)->AsExpression();
+        currentNumberExpr =
+            AllocNode<ir::BinaryExpression>(dummyNode, incrementNode, lexer::TokenType::PUNCTUATOR_PLUS);
     };
 
     parseMember();

@@ -423,8 +423,8 @@ private:
     bool IsStringEnum();
     ir::TSEnumDeclaration *ParseEnumMembers(ir::Identifier *key, const lexer::SourcePosition &enumStart, bool isConst,
                                             bool isStatic) override;
+    ir::Expression *ParseNumberEnumExpression();
     bool ParseNumberEnumEnd();
-    bool ParseNumberEnumHelper();
     void ParseNumberEnum(ArenaVector<ir::AstNode *> &members);
     void ParseStringEnum(ArenaVector<ir::AstNode *> &members);
 
