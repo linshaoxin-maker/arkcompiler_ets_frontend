@@ -54,11 +54,6 @@
 namespace ark::es2panda::util {
 // Helpers
 
-bool Helpers::IsGlobalIdentifier(const util::StringView &str)
-{
-    return (str.Is("NaN") || str.Is("undefined") || str.Is("Infinity"));
-}
-
 bool Helpers::ContainSpreadElement(const ArenaVector<ir::Expression *> &args)
 {
     return std::any_of(args.begin(), args.end(), [](const auto *it) { return it->IsSpreadElement(); });
@@ -407,10 +402,7 @@ static void CollectBindingName(ir::AstNode *node, std::vector<ir::Identifier *> 
 {
     switch (node->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
-            if (!Helpers::IsGlobalIdentifier(node->AsIdentifier()->Name())) {
-                bindings->push_back(node->AsIdentifier());
-            }
-
+            bindings->push_back(node->AsIdentifier());
             break;
         }
         case ir::AstNodeType::OBJECT_PATTERN: {
