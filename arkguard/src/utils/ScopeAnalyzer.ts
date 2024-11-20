@@ -350,7 +350,7 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
-      current.addDefinition(defSymbols);
+      current.addDefinition(defSymbols, true);
     }
 
     /**
