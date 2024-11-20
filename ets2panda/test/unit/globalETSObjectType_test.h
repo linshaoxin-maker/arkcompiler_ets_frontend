@@ -16,19 +16,14 @@
 #ifndef PANDA_GLOBAL_ETSOBJECTTYPE_TEST_H
 #define PANDA_GLOBAL_ETSOBJECTTYPE_TEST_H
 
+#include "test/utils/common.h"
+
 namespace ark::es2panda::gtests {
 
-class GlobalETSObjectTypeTest : public testing::Test {
+class GlobalETSObjectTypeTest : public test::utils::CheckerInitTest {
 public:
-    GlobalETSObjectTypeTest()
-        : allocator_(std::make_unique<ArenaAllocator>(SpaceType::SPACE_TYPE_COMPILER)),
-          publicContext_ {std::make_unique<public_lib::Context>()},
-          program_ {parser::Program::NewProgram<varbinder::ETSBinder>(allocator_.get())},
-          es2pandaPath_ {test::utils::PandaExecutablePathGetter {}.Get()}
-    {
-    }
-
     ~GlobalETSObjectTypeTest() override = default;
+    GlobalETSObjectTypeTest() = default;
 
     static void SetUpTestCase()
     {
@@ -37,83 +32,8 @@ public:
         PoolManager::Initialize();
     }
 
-    checker::ETSChecker *Checker()
-    {
-        return &checker_;
-    }
-
-    void InitializeChecker(std::string_view fileName, std::string_view src)
-    {
-        auto es2pandaPathPtr = es2pandaPath_.c_str();
-        ASSERT(es2pandaPathPtr);
-
-        InitializeChecker<parser::ETSParser, varbinder::ETSBinder, checker::ETSChecker, checker::ETSAnalyzer,
-                          compiler::ETSCompiler, compiler::ETSGen, compiler::StaticRegSpiller,
-                          compiler::ETSFunctionEmitter, compiler::ETSEmitter>(&es2pandaPathPtr, fileName, src,
-                                                                              &checker_, &program_);
-    }
-
-    template <typename Parser, typename VarBinder, typename Checker, typename Analyzer, typename AstCompiler,
-              typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter>
-    void InitializeChecker(const char **argv, std::string_view fileName, std::string_view src,
-                           checker::ETSChecker *checker, parser::Program *program)
-    {
-        auto options = std::make_unique<ark::es2panda::util::Options>();
-        if (!options->Parse(1, argv)) {
-            std::cerr << options->ErrorMsg() << std::endl;
-            return;
-        }
-
-        ark::Logger::ComponentMask mask {};
-        mask.set(ark::Logger::Component::ES2PANDA);
-        ark::Logger::InitializeStdLogging(ark::Logger::LevelFromString(options->LogLevel()), mask);
-
-        Compiler compiler(options->Extension(), options->ThreadCount());
-        SourceFile input(fileName, src, options->ParseModule());
-        compiler::CompilationUnit unit {input, *options, 0, options->Extension()};
-        auto getPhases = compiler::GetPhaseList(ScriptExtension::ETS);
-
-        program->MarkEntry();
-        auto parser =
-            Parser(program, unit.options.CompilerOptions(), static_cast<parser::ParserStatus>(unit.rawParserStatus));
-        auto analyzer = Analyzer(checker);
-        checker->SetAnalyzer(&analyzer);
-
-        auto *varbinder = program->VarBinder();
-        varbinder->SetProgram(program);
-
-        varbinder->SetContext(publicContext_.get());
-
-        auto emitter = Emitter(publicContext_.get());
-
-        auto config = public_lib::ConfigImpl {};
-        publicContext_->config = &config;
-        publicContext_->config->options = &unit.options;
-        publicContext_->sourceFile = &unit.input;
-        publicContext_->allocator = allocator_.get();
-        publicContext_->parser = &parser;
-        publicContext_->checker = checker;
-        publicContext_->analyzer = publicContext_->checker->GetAnalyzer();
-        publicContext_->emitter = &emitter;
-        publicContext_->parserProgram = program;
-
-        parser.ParseScript(unit.input, unit.options.CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB);
-        for (auto *phase : getPhases) {
-            if (!phase->Apply(publicContext_.get(), program)) {
-                return;
-            }
-        }
-    }
-
     NO_COPY_SEMANTIC(GlobalETSObjectTypeTest);
     NO_MOVE_SEMANTIC(GlobalETSObjectTypeTest);
-
-private:
-    std::unique_ptr<ArenaAllocator> allocator_;
-    std::unique_ptr<public_lib::Context> publicContext_;
-    parser::Program program_;
-    std::string es2pandaPath_;
-    checker::ETSChecker checker_;
 };
 
 }  // namespace ark::es2panda::gtests

@@ -17,13 +17,14 @@
 #define ES2PANDA_TEST_LOWERINGS_LOWERING_TEST_H
 
 #include <gtest/gtest.h>
-#include "test/unit/node_creator.h"
+#include "test/utils/node_creator.h"
 #include "test/utils/panda_executable_path_getter.h"
 #include "parser/program/program.h"
+#include "test/utils/common.h"
 
 namespace ark::es2panda {
 
-class LoweringTest : public testing::Test {
+class LoweringTest : public test::utils::CheckerTest {
 public:
     LoweringTest()
     {
@@ -51,8 +52,7 @@ public:
     parser::Program *SetupContext(const char *text, es2panda_ContextState state)
     {
         ASSERT(ctx_ == nullptr);
-        ctx_ = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-        impl_->ProceedToState(ctx_, state);
+        ctx_ = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", state);
         ASSERT(impl_->ContextState(ctx_) == state);
 
         return reinterpret_cast<parser::Program *>(impl_->ContextProgram(ctx_));

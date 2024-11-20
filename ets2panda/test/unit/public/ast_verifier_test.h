@@ -18,10 +18,11 @@
 
 #include "ast_verifier/ASTVerifier.h"
 #include "test/utils/panda_executable_path_getter.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
-class ASTVerifierTest : public testing::Test {
+class ASTVerifierTest : public test::utils::CheckerTest {
 public:
     ASTVerifierTest()
     {

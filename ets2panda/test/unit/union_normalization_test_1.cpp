@@ -34,6 +34,7 @@
 #include "test/utils/panda_executable_path_getter.h"
 #include "checker/types/globalTypesHolder.h"
 #include "test/unit/union_normalisation_test.h"
+#include "test/utils/common.h"
 
 using ark::es2panda::gtests::UnionNormalizationTest;
 

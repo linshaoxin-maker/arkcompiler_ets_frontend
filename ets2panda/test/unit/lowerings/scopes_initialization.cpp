@@ -17,14 +17,15 @@
 #include <algorithm>
 #include "macros.h"
 
-#include "test/unit/node_creator.h"
+#include "test/utils/node_creator.h"
+#include "test/utils/common.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "varbinder/tsBinding.h"
 #include "varbinder/ETSBinder.h"
 
 namespace ark::es2panda {
 
-class ScopesInitPhaseTest : public testing::Test {
+class ScopesInitPhaseTest : public test::utils::ScopeInitTest {
 public:
     ~ScopesInitPhaseTest() override = default;
 
@@ -48,22 +49,6 @@ public:
     gtests::NodeGenerator &NodeGen()
     {
         return nodeGen_;
-    }
-
-    /*
-     * Shortcut to convert single elemnt block expression body to it's name
-     * Example: { let x; } => x
-     */
-    static ir::Identifier *BodyToFirstName(ir::Statement *body)
-    {
-        return body->AsBlockStatement()
-            ->Statements()
-            .front()
-            ->AsVariableDeclaration()
-            ->Declarators()
-            .front()
-            ->Id()
-            ->AsIdentifier();
     }
 
     NO_COPY_SEMANTIC(ScopesInitPhaseTest);
