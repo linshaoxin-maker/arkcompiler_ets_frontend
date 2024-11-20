@@ -69,7 +69,7 @@ export enum OhmUrlStatus {
 }
 
 export interface IPrinterOption {
-  
+
   //Print obfuscation time&memory usage of all files and obfuscation processes
   readonly mFilesPrinter?: boolean;
 
@@ -95,4 +95,8 @@ export interface IKeepSourcePathsAndDependency {
 export interface IUnobfuscationOption {
   mPrintKeptNames: boolean;
   mPrintPath: string;
+}
+
+export interface IOptimizeSystemWhitelist {
+  mStripLanguageDefault: boolean;
 }

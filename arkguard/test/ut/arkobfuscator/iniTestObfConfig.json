@@ -9,7 +9,7 @@
         "mEnable": true,
         "mNameGeneratorType": 1,
         "mDictionaryList": [],
-        "mRenameProperties": false,
+        "mRenameProperties": true,
         "mReservedProperties": ["prop?", "function*", "*pro?", "prop"],
         "mKeepStringProperty": false,
         "mTopLevel": true,
