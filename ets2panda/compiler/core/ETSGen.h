@@ -687,6 +687,9 @@ private:
     void CheckedReferenceNarrowingObject(const ir::AstNode *node, const checker::Type *target);
 
     void HandleLooseNullishEquality(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse, Label *ifTrue);
+    bool RefEqualityLooseDefinitelyNullish(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse);
+    bool RefEqualityLoosePossiblyNullish(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse);
+    bool RefEqualityLooseObjCompare(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse);
 
     void EmitIsUndefined([[maybe_unused]] const ir::AstNode *node)
     {
@@ -697,11 +700,34 @@ private:
 #endif  // PANDA_WITH_ETS
     }
 
+    bool IsStrictEquals(const ir::AstNode *node)
+    {
+        if (node->IsBinaryExpression()) {
+            return ((node->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_STRICT_EQUAL) ||
+                    (node->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL));
+        }
+        return false;
+    }
+
     void EmitEtsEquals([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const VReg lhs,
                        [[maybe_unused]] const VReg rhs)
     {
 #ifdef PANDA_WITH_ETS
+        if (IsStrictEquals(node)) {
+            Ra().Emit<EtsStrictequals>(node, lhs, rhs);
+            return;
+        }
         Ra().Emit<EtsEquals>(node, lhs, rhs);
+#else
+        UNREACHABLE();
+#endif  // PANDA_WITH_ETS
+    }
+
+    void EmitEtsStrictEquals([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const VReg lhs,
+                             [[maybe_unused]] const VReg rhs)
+    {
+#ifdef PANDA_WITH_ETS
+        Ra().Emit<EtsStrictequals>(node, lhs, rhs);
 #else
         UNREACHABLE();
 #endif  // PANDA_WITH_ETS
@@ -853,6 +879,10 @@ private:
     template <typename ObjCompare, typename DynCompare>
     void RefEqualityStrict(const ir::AstNode *node, VReg lhs, Label *ifFalse)
     {
+        // NOTE(vlomovts): as per issue: IAL7WP
+        // put mark for later reference, it seems that we might no need this method anymore.
+        ASSERT(false);
+
         if (GetAccumulatorType()->IsETSDynamicType() || GetVRegType(lhs)->IsETSDynamicType()) {
             RefEqualityStrictDynamic<DynCompare>(node, lhs, ifFalse);
         } else {

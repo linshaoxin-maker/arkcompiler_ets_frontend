@@ -2013,20 +2013,14 @@ void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 {
     Label *ifFalse = AllocLabel();
     switch (op) {
+        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EQUAL: {
             BinaryEquality<JneObj, Jne, Jnez, Jeqz>(node, lhs, ifFalse);
             break;
         }
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
             BinaryEquality<JeqObj, Jeq, Jeqz, Jnez>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL: {
-            RefEqualityStrict<JneObj, Jeqz>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
-            RefEqualityStrict<JeqObj, Jnez>(node, lhs, ifFalse);
             break;
         }
         case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
@@ -2058,10 +2052,12 @@ void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 void ETSGen::Condition(const ir::AstNode *node, lexer::TokenType op, VReg lhs, Label *ifFalse)
 {
     switch (op) {
+        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EQUAL: {
             BinaryEqualityCondition<JneObj, Jne, Jnez>(node, lhs, ifFalse);
             break;
         }
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
             BinaryEqualityCondition<JeqObj, Jeq, Jeqz>(node, lhs, ifFalse);
             break;
@@ -2151,7 +2147,11 @@ void ETSGen::EmitNullishException(const ir::AstNode *node)
 void ETSGen::RefEqualityLooseDynamic(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse)
 {
     // NOTE(vpukhov): implement
-    EmitEtsEquals(node, lhs, rhs);
+    if (IsStrictEquals(node)) {
+        EmitEtsStrictEquals(node, lhs, rhs);
+    } else {
+        EmitEtsEquals(node, lhs, rhs);
+    }
     BranchIfFalse(node, ifFalse);
 }
 
@@ -2199,6 +2199,89 @@ static std::optional<std::pair<checker::Type const *, util::StringView>> SelectL
     return std::make_pair(checker->GetNonConstantType(obj), methodSig);
 }
 
+bool ETSGen::RefEqualityLooseDefinitelyNullish(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse)
+{
+    auto *checker = const_cast<checker::ETSChecker *>(Checker());
+    auto ltype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(lhs)));
+    auto rtype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(rhs)));
+    if (!ltype->DefinitelyETSNullish() && !rtype->DefinitelyETSNullish()) {
+        return false;
+    }
+
+    LoadAccumulator(node, ltype->DefinitelyETSNullish() ? rhs : lhs);
+    if (!IsStrictEquals(node)) {
+        BranchIfNotNullish(node, ifFalse);
+        return true;
+    }
+
+    if (ltype == rtype) {
+        BranchIfNotNullish(node, ifFalse);
+    } else if (((ltype->DefinitelyETSNullish() != rtype->DefinitelyETSNullish())) &&
+               !(ltype->IsETSUnionType() || rtype->IsETSUnionType())) {
+        // NOTE: if only one of operands definetely nullish just branch out of, no need to generate
+        // more code, optimizer will clean this out later.
+        BranchIfNotNullish(node, ifFalse);
+    } else if ((ltype->IsETSNullType() && rtype->IsETSUndefinedType()) ||
+               (rtype->IsETSNullType() && ltype->IsETSUndefinedType())) {
+        BranchIfNullish(node, ifFalse);
+    } else {
+        // NOTE: for some scenarios, when we have one of the operands potentially
+        // nullish, but not definitely (e.g. we have argument of type <Some class>|null|undefined)
+        // we can't guess/predict what would be it evaluated to.
+        EmitEtsStrictEquals(node, lhs, rhs);
+        BranchIfFalse(node, ifFalse);
+    }
+
+    return true;
+}
+
+bool ETSGen::RefEqualityLoosePossiblyNullish(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse)
+{
+    auto *checker = const_cast<checker::ETSChecker *>(Checker());
+    auto ltype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(lhs)));
+    auto rtype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(rhs)));
+    if (ltype->PossiblyETSValueTypedExceptNullish() && rtype->PossiblyETSValueTypedExceptNullish()) {
+        return false;
+    }
+    auto ifTrue = AllocLabel();
+    if (!IsStrictEquals(node) && ((ltype->PossiblyETSUndefined() && rtype->PossiblyETSNull()) ||
+                                  (rtype->PossiblyETSUndefined() && ltype->PossiblyETSNull()))) {
+        HandleLooseNullishEquality(node, lhs, rhs, ifFalse, ifTrue);
+    }
+    LoadAccumulator(node, lhs);
+    Ra().Emit<JneObj>(node, rhs, ifFalse);
+    SetLabel(node, ifTrue);
+    return true;
+}
+
+bool ETSGen::RefEqualityLooseObjCompare(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse)
+{
+    auto *checker = const_cast<checker::ETSChecker *>(Checker());
+    auto ltype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(lhs)));
+    auto rtype = checker->GetNonConstantType(const_cast<checker::Type *>(GetVRegType(rhs)));
+    auto spec = SelectLooseObjComparator(  // try to select specific type
+                                           // CC-OFFNXT(G.FMT.06-CPP) project code style
+        const_cast<checker::ETSChecker *>(Checker()), const_cast<checker::Type *>(ltype),
+        const_cast<checker::Type *>(rtype));  // CC-OFF(G.FMT.02) project code style
+    if (!spec.has_value()) {
+        return false;
+    }
+
+    auto ifTrue = AllocLabel();
+    if (ltype->PossiblyETSNullish() || rtype->PossiblyETSNullish()) {
+        HandleLooseNullishEquality(node, lhs, rhs, ifFalse, ifTrue);
+    }
+    LoadAccumulator(node, rhs);
+    AssumeNonNullish(node, spec->first);
+    StoreAccumulator(node, rhs);
+    LoadAccumulator(node, lhs);
+    AssumeNonNullish(node, spec->first);
+    CallExact(node, spec->second, lhs, rhs);
+    BranchIfFalse(node, ifFalse);
+    SetLabel(node, ifTrue);
+    return true;
+}
+
 void ETSGen::RefEqualityLoose(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse)
 {
     auto *checker = const_cast<checker::ETSChecker *>(Checker());
@@ -2209,37 +2292,17 @@ void ETSGen::RefEqualityLoose(const ir::AstNode *node, VReg lhs, VReg rhs, Label
         return;
     }
 
-    if (ltype->DefinitelyETSNullish() || rtype->DefinitelyETSNullish()) {
-        LoadAccumulator(node, ltype->DefinitelyETSNullish() ? rhs : lhs);
-        BranchIfNotNullish(node, ifFalse);
-    } else if (!ltype->PossiblyETSValueTypedExceptNullish() || !rtype->PossiblyETSValueTypedExceptNullish()) {
-        auto ifTrue = AllocLabel();
-        if ((ltype->PossiblyETSUndefined() && rtype->PossiblyETSNull()) ||
-            (rtype->PossiblyETSUndefined() && ltype->PossiblyETSNull())) {
-            HandleLooseNullishEquality(node, lhs, rhs, ifFalse, ifTrue);
+    // NOTE: test sequence is mandatory! first we check definitely nullish,
+    // then possibly nullish, then try to select object comparator
+    // and only after that generate ets.equals opcode.
+    if (!RefEqualityLooseDefinitelyNullish(node, lhs, rhs, ifFalse) &&
+        !RefEqualityLoosePossiblyNullish(node, lhs, rhs, ifFalse) &&
+        !RefEqualityLooseObjCompare(node, lhs, rhs, ifFalse)) {
+        if (IsStrictEquals(node)) {
+            EmitEtsStrictEquals(node, lhs, rhs);
+        } else {
+            EmitEtsEquals(node, lhs, rhs);
         }
-        LoadAccumulator(node, lhs);
-        Ra().Emit<JneObj>(node, rhs, ifFalse);
-        SetLabel(node, ifTrue);
-    } else if (auto spec = SelectLooseObjComparator(  // try to select specific type
-                                                      // CC-OFFNXT(G.FMT.06-CPP) project code style
-                   const_cast<checker::ETSChecker *>(Checker()), const_cast<checker::Type *>(ltype),
-                   const_cast<checker::Type *>(rtype));  // CC-OFF(G.FMT.02) project code style
-               spec.has_value()) {                       // CC-OFF(G.FMT.02-CPP) project code style
-        auto ifTrue = AllocLabel();
-        if (ltype->PossiblyETSNullish() || rtype->PossiblyETSNullish()) {
-            HandleLooseNullishEquality(node, lhs, rhs, ifFalse, ifTrue);
-        }
-        LoadAccumulator(node, rhs);
-        AssumeNonNullish(node, spec->first);
-        StoreAccumulator(node, rhs);
-        LoadAccumulator(node, lhs);
-        AssumeNonNullish(node, spec->first);
-        CallExact(node, spec->second, lhs, rhs);
-        BranchIfFalse(node, ifFalse);
-        SetLabel(node, ifTrue);
-    } else {
-        EmitEtsEquals(node, lhs, rhs);
         BranchIfFalse(node, ifFalse);
     }
     SetAccumulatorType(nullptr);

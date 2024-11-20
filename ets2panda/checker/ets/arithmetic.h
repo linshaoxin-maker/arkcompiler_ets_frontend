@@ -80,10 +80,12 @@ Type *ETSChecker::PerformRelationOperationOnTypes(Type *left, Type *right, lexer
             result = leftValue >= rightValue;
             break;
         }
+        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EQUAL: {
             result = leftValue == rightValue;
             break;
         }
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
             result = leftValue != rightValue;
             break;
