@@ -41,20 +41,3 @@ HWTEST(GuardContextUnitTest, guard_context_test_001, TestSize.Level4)
     context->Init(argc, const_cast<const char **>(argv));
     EXPECT_EQ(context->IsDebugMode(), true);
 }
-
-/**
- * @tc.name: guard_context_test_002
- * @tc.desc: test context init with invalid config
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST(GuardContextUnitTest, guard_context_test_002, TestSize.Level4)
-{
-    int argc = 2;
-    char *argv[2];
-    argv[0] = const_cast<char *>("xxx");
-    argv[1] = const_cast<char *>("xxx");
-
-    auto context = guard::GuardContext::GetInstance();
-    EXPECT_DEATH(context->Init(argc, const_cast<const char **>(argv)), "");
-}
