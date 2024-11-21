@@ -955,7 +955,7 @@ Variable *ClassScope::AddBinding(ArenaAllocator *allocator, [[maybe_unused]] Var
 
     const auto *foundVar = FindLocal(newDecl->Name(), options);
     if (foundVar != nullptr) {
-        if (!newDecl->IsLetOrConstDecl()) {
+        if (!newDecl->IsLetOrConstDecl() && !newDecl->IsReadonlyDecl()) {
             return nullptr;
         }
 
