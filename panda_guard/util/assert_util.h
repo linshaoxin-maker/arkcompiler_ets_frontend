@@ -16,13 +16,11 @@
 #ifndef PANDA_GUARD_UTIL_ASSERT_UTIL_H
 #define PANDA_GUARD_UTIL_ASSERT_UTIL_H
 
-#include "utils/logger.h"
 #include "macros.h"
 
 #define PANDA_GUARD_ASSERT_PRINT(cond, message)     \
     do {                                            \
         if (UNLIKELY((cond))) {                     \
-            LOG(ERROR, PANDAGUARD) << message;      \
             std::cerr << message <<std::endl;       \
             std::abort();                           \
         }                                           \
@@ -30,7 +28,6 @@
 
 #define PANDA_GUARD_ABORT_PRINT(message)        \
     do {                                        \
-        LOG(ERROR, PANDAGUARD) << message;      \
         std::cerr << message <<std::endl;       \
         std::abort();                           \
     } while (0)

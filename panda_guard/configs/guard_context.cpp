@@ -15,16 +15,8 @@
 
 #include "guard_context.h"
 
-#include "utils/logger.h"
 #include "guard_args_parser.h"
-#include "generator/order_name_generator.h"
 #include "util/assert_util.h"
-
-namespace {
-    const std::string TAG = "[Guard_Context]";
-    const std::set<std::string> RESERVED_NAMES = {"prototype", "default", "*default*"};
-    const std::set<std::string> RESERVED_FILE_NAMES = {".", ".."};
-}
 
 std::shared_ptr<panda::guard::GuardContext> panda::guard::GuardContext::GetInstance()
 {
@@ -38,55 +30,6 @@ void panda::guard::GuardContext::Init(int argc, const char **argv)
     PANDA_GUARD_ASSERT_PRINT(!parser.Parse(argc, argv), TAG << "input param parse failed");
 
     debugMode_ = parser.IsDebugMode();
-    LOG(INFO, PANDAGUARD) << TAG << "[param parse success, config file:]" << parser.GetConfigFilePath();
-
-    options_ = std::make_shared<GuardOptions>();
-    options_->Load(parser.GetConfigFilePath());
-
-    LOG(INFO, PANDAGUARD) << TAG << "[load config file success]";
-
-    nameCache_ = std::make_shared<NameCache>(options_);
-    std::string applyNameCachePath = options_->GetApplyNameCache().empty() ? options_->GetDefaultNameCachePath()
-                                                                           : options_->GetApplyNameCache();
-    nameCache_->Load(applyNameCachePath);
-
-    nameMapping_ = std::make_shared<NameMapping>(nameCache_, options_);
-    nameMapping_->AddNameMapping(RESERVED_NAMES);
-    nameMapping_->AddFileNameMapping(RESERVED_FILE_NAMES);
-    LOG(INFO, PANDAGUARD) << TAG << "[name mapping init success]";
-
-    LOG(INFO, PANDAGUARD) << TAG << "[guard context init success]";
-}
-
-void panda::guard::GuardContext::Finalize()
-{
-    graph_context_->Finalize();
-}
-
-const std::shared_ptr<panda::guard::GuardOptions> &panda::guard::GuardContext::GetGuardOptions() const
-{
-    return options_;
-}
-
-const std::shared_ptr<panda::guard::NameCache> &panda::guard::GuardContext::GetNameCache() const
-{
-    return nameCache_;
-}
-
-const std::shared_ptr<panda::guard::NameMapping> &panda::guard::GuardContext::GetNameMapping() const
-{
-    return nameMapping_;
-}
-
-void panda::guard::GuardContext::CreateGraphContext(const panda_file::File &file)
-{
-    graph_context_ = std::make_shared<GraphContext>(file);
-    graph_context_->Init();
-}
-
-const std::shared_ptr<panda::guard::GraphContext> &panda::guard::GuardContext::GetGraphContext() const
-{
-    return graph_context_;
 }
 
 bool panda::guard::GuardContext::IsDebugMode() const

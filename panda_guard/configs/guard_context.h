@@ -18,11 +18,6 @@
 
 #include <memory>
 
-#include "guard_options.h"
-#include "guard_name_cache.h"
-#include "generator/name_mapping.h"
-#include "guard_graph_context.h"
-
 namespace panda::guard {
     class GuardContext {
     public:
@@ -30,29 +25,9 @@ namespace panda::guard {
 
         void Init(int argc, const char **argv);
 
-        void Finalize();
-
-        [[nodiscard]] const std::shared_ptr<GuardOptions> &GetGuardOptions() const;
-
-        [[nodiscard]] const std::shared_ptr<NameCache> &GetNameCache() const;
-
-        [[nodiscard]] const std::shared_ptr<NameMapping> &GetNameMapping() const;
-
-        void CreateGraphContext(const panda_file::File &file);
-
-        [[nodiscard]] const std::shared_ptr<GraphContext> &GetGraphContext() const;
-
         [[nodiscard]] bool IsDebugMode() const;
 
     private:
-        std::shared_ptr<GuardOptions> options_;
-
-        std::shared_ptr<NameCache> nameCache_;
-
-        std::shared_ptr<NameMapping> nameMapping_;
-
-        std::shared_ptr<GraphContext> graph_context_;
-
         bool debugMode_ = false;
     };
 }
