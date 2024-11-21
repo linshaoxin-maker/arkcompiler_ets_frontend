@@ -12,17 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export class TestClass1 {
+    prop1: number;
+    constructor (public param1: number, param2: number) {
+        this.param1 = param1;
+        this.prop1 = param2;
+    }
+    foo1(param5: number) {}
+}
 
-export declare class TestClass1 {
-  prop1: TestClass2;
-  foo1(param1: AbstractClass): void;
+class TestClass2 {
+    prop2: number;
+    constructor (public param3: number, param4: number) {
+        this.param3 = param3;
+        this.prop2 = param4;
+    }
+    foo2(param6: number) {}
 }
-declare abstract class AbstractClass {
-  abstract abstractProp: TestClass2;
-}
-
-declare class TestClass2 {
-  prop2: string;
-  foo2(param2: string): void;
-}
-export {};

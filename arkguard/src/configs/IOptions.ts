@@ -19,7 +19,8 @@ import type {
   INameObfuscationOption,
   IKeepSourcePathsAndDependency,
   IDeclarationCommentOption,
-  IUnobfuscationOption
+  IUnobfuscationOption,
+  IOptimizeSystemWhitelist
 } from './INameObfuscationOption';
 
 export interface IOptions {
@@ -66,4 +67,7 @@ export interface IOptions {
 
   // Whether to print unobfuscation names and the print path.
   readonly mUnobfuscationOption?: IUnobfuscationOption;
+
+  // use optimized system whitelist
+  readonly mOptimizeSystemWhitelist?: IOptimizeSystemWhitelist;
 }

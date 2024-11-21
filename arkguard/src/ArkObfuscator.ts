@@ -59,6 +59,7 @@ import { needReadApiInfo, readProjectPropertiesByCollectedPaths } from './common
 import type { ReseverdSetForArkguard } from './common/ApiReader';
 import { ApiExtractor } from './common/ApiExtractor';
 import esInfo from './configs/preset/es_reserved_properties.json';
+import optimizeEsInfo from './configs/preset/es_reserved_properties_optimized.json'
 import { EventList, TimeSumPrinter, TimeTracker } from './utils/PrinterUtils';
 import { Extension, type ProjectInfo, type FilePathObj } from './common/type';
 export { FileUtils } from './utils/FileUtils';
@@ -254,8 +255,9 @@ export class ArkObfuscator {
     if (needReadApiInfo(this.mCustomProfiles)) {
       // if -enable-property-obfuscation or -enable-export-obfuscation, collect language reserved keywords.
       let languageSet: Set<string> = new Set();
-      for (const key of Object.keys(esInfo)) {
-        const valueArray = esInfo[key];
+      let presetLanguageWhitelist = this.mCustomProfiles.mOptimizeSystemWhitelist?.mStripLanguageDefault ? optimizeEsInfo : esInfo;
+      for (const key of Object.keys(presetLanguageWhitelist)) {
+        const valueArray = presetLanguageWhitelist[key];
         valueArray.forEach((element: string) => {
           languageSet.add(element);
         });
