@@ -18,6 +18,10 @@
 #include "guard_args_parser.h"
 #include "util/assert_util.h"
 
+namespace {
+    const std::string TAG = "[Guard_Context]";
+}
+
 std::shared_ptr<panda::guard::GuardContext> panda::guard::GuardContext::GetInstance()
 {
     static auto instance = std::make_shared<GuardContext>();
