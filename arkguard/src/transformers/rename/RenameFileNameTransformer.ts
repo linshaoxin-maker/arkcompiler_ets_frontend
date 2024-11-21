@@ -127,6 +127,7 @@ namespace secharmony {
           globalFileNameMangledTable = new Map<string, string>();
         }
 
+        ArkObfuscator.recordStage('RenameFileNameTransformer(renameFileNameTransformer: Filename obfuscation)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.FILENAME_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = updateNodeInfo(node);
         if (!isInOhModules(projectInfo, orignalFilePathForSearching) && isSourceFile(ret)) {
@@ -136,6 +137,7 @@ namespace secharmony {
         }
         let parentNodes = setParentRecursive(ret, true);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.FILENAME_OBFUSCATION, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('RenameFileNameTransformer(renameFileNameTransformer: Filename obfuscation)');
         return parentNodes;
       }
 

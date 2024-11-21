@@ -48,7 +48,7 @@ import type {IOptions} from '../../configs/IOptions';
 import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import { NodeUtils } from '../../utils/NodeUtils';
-import { performancePrinter } from '../../ArkObfuscator';
+import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 
 namespace secharmony {
@@ -73,10 +73,12 @@ namespace secharmony {
           return node;
         }
 
+        ArkObfuscator.recordStage('DisableConsoleTransformer(disableConsoleFactory: Remove console)');
         performancePrinter?.singleFilePrinter?.startEvent(EventList.REMOVE_CONSOLE, performancePrinter.timeSumPrinter);
         let resultAst: Node = visitAst(node);
         let parentNodes = setParentRecursive(resultAst, true);
         performancePrinter?.singleFilePrinter?.endEvent(EventList.REMOVE_CONSOLE, performancePrinter.timeSumPrinter);
+        ArkObfuscator.stopRecordStage('DisableConsoleTransformer(disableConsoleFactory: Remove console)');
         return parentNodes;
       }
 

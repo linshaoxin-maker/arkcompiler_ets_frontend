@@ -30,6 +30,7 @@ import {
   renameFileNameModule,
   separateUniversalReservedItem,
   wildcardTransformer,
+  ArkObfuscator,
 } from '../ArkObfuscator';
 
 import { isDebug, isFileExist, sortAndDeduplicateStringArr, mergeSet, convertSetToArray } from './utils';
@@ -241,9 +242,11 @@ export class ObConfigResolver {
       if (isFileExist(systemApiCachePath)) {
         this.getSystemApiConfigsByCache(systemApiCachePath);
       } else {
+        ArkObfuscator.recordStage('ConfigResolver(resolveObfuscationConfigs: Scan system api)');
         performancePrinter?.iniPrinter?.startEvent('  Scan system api');
         this.getSystemApiCache(mergedConfigs, systemApiCachePath);
         performancePrinter?.iniPrinter?.endEvent('  Scan system api');
+        ArkObfuscator.stopRecordStage('ConfigResolver(resolveObfuscationConfigs: Scan system api)');
       }
     }
 
