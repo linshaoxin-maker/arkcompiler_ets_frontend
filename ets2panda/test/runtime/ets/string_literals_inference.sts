@@ -46,6 +46,26 @@ class A {
     p: "aa"|"bb" = "bb"
 }
 
+function wrap1<T>(p: T): T {
+    return p
+}
+
+function wrap11<T>(p: T) {
+    return p
+}
+
+function wrap2<T>(p: T): A|T {
+    return p
+}
+
+function wrap3<T, U>(p: T, q: U, c: boolean): T|U {
+    return c ? p : q
+}
+
+function wrap33<T, U>(p: T, q: U, c: boolean) {
+    return c ? p : q
+}
+
 function test_inference_from_return() {
     let arr = new Array<"default"|"invisible"|number>(3);
     arr[0] = "default"
@@ -54,6 +74,33 @@ function test_inference_from_return() {
     let s = getColor(arr, 0)   // s is of type string|number
     assert s == "default"
     s = "dd"
+
+    let x1 = wrap1("first")  // x1 is of type string
+    assert x1 == "first"
+    x1 = "second"
+
+    let x11 = wrap11("first")  // x11 is of type string
+    assert x11 == "first"
+    x11 = "second"
+
+    let x2 = wrap2("first")  // x2 is of type A|string
+    assert x2 == "first"
+    x2 = new A
+    x2 = "second"
+
+    let x3 = wrap3("first", "second", false)  // x3 is of type string
+    assert x3 == "second"
+    x3 = "abc"
+
+    let x4 = wrap3("first", new A, true)  // x4 is of type string|A
+    assert x4 == "first"
+    x4 = "second"
+    x4 = new A
+
+    let x33 = wrap33("first", new A, true)  // x33 is of type string|A
+    assert x33 == "first"
+    x33 = "second"
+    x33 = new A
 }
 
 function test_inference_from_conditional(cond: boolean) {

@@ -174,10 +174,7 @@ public:
         return HasTypeFlag(TypeFlag::CONDITION_EXPRESSION_TYPE);
     }
 
-    bool IsConstantType() const
-    {
-        return HasTypeFlag(checker::TypeFlag::CONSTANT);
-    }
+    bool IsConstantType() const;
 
     TypeFlag TypeFlags() const
     {

@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+class A{}
+
+function wrap1<T>(p: T): T {
+    return p
+}
+
+function wrap2<T>(p: T): A|T {
+    return p
+}
+
+function wrap3<T, U>(p: T, q: U, c: boolean): T|U {
+    return c ? p : q
+}
+
+function f(p: string) {
+    return p
+}
+
+function f1(p: "first") {
+    return p
+}
+
+function f2(p: "second") {
+    return p
+}
+
+function f3(p: "first"|"second") {
+    return p
+}
+
+function f4(p: A|"first") {
+    return p
+}
+
+function main() {
+    f1(wrap1("first"))  // OK: return type is string literal type "first"
+    f2(wrap1("first"))  // CTE: return type is string literal type "first"
+
+    let x1 = wrap1<"first">("first")  // x1 is of type string, smart type is "first"
+    f1(x1) // OK
+    f2(x1) // CTE
+    x1 = "second"  // OK
+
+    let x2 = wrap2<"first">("first")  // x2 is of type A|string, smart type is also A|string
+    f4(x2)  // CTE
+    x2 = new A  // OK
+    x2 = "second"  // OK
+
+    f3(wrap3("first", "second", false))  // return type is "first"|"second"
+    let x3 = wrap3<"first", "second">("first", "second", false)  // smart type of x3 is "first"|"second"
+    f(x3)  // OK
+    f3(x3)  // OK
+    f2(x3)  // CTE
+    x3 = "first"  // OK
+    x3 = "second"  // OK
+    x3 = "third"  // OK
+
+    let x4 = wrap3<"first", A>("first", new A, true)  // smart type of x4 is string|A
+    f4(x4)  // CTE
+    x4 = "first"  // OK
+    x4 = "second"  // OK
+    x4 = new A  // OK
+}
+
+
+/* @@? 52:8 Error TypeError: Type '"first"' is not compatible with type '"second"' at index 1 */
+/* @@? 52:5 Error TypeError: No matching call signature for f2("first") */
+/* @@? 56:8 Error TypeError: Type '"first"' is not compatible with type '"second"' at index 1 */
+/* @@? 56:5 Error TypeError: No matching call signature for f2("first") */
+/* @@? 60:8 Error TypeError: Type 'A|String' is not compatible with type 'A|"first"' at index 1 */
+/* @@? 60:5 Error TypeError: No matching call signature for f4(A|String) */
+/* @@? 68:8 Error TypeError: Type '"first"|"second"' is not compatible with type '"second"' at index 1 */
+/* @@? 68:5 Error TypeError: No matching call signature for f2("first"|"second") */
+/* @@? 74:8 Error TypeError: Type 'String|A' is not compatible with type 'A|"first"' at index 1 */
+/* @@? 74:5 Error TypeError: No matching call signature for f4(String|A) */
