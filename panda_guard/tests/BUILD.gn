@@ -14,18 +14,12 @@
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
 import("//arkcompiler/ets_frontend/panda_guard/panda_guard_config.gni")
 import("//arkcompiler/runtime_core/ark_config.gni")
-import("$ark_root/tests/test_helper.gni")
+import("//arkcompiler/runtime_core/tests/test_helper.gni")
 
 ets_frontend_output_path = "arkcompiler/ets_frontend"
 
 panda_guard_test_configs = [
-  "$ark_root:ark_config",
-  "$ets_frontend_root/panda_guard:panda_guard_public_config",
-  "$ark_root/assembler:arkassembler_public_config",
-  "$ark_root/libpandabase:arkbase_public_config",
-  "$ark_root/libpandafile:arkfile_public_config",
-  "$ark_root/compiler:arkcompiler_public_config",
-  sdk_libc_secshared_config,
+  "$ets_frontend_root/panda_guard:panda_guard_public_config"
 ]
 
 panda_guard_test_deps =
@@ -33,9 +27,7 @@ panda_guard_test_deps =
 
 panda_guard_include_dirs = [
   "$ets_frontend_root/panda_guard",
-  "$ets_frontend_root/panda_guard/tests",
-  "$ark_root/abc2program",
-  "$ark_root/assembler",
+  "$ets_frontend_root/panda_guard/tests"
 ]
 
 ohos_copy("copy_config_files") {
