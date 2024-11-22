@@ -24,9 +24,7 @@ group("panda_guard_packages") {
   deps = [ "./panda_guard:panda_guard_build" ]
 }
 
-if (!ark_standalone_build) {
-  group("panda_guard_host_unittest") {
-    testonly = true
-    deps = [ "./panda_guard/tests:host_unittest" ]
-  }
+group("panda_guard_host_unittest") {
+  testonly = true
+  deps = [ "./panda_guard/tests:host_unittest" ]
 }

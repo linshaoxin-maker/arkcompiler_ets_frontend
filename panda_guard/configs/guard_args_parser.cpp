@@ -23,15 +23,15 @@ bool panda::guard::GuardArgsParser::Parse(int argc, const char **argv)
     PandArg help("help", false, "Print this message and exit");
     PandArg<bool> debug("debug", false,
                         "enable debug messages (will be printed to standard output if no --debug-file was specified)");
-    PandArg<std::string> debug_file("debug-file", "",
-                                    "(--debug-file FILENAME) set debug file name. default is std::cout");
-    PandArg<std::string> config_file_path("config-file-path", "", "configuration file path");
+    PandArg<std::string> debugFile("debug-file", "",
+                                   "(--debug-file FILENAME) set debug file name. default is std::cout");
+    PandArg<std::string> configFilePath("config-file-path", "", "configuration file path");
 
     PandArgParser parser;
     parser.Add(&help);
     parser.Add(&debug);
-    parser.Add(&debug_file);
-    parser.PushBackTail(&config_file_path);
+    parser.Add(&debugFile);
+    parser.PushBackTail(&configFilePath);
     parser.EnableTail();
     if (!parser.Parse(argc, argv)) {
         PrintErrorMsg(parser.GetHelpString());
@@ -45,18 +45,18 @@ bool panda::guard::GuardArgsParser::Parse(int argc, const char **argv)
     component_mask.set(Logger::Component::ASSEMBLER);
     if (debug.GetValue()) {
         debugMode_ = true;
-        if (debug_file.GetValue().empty()) {
+        if (debugFile.GetValue().empty()) {
             Logger::InitializeStdLogging(Logger::Level::DEBUG, component_mask);
         } else {
-            Logger::InitializeFileLogging(debug_file.GetValue(), Logger::Level::DEBUG, component_mask);
+            Logger::InitializeFileLogging(debugFile.GetValue(), Logger::Level::DEBUG, component_mask);
         }
     } else {
         Logger::InitializeStdLogging(Logger::Level::ERROR, component_mask);
     }
 
-    configFilePath_ = config_file_path.GetValue();
+    configFilePath_ = configFilePath.GetValue();
     if (configFilePath_.empty()) {
-        PrintErrorMsg(parser.GetHelpString());
+        PrintErrorMsg("The config-file-path value is empty. Please check if the config-file-path is set correctly");
         parser.DisableTail();
         return false;
     }
