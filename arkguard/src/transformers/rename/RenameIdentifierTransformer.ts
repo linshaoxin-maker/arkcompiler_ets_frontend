@@ -269,7 +269,15 @@ namespace secharmony {
             return;
           }
 
-          if (mangledSymbolNames.has(def)) {
+          // Retrieve the original symbol for the given symbol to ensure we can reuse the mangled name if it already exists.
+          // This ensures that the obfuscated name for the declaration is consistent across different references to the same symbol.
+          // Example: if we have `class A {}`, and then `declare namespace ns { export { A }; }`, we want both `A` references to be obfuscated as the same name.
+          let originalSymbol = TypeUtils.getOriginalSymbol(def, checker);
+
+          // Check if the name of the current symbol matches the name of the original symbol and if it already has an obfuscated name.
+          // If `def` and `originalSymbol` have the same name, we assume they are the same logical entity and return to reuse the obfuscated name.
+          // Example: For `let A = 1; export { A as B };`, `originalSymbol` for `B` will be `A`, but since their names differ, they should not share the same mangled name.
+          if (def.name === originalSymbol.name && mangledSymbolNames.has(originalSymbol)) {
             return;
           }
 
@@ -696,7 +704,19 @@ namespace secharmony {
           (identifierCache as Map<string, string>).delete(originalName);
         }
 
-        let mangledName: string = mangledSymbolNames.get(sym)?.mangledName;
+        let mangledName: string | undefined;
+
+        if (sym) {
+          const originalSym = TypeUtils.getOriginalSymbol(sym, checker);
+          // Only those symbols of declaration nodes have mangledNames in mangledSymbolNames
+          let hasOriginalObfuscatedName: boolean =
+            sym !== originalSym && sym.name === originalSym.name && mangledSymbolNames.has(originalSym);
+          if (hasOriginalObfuscatedName) {
+            mangledName = mangledSymbolNames.get(originalSym)?.mangledName;
+          } else {
+            mangledName = mangledSymbolNames.get(sym)?.mangledName;
+          }
+        }
         if (node?.parent.kind === SyntaxKind.ClassDeclaration) {
           classMangledName.set(node, mangledName);
         }

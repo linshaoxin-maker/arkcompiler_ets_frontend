@@ -18,6 +18,7 @@ import {
   createCompilerHost,
   createProgram,
   createSourceFile,
+  SymbolFlags
 } from 'typescript';
 
 import type {
@@ -26,6 +27,7 @@ import type {
   Program,
   SourceFile,
   TypeChecker,
+  Symbol,
 } from 'typescript';
 import { Extension, PathAndExtension } from '../common/type';
 import { FileUtils } from './FileUtils';
@@ -100,5 +102,12 @@ export class TypeUtils {
     let typeChecker: TypeChecker = program.getTypeChecker();
     endSingleFileEvent(EventList.GET_CHECKER, performancePrinter.timeSumPrinter);
     return typeChecker;
+  }
+
+  public static getOriginalSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
+    if (symbol.getFlags() & SymbolFlags.Alias) {
+      symbol = checker.getAliasedSymbol(symbol);
+    }
+    return symbol;
   }
 }

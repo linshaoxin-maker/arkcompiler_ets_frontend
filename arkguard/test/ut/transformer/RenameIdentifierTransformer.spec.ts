@@ -27,6 +27,7 @@ import {
   UnobfuscationCollections,
   LocalVariableCollections
 } from '../../../src/utils/CommonCollections';
+import { transformerPlugin as propertyPlugin } from '../../../src/transformers/rename/RenamePropertiesTransformer';
 
 describe('Teste Cases for <RenameFileNameTransformer>.', function () {
   describe('Teste Cases for <createRenameIdentifierFactory>.', function () {
@@ -86,6 +87,14 @@ describe('Teste Cases for <RenameFileNameTransformer>.', function () {
         }
       }
     `;
+      const fileContent2 = `
+        type toplevelElement = string;
+        declare namespace ns{
+          export{toplevelElement};
+        }
+        let testVar: ns.toplevelElement = '123';
+        export{};
+      `;
       let transformer: ts.TransformerFactory<ts.Node>;
 
       it('should not transform parameter property when mRenameProperties is false',function () {
@@ -192,6 +201,97 @@ describe('Teste Cases for <RenameFileNameTransformer>.', function () {
         PropCollections.newlyOccupiedMangledProps.clear();
         PropCollections.globalMangledTable.clear();
       })
+
+      it('toplevel element is exported in namespace: enable export obfuscation', function () {
+        let option1: IOptions = {
+          mCompact: false,
+          mRemoveComments: false,
+          mOutputDir: '',
+          mDisableConsole: false,
+          mSimplify: false,
+          mNameObfuscation: {
+            mEnable: true,
+            mNameGeneratorType: 1,
+            mDictionaryList: [],
+            mRenameProperties: false,
+            mKeepStringProperty: false,
+            mTopLevel: false,
+            mReservedProperties: [],
+          },
+          mExportObfuscation: true,
+          mEnableSourceMap: false,
+          mEnableNameCache: false,
+        };
+        transformer = transformerPlugin.createTransformerFactory(option1);
+        const sourceFile: ts.SourceFile = ts.createSourceFile('demo.ts', fileContent2, ts.ScriptTarget.ES2015, true);
+        let transformed = ts.transform(sourceFile, [transformer]);
+        expect((transformed.transformed[0] as ts.SourceFile).text === fileContent2).to.be.true;
+      });
+
+      it('toplevel element is exported in namespace: enable export obfuscation and toplevel obfuscation', function () {
+        let option1: IOptions = {
+          mCompact: false,
+          mRemoveComments: false,
+          mOutputDir: '',
+          mDisableConsole: false,
+          mSimplify: false,
+          mNameObfuscation: {
+            mEnable: true,
+            mNameGeneratorType: 1,
+            mDictionaryList: [],
+            mRenameProperties: false,
+            mKeepStringProperty: false,
+            mTopLevel: true,
+            mReservedProperties: [],
+          },
+          mExportObfuscation: true,
+          mEnableSourceMap: false,
+          mEnableNameCache: false,
+        };
+        transformer = transformerPlugin.createTransformerFactory(option1);
+        const sourceFile: ts.SourceFile = ts.createSourceFile('demo.ts', fileContent2, ts.ScriptTarget.ES2015, true);
+        let transformed = ts.transform(sourceFile, [transformer]);
+        let ast: ts.SourceFile = transformed.transformed[0] as ts.SourceFile;
+
+        const printer = ts.createPrinter();
+        const transformedAst: string = printer.printFile(ast);
+        const expectedResult: string = `type a = string;\ndeclare namespace b {\n    export { a };\n}\nlet c: b.toplevelElement = '123';\nexport {};\n`;
+
+        expect(transformedAst === expectedResult).to.be.true;
+      });
+
+      it('toplevel element is exported in namespace: enable export, toplevel and property obfuscation', function () {
+        let option1: IOptions = {
+          mCompact: false,
+          mRemoveComments: false,
+          mOutputDir: '',
+          mDisableConsole: false,
+          mSimplify: false,
+          mNameObfuscation: {
+            mEnable: true,
+            mNameGeneratorType: 1,
+            mDictionaryList: [],
+            mRenameProperties: true,
+            mKeepStringProperty: false,
+            mTopLevel: true,
+            mReservedProperties: [],
+          },
+          mExportObfuscation: true,
+          mEnableSourceMap: false,
+          mEnableNameCache: false,
+        };
+        transformer = transformerPlugin.createTransformerFactory(option1);
+        let propertyTransformer: ts.TransformerFactory<ts.Node> = propertyPlugin.createTransformerFactory(option1);
+        const sourceFile: ts.SourceFile = ts.createSourceFile('demo.ts', fileContent2, ts.ScriptTarget.ES2015, true);
+        let transformed = ts.transform(sourceFile, [transformer, propertyTransformer]);
+        let ast: ts.SourceFile = transformed.transformed[0] as ts.SourceFile;
+
+        const printer = ts.createPrinter();
+        const transformedAst: string = printer.printFile(ast);
+        const expectedResult: string = `type a = string;\ndeclare namespace b {\n    export { a };\n}\nlet c: b.a = '123';\nexport {};\n`;
+
+        expect(transformedAst === expectedResult).to.be.true;
+      });
     })
   })
 })
