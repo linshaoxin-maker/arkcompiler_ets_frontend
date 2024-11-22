@@ -31,9 +31,10 @@ HWTEST(GuardArgsParserUnitTest, guard_args_parser_test_001, TestSize.Level4)
     testing::internal::CaptureStderr();
 
     GuardArgsParser parser;
-    int argc = 1;
-    char *argv[1];
+    int argc = 2;
+    char *argv[2];
     argv[0] = const_cast<char *>("xxx");
+    argv[1] = const_cast<char *>("--debug=");
     bool ret = parser.Parse(argc, const_cast<const char **>(argv));
     EXPECT_EQ(ret, false);
 
@@ -72,13 +73,6 @@ HWTEST(GuardArgsParserUnitTest, guard_args_parser_test_002, TestSize.Level4)
 
     std::string err = testing::internal::GetCapturedStderr();
     std::string res = panda::helpers::string::Format(
-            "Usage:\n"
-            "panda_guard [options] config-file-path\n"
-            "Supported options:\n"
-            "--debug: enable debug messages (will be printed to standard output if no --debug-file was specified)\n"
-            "--debug-file: (--debug-file FILENAME) set debug file name. default is std::cout\n"
-            "--help: Print this message and exit\n"
-            "Tail arguments:\n"
-            "config-file-path: configuration file path\n\n");
+        "The config-file-path value is empty. Please check if the config-file-path is set correctly.\n");
     EXPECT_EQ(err, res);
 }

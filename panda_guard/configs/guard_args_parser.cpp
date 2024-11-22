@@ -23,9 +23,9 @@ bool panda::guard::GuardArgsParser::Parse(int argc, const char **argv)
     PandArg help("help", false, "Print this message and exit");
     PandArg<bool> debug("debug", false,
                         "enable debug messages (will be printed to standard output if no --debug-file was specified)");
-    PandArg<std::string> debugFile("debug-file", "",
-                                   "(--debug-file FILENAME) set debug file name. default is std::cout");
-    PandArg<std::string> configFilePath("config-file-path", "", "configuration file path");
+    PandArg <std::string> debugFile("debug-file", "",
+                                    "(--debug-file FILENAME) set debug file name. default is std::cout");
+    PandArg <std::string> configFilePath("config-file-path", "", "configuration file path");
 
     PandArgParser parser;
     parser.Add(&help);
@@ -56,7 +56,8 @@ bool panda::guard::GuardArgsParser::Parse(int argc, const char **argv)
 
     configFilePath_ = configFilePath.GetValue();
     if (configFilePath_.empty()) {
-        PrintErrorMsg("The config-file-path value is empty. Please check if the config-file-path is set correctly");
+        std::cerr << "The config-file-path value is empty. Please check if the config-file-path is set correctly."
+                  << std::endl;
         parser.DisableTail();
         return false;
     }
