@@ -175,6 +175,7 @@ public:
     ETSObjectType *CheckThisOrSuperAccess(ir::Expression *node, ETSObjectType *classType, std::string_view msg);
     void CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type);
     ETSTypeParameter *SetUpParameterType(ir::TSTypeParameter *param);
+    void CheckTypeParameterName(ir::TSTypeParameter *param);
     void CheckIfOverrideIsValidInInterface(const ETSObjectType *classType, Signature *sig, ir::ScriptFunction *func);
     void CheckFunctionRedeclarationInInterface(const ETSObjectType *classType,
                                                ArenaVector<Signature *> &similarSignatures, ir::ScriptFunction *func);

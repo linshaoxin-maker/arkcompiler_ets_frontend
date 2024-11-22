@@ -760,6 +760,9 @@ ir::AstNode *TypedParser::ParseTypeParameterDeclarationImpl(TypeAnnotationParsin
 
     while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_GREATER_THAN) {
         auto newOptions = *options | TypeAnnotationParsingOptions::ADD_TYPE_PARAMETER_BINDING;
+
+        CheckIfTypeParameterNameIsReserved();
+
         ir::TSTypeParameter *currentParam = ParseTypeParameter(&newOptions);
 
         if (currentParam == nullptr) {
@@ -789,6 +792,13 @@ ir::AstNode *TypedParser::ParseTypeParameterDeclarationImpl(TypeAnnotationParsin
     }
 
     return AllocNode<ir::TSTypeParameterDeclaration>(std::move(params), requiredParams);
+}
+
+void TypedParser::CheckIfTypeParameterNameIsReserved()
+{
+    if (Lexer()->GetToken().IsReservedTypeName() || Lexer()->GetToken().IsDefinableTypeName()) {
+        LogSyntaxError("Invalid type parameter name");
+    }
 }
 
 ir::TSTypeParameterDeclaration *TypedParser::ParseTypeParameterDeclaration(TypeAnnotationParsingOptions *options)

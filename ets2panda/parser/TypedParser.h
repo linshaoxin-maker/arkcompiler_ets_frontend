@@ -82,7 +82,7 @@ protected:
 
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Statement *ParseModuleDeclaration(StatementParsingFlags flags = StatementParsingFlags::NONE) override;
-    virtual void CheckIfTypeParameterNameIsReserved() {};
+    virtual void CheckIfTypeParameterNameIsReserved();
     virtual ArenaVector<ir::TSInterfaceHeritage *> ParseInterfaceExtendsClause();
     virtual ir::Statement *ParseDeclareAndDecorators(StatementParsingFlags flags);
     virtual void ParseOptionalClassElement(ClassElementDescriptor *desc);

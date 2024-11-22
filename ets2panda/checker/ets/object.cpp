@@ -19,6 +19,7 @@
 #include "checker/types/ets/etsDynamicType.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/etsTupleType.h"
+#include "etsWarningAnalyzer.h"
 #include "ir/astNode.h"
 #include "ir/typeNode.h"
 #include "ir/base/classDefinition.h"
@@ -199,6 +200,7 @@ std::pair<ArenaVector<Type *>, bool> ETSChecker::CreateUnconstrainedTypeParamete
     }
 
     for (auto *const typeParam : typeParams->Params()) {
+        CheckTypeParameterName(typeParam);
         result.emplace_back(SetUpParameterType(typeParam));
     }
 
@@ -298,6 +300,15 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
         traverseReferenced(param->DefaultType());
         // NOTE: #14993 ensure default matches constraint
         paramType->SetDefaultType(MaybeBoxType(param->DefaultType()->GetType(this)));
+    }
+}
+
+void ETSChecker::CheckTypeParameterName(ir::TSTypeParameter *const param)
+{
+    auto wrap = primitiveWrappers_.Wrappers();
+    auto res = wrap.find(param->Name()->Name());
+    if (res != wrap.end()) {
+        LogTypeError("Prohibited to use Builtin type as type parameter.", param->Start());
     }
 }
 
