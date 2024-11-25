@@ -73,7 +73,7 @@ void CompileModuleRecordJob::Run()
     }
 }
 
-bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
+bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer, bool isAbcFile)
 {
     if (options_->requireGlobalOptimization) {
         return false;
@@ -88,17 +88,38 @@ bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
         src_->hash = GetHash32String(reinterpret_cast<const uint8_t *>(bufToHash.c_str()));
 
         ArenaAllocator allocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
-        auto *cacheProgramInfo = proto::ProtobufSnapshotGenerator::GetCacheContext(cacheFileIter->second,
-                                                                                   &allocator);
-
-        if (cacheProgramInfo != nullptr && cacheProgramInfo->hashCode == src_->hash) {
-            std::unique_lock<std::mutex> lock(globalMutex_);
-            auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(cacheProgramInfo->program));
-            progsInfo_.insert({src_->fileName, cache});
-            return true;
+        if (!isAbcFile) {
+            auto *cacheProgramInfo = proto::ProtobufSnapshotGenerator::GetCacheContext(cacheFileIter->second,
+                                                                                       &allocator);
+            if (cacheProgramInfo != nullptr && cacheProgramInfo->hashCode == src_->hash) {
+                std::unique_lock<std::mutex> lock(globalMutex_);
+                auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(cacheProgramInfo->program));
+                progsInfo_.insert({src_->fileName, cache});
+                return true;
+            }
+        } else {
+            auto *cacheAbcProgramsInfo = proto::ProtobufSnapshotGenerator::GetAbcInputCacheContext(
+                cacheFileIter->second, &allocator);
+            if (cacheAbcProgramsInfo != nullptr && cacheAbcProgramsInfo->hashCode == src_->hash) {
+                Compiler::SetExpectedProgsCount(Compiler::GetExpectedProgsCount() +
+                    cacheAbcProgramsInfo->programsCache.size() - 1);
+                InsertAbcCachePrograms(cacheAbcProgramsInfo->programsCache);
+                return true;
+            }
         }
     }
     return false;
+}
+
+void CompileFileJob::InsertAbcCachePrograms(
+    std::map<std::string, panda::es2panda::util::ProgramCache *> &abcProgramsInfo)
+{
+    std::unique_lock<std::mutex> lock(globalMutex_);
+    for (auto pair : abcProgramsInfo) {
+        ASSERT(progsInfo_.find(pair.first) == progsInfo_.end())
+        auto *cache = allocator_->New<util::ProgramCache>(std::move(pair.second->program));
+        progsInfo_.insert({pair.first, cache});
+    }
 }
 
 void CompileFileJob::Run()
@@ -106,13 +127,13 @@ void CompileFileJob::Run()
     std::stringstream ss;
     std::string buffer;
     panda::Timer::timerStart(panda::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
-    if (!src_->fileName.empty() && src_->isSourceMode) {
+    if (!src_->fileName.empty()) {
         if (!util::Helpers::ReadFileToBuffer(src_->fileName, ss)) {
             return;
         }
         buffer = ss.str();
         src_->source = buffer;
-        if (RetrieveProgramFromCacheFiles(buffer)) {
+        if (RetrieveProgramFromCacheFiles(buffer, !src_->isSourceMode)) {
             panda::Timer::timerEnd(panda::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
             return;
         }
@@ -138,9 +159,7 @@ void CompileFileJob::CompileProgram()
         panda::Timer::timerEnd(panda::EVENT_COMPILE_ABC_FILE, src_->fileName);
     } else {
         // If input is an abc file, in merge-abc mode, compile each class parallelly.
-        panda::Timer::timerStart(panda::EVENT_COMPILE_ABC_FILE, src_->fileName);
-        compiler.CompileAbcFileInParallel(src_, *options_, progsInfo_, allocator_);
-        panda::Timer::timerEnd(panda::EVENT_COMPILE_ABC_FILE, src_->fileName);
+        CompileAbcFileJobInParallel(compiler);
         return;
     }
 
@@ -149,6 +168,28 @@ void CompileFileJob::CompileProgram()
     }
 
     OptimizeAndCacheProgram(prog);
+}
+
+void CompileFileJob::CompileAbcFileJobInParallel(es2panda::Compiler &compiler)
+{
+    std::map<std::string, panda::es2panda::util::ProgramCache *> abcProgramsInfo {};
+    panda::Timer::timerStart(panda::EVENT_COMPILE_ABC_FILE, src_->fileName);
+    compiler.CompileAbcFileInParallel(src_, *options_, abcProgramsInfo, allocator_);
+    panda::Timer::timerEnd(panda::EVENT_COMPILE_ABC_FILE, src_->fileName);
+
+    panda::Timer::timerStart(panda::EVENT_UPDATE_ABC_PROG_CACHE, src_->fileName);
+    auto *cache = allocator_->New<panda::es2panda::util::AbcProgramsCache>(src_->hash, abcProgramsInfo);
+    CHECK_NOT_NULL(cache);
+    auto outputCacheIter = options_->cacheFiles.find(src_->fileName);
+    /**
+     * Disable generating cached files when cross-program optimization is required, to prevent cached files from
+     * not being invalidated when their dependencies are changed
+     */
+    if (!options_->requireGlobalOptimization && outputCacheIter != options_->cacheFiles.end()) {
+        panda::proto::ProtobufSnapshotGenerator::UpdateAbcCacheFile(cache, outputCacheIter->second);
+    }
+    InsertAbcCachePrograms(cache->programsCache);
+    panda::Timer::timerEnd(panda::EVENT_UPDATE_ABC_PROG_CACHE, src_->fileName);
 }
 
 void CompileFileJob::OptimizeAndCacheProgram(panda::pandasm::Program *prog)
