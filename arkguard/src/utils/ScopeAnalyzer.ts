@@ -467,7 +467,7 @@ namespace secharmony {
           tryAddPropertyNameNodeSymbol(propetyNameNode);
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
-            current.addDefinition(nameSymbol);
+            current.addDefinition(nameSymbol, true);
           }
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
