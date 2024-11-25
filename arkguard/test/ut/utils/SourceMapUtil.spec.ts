@@ -21,12 +21,12 @@ describe('test for SourceMapUtil', function () {
     const filePath = undefined;
 
     const generator = getSourceMapGenerator(filePath);
-    assert.strictEqual(generator, undefined);
+    assert.isNull(generator);
   });
 
   it('should return an object if path valid', function () {
     const filePath = 'demo.js';
     const generator = getSourceMapGenerator(filePath);
-    assert.isTrue(generator !== undefined);
+    assert.isNotNull(generator);
   });
 });
