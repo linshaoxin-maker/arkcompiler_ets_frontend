@@ -484,7 +484,7 @@ namespace secharmony {
       if (propertyNameNode && isIdentifier(propertyNameNode)) {
         let propertySymbol = checker.getSymbolAtLocation(propertyNameNode);
         if (!propertySymbol) {
-          noSymbolIdentifier.add(propertyNameNode.text);
+          exportElementsWithoutSymbol.set(propertyNameNode, current.kind === ScopeKind.GLOBAL);
         } else {
           current.addDefinition(propertySymbol, true);
         }
@@ -543,11 +543,8 @@ namespace secharmony {
       root.fileExportNames.add(node.name.text);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
-      if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-        let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-        if (!propertySymbol) {
-          exportElementsWithoutSymbol.set(propetyNameNode, current.kind === ScopeKind.GLOBAL);
-        }
+      if (exportObfuscation) {
+        tryAddPropertyNameNodeSymbol(propetyNameNode);
       }
       forEachChild(node, analyzeScope);
     }

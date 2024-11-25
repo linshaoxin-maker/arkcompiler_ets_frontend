@@ -370,12 +370,12 @@
       },
       "strProp+top+export": {
         "mNameObfuscation": {
-          "mReservedToplevelNames": ["Person"]
+          "mReservedToplevelNames": ["Person", "reduce"]
         }
       },
       "top+export": {
         "mNameObfuscation": {
-          "mReservedToplevelNames": ["Person"]
+          "mReservedToplevelNames": ["Person", "reduce"]
         }
       }
     }
