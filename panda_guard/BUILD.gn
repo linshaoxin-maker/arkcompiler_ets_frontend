@@ -24,9 +24,7 @@ panda_guard_sources = [
   "guard_driver.cpp",
 ]
 
-panda_guard_configs = [
-  ":panda_guard_public_config"
-]
+panda_guard_configs = [ ":panda_guard_public_config" ]
 
 ohos_static_library("panda_guard_frontend_static") {
   sources = panda_guard_sources

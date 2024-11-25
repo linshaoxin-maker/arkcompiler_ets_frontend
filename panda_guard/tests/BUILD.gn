@@ -17,16 +17,15 @@ import("//arkcompiler/runtime_core/tests/test_helper.gni")
 
 ets_frontend_output_path = "arkcompiler/ets_frontend"
 
-panda_guard_test_configs = [
-  "$ets_frontend_root/panda_guard:panda_guard_public_config"
-]
+panda_guard_test_configs =
+    [ "$ets_frontend_root/panda_guard:panda_guard_public_config" ]
 
 panda_guard_test_deps =
     [ "$ets_frontend_root/panda_guard:panda_guard_frontend_static" ]
 
 panda_guard_include_dirs = [
   "$ets_frontend_root/panda_guard",
-  "$ets_frontend_root/panda_guard/tests"
+  "$ets_frontend_root/panda_guard/tests",
 ]
 
 ohos_copy("copy_config_files") {
@@ -45,9 +44,7 @@ host_unittest_action("PandaGuardUnitTest") {
   include_dirs = panda_guard_include_dirs
   configs = panda_guard_test_configs
   deps = panda_guard_test_deps
-  external_deps = [
-    "runtime_core:libarkbase_static"
-  ]
+  external_deps = [ "runtime_core:libarkbase_static" ]
   unit_test_dir = rebase_path(target_out_dir)
   defines = [ "PANDA_GUARD_UNIT_TEST_DIR=\"${unit_test_dir}/\"" ]
 
