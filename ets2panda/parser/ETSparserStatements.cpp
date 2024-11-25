@@ -78,6 +78,7 @@
 #include "ir/statements/doWhileStatement.h"
 #include "ir/statements/breakStatement.h"
 #include "ir/statements/debuggerStatement.h"
+#include "ir/statements/etsNamespace.h"
 #include "ir/ets/etsLaunchExpression.h"
 #include "ir/ets/etsClassLiteral.h"
 #include "ir/ets/etsPrimitiveType.h"
@@ -211,7 +212,12 @@ ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags
         case lexer::TokenType::KEYW_LET:
             result = ParseStatement(flags);
             break;
-        case lexer::TokenType::KEYW_NAMESPACE:
+        case lexer::TokenType::KEYW_NAMESPACE: {
+            GetContext().Status() |= ParserStatus::IN_NAMESPACE;
+            auto *ns = ParseNamespace(ir::ModifierFlags::DECLARE | ir::ModifierFlags::EXPORT);
+            GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
+            return ns;
+        }
         case lexer::TokenType::KEYW_STATIC:
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_FINAL:

@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_IR_ETS_SCRIPT_H
 #define ES2PANDA_IR_ETS_SCRIPT_H
 
-#include "ir/statements/blockStatement.h"
+#include "ir/statements/etsTopLevel.h"
 
 namespace ark::es2panda::parser {
 class Program;
@@ -24,10 +24,10 @@ class Program;
 
 namespace ark::es2panda::ir {
 
-class ETSScript : public BlockStatement {
+class ETSScript : public ETSTopLevel {
 public:
     explicit ETSScript(ArenaAllocator *allocator, ArenaVector<Statement *> &&statementList, parser::Program *program)
-        : BlockStatement(allocator, std::move(statementList)), program_(program)
+        : ETSTopLevel(allocator, std::move(statementList)), program_(program)
     {
         type_ = AstNodeType::ETS_SCRIPT;
     }

@@ -1134,15 +1134,18 @@ void InitScopesPhaseETS::VisitClassDefinition(ir::ClassDefinition *classDef)
 {
     if (classDef->IsGlobal()) {
         ParseGlobalClass(classDef);
+        classDef->Scope()->AddFlag(varbinder::ScopeFlags::GLOBALSCOPE);
         return;
     }
     auto typeParamsCtx = LexicalScopeCreateOrEnter<varbinder::LocalScope>(VarBinder(), classDef->TypeParams());
     CallNode(classDef->TypeParams());
     auto classCtx = LexicalScopeCreateOrEnter<varbinder::ClassScope>(VarBinder(), classDef);
-
     IterateNoTParams(classDef);
     FilterOverloads(classDef->Body());
     auto *classScope = classCtx.GetScope();
+    if (classDef->IsNamespaceTransformed()) {
+        classScope->AddFlag(varbinder::ScopeFlags::GLOBALSCOPE);
+    }
     BindScopeNode(classScope, classDef);
 }
 

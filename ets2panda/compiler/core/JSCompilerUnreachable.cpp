@@ -509,12 +509,12 @@ void JSCompiler::Compile([[maybe_unused]] const ir::DummyNode *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::NamespaceDeclaration *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSNamespace *st) const
 {
     UNREACHABLE();
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::NamespaceDefinition *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSTopLevel *st) const
 {
     UNREACHABLE();
 }

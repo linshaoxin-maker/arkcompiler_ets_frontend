@@ -13,46 +13,57 @@
  * limitations under the License.
  */
 
-#include "namespaceDeclaration.h"
+#include "etsNamespace.h"
 
 #include "checker/TSchecker.h"
+#include "checker/ETSchecker.h"
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/pandagen.h"
 #include "ir/astDump.h"
 #include "ir/srcDump.h"
+#include "ir/expressions/identifier.h"
 
 namespace ark::es2panda::ir {
-void NamespaceDeclaration::TransformChildren([[maybe_unused]] const NodeTransformer &cb,
+void ETSNamespace::TransformChildren([[maybe_unused]] const NodeTransformer &cb,
                                              [[maybe_unused]] std::string_view const transformationName)
 {
 }
 
-void NamespaceDeclaration::Iterate([[maybe_unused]] const NodeTraverser &cb) const {}
+void ETSNamespace::Iterate([[maybe_unused]] const NodeTraverser &cb) const {}
 
-void NamespaceDeclaration::Dump(ir::AstDumper *dumper) const
+void ETSNamespace::Dump(ir::AstDumper *dumper) const
 {
-    dumper->Add({{"type", "NamespaceDeclaration"}, {"definition", def_}});
+    dumper->Add({{"type", "Namespace"}, {"expr", AstDumper::Nullish(expr_)}, {"statements", Statements()}});
 }
 
-void NamespaceDeclaration::Dump([[maybe_unused]] ir::SrcDumper *dumper) const {}
+void ETSNamespace::Dump([[maybe_unused]] ir::SrcDumper *dumper) const {}
 
-void NamespaceDeclaration::Compile(compiler::PandaGen *pg) const
+void ETSNamespace::Compile(compiler::PandaGen *pg) const
 {
     pg->GetAstCompiler()->Compile(this);
 }
 
-void NamespaceDeclaration::Compile(compiler::ETSGen *etsg) const
+void ETSNamespace::Compile(compiler::ETSGen *etsg) const
 {
     etsg->GetAstCompiler()->Compile(this);
 }
 
-checker::Type *NamespaceDeclaration::Check(checker::TSChecker *checker)
+checker::Type *ETSNamespace::Check(checker::TSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
 }
 
-checker::Type *NamespaceDeclaration::Check(checker::ETSChecker *checker)
+checker::Type *ETSNamespace::Check(checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
+}
+
+Identifier *ETSNamespace::GetBaseName() const
+{
+    auto *part = expr_->AsETSTypeReference()->Part();
+    if (part->Name()->IsIdentifier()){
+        return part->Name()->AsIdentifier();
+    }
+    return part->Name()->AsTSQualifiedName()->Right();
 }
 }  // namespace ark::es2panda::ir

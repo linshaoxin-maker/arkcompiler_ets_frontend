@@ -17,12 +17,13 @@
 #define ES2PANDA_PARSER_INCLUDE_PROGRAM_H
 
 #include "macros.h"
+#include "mem/arena_allocator.h"
 #include "mem/pool_manager.h"
 #include "os/filesystem.h"
 #include "util/ustring.h"
 #include "util/path.h"
+#include "utils/arena_containers.h"
 #include "varbinder/varbinder.h"
-
 #include "es2panda.h"
 
 #include <set>

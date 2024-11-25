@@ -410,13 +410,13 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::DummyNode *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::NamespaceDeclaration *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSNamespace *expr) const
 {
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::NamespaceDefinition *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]]ir::ETSTopLevel *st) const
 {
-    UNREACHABLE();
+    return nullptr; 
 }
 }  // namespace ark::es2panda::checker

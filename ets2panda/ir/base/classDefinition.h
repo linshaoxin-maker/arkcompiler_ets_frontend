@@ -50,6 +50,7 @@ enum class ClassDefinitionModifiers : uint32_t {
     FROM_EXTERNAL = 1U << 10U,
     LOCAL = 1U << 11U,
     CLASSDEFINITION_CHECKED = 1U << 12U,
+    NAMESPACE_TRANSFORMED = 1U << 13U,
     DECLARATION_ID_REQUIRED = DECLARATION | ID_REQUIRED
 };
 
@@ -225,6 +226,11 @@ public:
         return (modifiers_ & ClassDefinitionModifiers::CLASSDEFINITION_CHECKED) != 0;
     }
 
+    [[nodiscard]] bool IsNamespaceTransformed() const noexcept
+    {
+        return (modifiers_ & ClassDefinitionModifiers::NAMESPACE_TRANSFORMED) != 0;
+    }
+
     [[nodiscard]] es2panda::Language Language() const noexcept
     {
         return lang_;
@@ -243,6 +249,11 @@ public:
     void SetClassDefinitionChecked() noexcept
     {
         modifiers_ |= ClassDefinitionModifiers::CLASSDEFINITION_CHECKED;
+    }
+
+    void SetNamespaceTransformed() noexcept
+    {
+        modifiers_ |= ClassDefinitionModifiers::NAMESPACE_TRANSFORMED;
     }
 
     [[nodiscard]] ClassDefinitionModifiers Modifiers() const noexcept
