@@ -2189,6 +2189,13 @@ def add_directory_for_version_control(runners, args):
         "API15",
         "bytecode_feature",
     )
+    runner.add_directory(
+        "version_control/API16/bytecode_feature",
+        "ts",
+        ["--module"],
+        "API16",
+        "bytecode_feature",
+    )
     runners.append(runner)
 
     abc_tests_prepare = AbcTestCasesPrepare(args)
