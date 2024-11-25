@@ -49,6 +49,7 @@
 #include "ir/ets/etsStringLiteralType.h"
 #include "ir/ets/etsStructDeclaration.h"
 #include "ir/ets/etsTypeReference.h"
+#include "ir/ets/etsKeyofType.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsWildcardType.h"
 #include "ir/expressions/arrayExpression.h"

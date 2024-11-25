@@ -317,6 +317,48 @@ Type *ETSChecker::CreateETSUnionType(Span<Type *const> constituentTypes)
     return Allocator()->New<ETSUnionType>(this, std::move(newConstituentTypes));
 }
 
+Type *ETSChecker::CreateUnionFromKeyofType(Type *const type)
+{
+    ArenaVector<checker::Type *> types(Allocator()->Adapter());
+    auto keyofObject = type->AsETSObjectType();
+
+    std::deque<checker::ETSObjectType *> extends;
+    extends.push_back(keyofObject);
+    auto addToUnion = [this, &types, &keyofObject](checker::ETSObjectType *it) {
+        if (it != keyofObject && it == GlobalETSObjectType()) {
+            return;
+        }
+        for (auto *method : it->Methods()) {
+            types.push_back(this->CreateETSStringLiteralType(method->Name()));
+        }
+        for (auto *field : it->Fields()) {
+            types.push_back(this->CreateETSStringLiteralType(field->Name()));
+        }
+    };
+    auto addObjToDeque = [&extends](checker::ETSObjectType *it) {
+        if (it->SuperType() != nullptr) {
+            extends.push_back(it->SuperType());
+        }
+        if (it->Interfaces().empty()) {
+            return;
+        }
+        for (auto inteface : it->Interfaces()) {
+            extends.push_back(inteface);
+        }
+    };
+    while (!extends.empty()) {
+        auto *extendsObject = extends.front();
+        extends.pop_front();
+        addToUnion(extendsObject);
+        addObjToDeque(extendsObject);
+    }
+    if (types.empty()) {
+        return GlobalETSNeverType();
+    }
+
+    return CreateETSUnionType(std::move(types));
+}
+
 ETSTypeAliasType *ETSChecker::CreateETSTypeAliasType(util::StringView name, const ir::AstNode *declNode,
                                                      bool isRecursive)
 {

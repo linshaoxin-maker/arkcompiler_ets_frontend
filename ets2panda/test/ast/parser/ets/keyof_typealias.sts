@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+class A{
+    field1:int;
+    field2:int;
+    method1(){};
+}
+
+interface B{
+    field1:int;
+    field2:int;
+    method1(){};
+}
+
+function main():void{
+    type keyofA = keyof A;
+    let x1:keyofA = "field1";
+    let x2:keyofA = "field2";
+    let x3:keyofA = "method1";
+    let x4:keyofA = "other field";
+    let x5:keyofA = "other method";
+    let x6:keyofA = 100;
+
+    type keyofB = keyof B;
+    let x7:keyofB = "field1";
+    let x8:keyofB = "field2";
+    let x9:keyofB = "method1";
+    let x10:keyofB = "other field";
+    let x11:keyofB = "other method";
+    let x12:keyofB = 100;
+}
+
+/* @@? 33:21 Error TypeError: Type '"other field"' cannot be assigned to type '"method1"|"field1"|"field2"'  */
+/* @@? 34:21 Error TypeError: Type '"other method"' cannot be assigned to type '"method1"|"field1"|"field2"'  */
+/* @@? 35:21 Error TypeError: Type 'int' cannot be assigned to type '"method1"|"field1"|"field2"'  */
+/* @@? 41:22 Error TypeError: Type '"other field"' cannot be assigned to type '"method1"|"field1"|"field2"'  */
+/* @@? 42:22 Error TypeError: Type '"other method"' cannot be assigned to type '"method1"|"field1"|"field2"'  */
+/* @@? 43:22 Error TypeError: Type 'int' cannot be assigned to type '"method1"|"field1"|"field2"'  */

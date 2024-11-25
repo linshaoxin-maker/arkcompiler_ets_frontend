@@ -103,6 +103,11 @@ void JSCompiler::Compile([[maybe_unused]] const ir::ETSFunctionType *expr) const
     UNREACHABLE();
 }
 
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSKeyofType *expr) const
+{
+    UNREACHABLE();
+}
+
 void JSCompiler::Compile([[maybe_unused]] const ir::ETSTuple *expr) const
 {
     UNREACHABLE();

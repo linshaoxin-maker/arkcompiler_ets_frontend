@@ -43,6 +43,7 @@
 #include "ir/ets/etsFunctionType.h"
 #include "ir/ets/etsNeverType.h"
 #include "ir/ets/etsScript.h"
+#include "ir/ets/etsKeyofType.h"
 #include "ir/ets/etsImportDeclaration.h"
 #include "ir/ts/tsInterfaceDeclaration.h"
 #include "ir/ts/tsTypeParameterDeclaration.h"
