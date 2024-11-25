@@ -463,14 +463,8 @@ namespace secharmony {
     function analyzeImportNames(node: ImportSpecifier): void {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
-        if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-          if (!propertySymbol) {
-            exportElementsWithoutSymbol.set(propetyNameNode, current.kind === ScopeKind.GLOBAL);
-          } else {
-            current.addDefinition(propertySymbol);
-          }
-
+        if (exportObfuscation) {
+          tryAddPropertyNameNodeSymbol(propetyNameNode);
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
             current.addDefinition(nameSymbol);
@@ -485,6 +479,18 @@ namespace secharmony {
         console.error(e);
       }
     }
+
+    function tryAddPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
+      if (propertyNameNode && isIdentifier(propertyNameNode)) {
+        let propertySymbol = checker.getSymbolAtLocation(propertyNameNode);
+        if (!propertySymbol) {
+          noSymbolIdentifier.add(propertyNameNode.text);
+        } else {
+          current.addDefinition(propertySymbol, true);
+        }
+      }
+    }
+
 
     /** example
      * const { x1, y: customY, z = 0 }: { x: number; y?: number; z?: number } = { x: 1, y: 2 };
