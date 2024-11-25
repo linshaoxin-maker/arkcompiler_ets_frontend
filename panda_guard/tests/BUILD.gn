@@ -13,7 +13,6 @@
 
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
 import("//arkcompiler/ets_frontend/panda_guard/panda_guard_config.gni")
-import("//arkcompiler/runtime_core/ark_config.gni")
 import("//arkcompiler/runtime_core/tests/test_helper.gni")
 
 ets_frontend_output_path = "arkcompiler/ets_frontend"
@@ -46,6 +45,9 @@ host_unittest_action("PandaGuardUnitTest") {
   include_dirs = panda_guard_include_dirs
   configs = panda_guard_test_configs
   deps = panda_guard_test_deps
+  external_deps = [
+    "runtime_core:libarkbase_static"
+  ]
   unit_test_dir = rebase_path(target_out_dir)
   defines = [ "PANDA_GUARD_UNIT_TEST_DIR=\"${unit_test_dir}/\"" ]
 

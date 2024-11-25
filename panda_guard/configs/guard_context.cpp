@@ -16,7 +16,6 @@
 #include "guard_context.h"
 
 #include "guard_args_parser.h"
-#include "util/assert_util.h"
 
 namespace {
     const std::string TAG = "[Guard_Context]";
@@ -31,7 +30,10 @@ std::shared_ptr<panda::guard::GuardContext> panda::guard::GuardContext::GetInsta
 void panda::guard::GuardContext::Init(int argc, const char **argv)
 {
     GuardArgsParser parser;
-    PANDA_GUARD_ASSERT_PRINT(!parser.Parse(argc, argv), TAG << "input param parse failed");
+    if (!parser.Parse(argc, argv)) {
+        std::cerr << TAG << "input param parse failed" << std::endl;
+        return;
+    }
 
     debugMode_ = parser.IsDebugMode();
 }

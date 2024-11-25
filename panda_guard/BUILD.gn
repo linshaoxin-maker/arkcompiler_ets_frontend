@@ -37,7 +37,7 @@ ohos_static_library("panda_guard_frontend_static") {
     "json:nlohmann_json_static",
     "runtime_core:abc2program_frontend_static",
     "runtime_core:libarkassembler_frontend_static",
-    "runtime_core:libarkbase_frontend_static",
+    "runtime_core:libarkbase_static",
     "runtime_core:libarkcompiler_frontend_static",
     "runtime_core:libarkfile_frontend_static",
     sdk_libc_secshared_dep,
