@@ -59,6 +59,8 @@ public:
     void UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder) override;
 
 private:
+    void CompileDeleteExpression(compiler::PandaGen *pg) const;
+    
     Expression *argument_;
     lexer::TokenType operator_;
 };

@@ -19,6 +19,7 @@
 #include <compiler/core/pandagen.h>
 #include <typescript/checker.h>
 #include <ir/astDump.h>
+#include <ir/expressions/chainExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/expressions/literals/bigIntLiteral.h>
 #include <ir/expressions/literals/numberLiteral.h>
@@ -36,43 +37,58 @@ void UnaryExpression::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "UnaryExpression"}, {"operator", operator_}, {"prefix", true}, {"argument", argument_}});
 }
 
+void UnaryExpression::CompileDeleteExpression(compiler::PandaGen *pg) const
+{
+    if (argument_->IsIdentifier()) {
+        binder::ScopeFindResult result = pg->Scope()->Find(argument_->AsIdentifier()->Name());
+        if (!result.variable || (result.scope->IsGlobalScope() && result.variable->IsGlobalVariable())) {
+            compiler::RegScope rs(pg);
+            compiler::VReg variable = pg->AllocReg();
+            compiler::VReg global = pg->AllocReg();
+
+            pg->LoadConst(this, compiler::Constant::JS_GLOBAL);
+            pg->StoreAccumulator(this, global);
+
+            pg->LoadAccumulatorString(this, argument_->AsIdentifier()->Name());
+            pg->StoreAccumulator(this, variable);
+
+            pg->DeleteObjProperty(this, global, variable);
+        } else {
+            // Otherwise it is a local variable which can't be deleted and we just return false.
+            pg->LoadConst(this, compiler::Constant::JS_FALSE);
+        }
+    } else if (argument_->IsChainExpression() &&
+               argument_->AsChainExpression()->GetExpression()->IsMemberExpression()) {
+        compiler::RegScope rs(pg);
+        compiler::VReg object = pg->AllocReg();
+
+        auto *expr = argument_->AsChainExpression()->GetExpression();
+        compiler::OptionalChain chain(pg, expr);
+        expr->AsMemberExpression()->CompileObject(pg, object);
+        compiler::Operand prop = expr->AsMemberExpression()->CompileKey(pg);
+
+        pg->DeleteObjProperty(this, object, prop);
+    } else if (argument_->IsMemberExpression()) {
+        compiler::RegScope rs(pg);
+        compiler::VReg object = pg->AllocReg();
+
+        argument_->AsMemberExpression()->CompileObject(pg, object);
+        compiler::Operand prop = argument_->AsMemberExpression()->CompileKey(pg);
+
+        pg->DeleteObjProperty(this, object, prop);
+    } else {
+        // compile the delete operand.
+        argument_->Compile(pg);
+        // Deleting any value or a result of an expression returns True.
+        pg->LoadConst(this, compiler::Constant::JS_TRUE);
+    }
+}
+
 void UnaryExpression::Compile(compiler::PandaGen *pg) const
 {
     switch (operator_) {
         case lexer::TokenType::KEYW_DELETE: {
-            if (argument_->IsIdentifier()) {
-                binder::ScopeFindResult result = pg->Scope()->Find(argument_->AsIdentifier()->Name());
-                if (!result.variable || (result.scope->IsGlobalScope() && result.variable->IsGlobalVariable())) {
-                    compiler::RegScope rs(pg);
-                    compiler::VReg variable = pg->AllocReg();
-                    compiler::VReg global = pg->AllocReg();
-
-                    pg->LoadConst(this, compiler::Constant::JS_GLOBAL);
-                    pg->StoreAccumulator(this, global);
-
-                    pg->LoadAccumulatorString(this, argument_->AsIdentifier()->Name());
-                    pg->StoreAccumulator(this, variable);
-
-                    pg->DeleteObjProperty(this, global, variable);
-                } else {
-                    // Otherwise it is a local variable which can't be deleted and we just
-                    // return false.
-                    pg->LoadConst(this, compiler::Constant::JS_FALSE);
-                }
-            } else if (argument_->IsMemberExpression()) {
-                compiler::RegScope rs(pg);
-                compiler::VReg object = pg->AllocReg();
-
-                argument_->AsMemberExpression()->CompileObject(pg, object);
-                compiler::Operand prop = argument_->AsMemberExpression()->CompileKey(pg);
-
-                pg->DeleteObjProperty(this, object, prop);
-            } else {
-                // compile the delete operand.
-                argument_->Compile(pg);
-                // Deleting any value or a result of an expression returns True.
-                pg->LoadConst(this, compiler::Constant::JS_TRUE);
-            }
+            CompileDeleteExpression(pg);
             break;
         }
         case lexer::TokenType::KEYW_TYPEOF: {
