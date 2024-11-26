@@ -17,6 +17,7 @@
 #include "ETSNolintParser.h"
 #include <utility>
 
+#include "ir/opaqueTypeNode.h"
 #include "macros.h"
 #include "parser/parserFlags.h"
 #include "parser/parserStatusContext.h"
@@ -360,11 +361,9 @@ ir::TypeNode *ETSParser::ParsePotentialFunctionalType(TypeAnnotationParsingOptio
 // Just to reduce the size of ParseTypeAnnotation(...) method
 std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnotationParsingOptions *options)
 {
-    ir::TypeNode *typeAnnotation = nullptr;
-
     switch (Lexer()->GetToken().Type()) {
         case lexer::TokenType::LITERAL_IDENT: {
-            typeAnnotation = ParseLiteralIdent(options);
+            auto typeAnnotation = ParseLiteralIdent(options);
             if (((*options) & TypeAnnotationParsingOptions::POTENTIAL_CLASS_LITERAL) != 0 &&
                 (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS || IsStructKeyword())) {
                 return std::make_pair(typeAnnotation, false);
@@ -372,19 +371,19 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
             return std::make_pair(typeAnnotation, true);
         }
         case lexer::TokenType::LITERAL_NULL: {
-            typeAnnotation = AllocNode<ir::ETSNullType>();
+            auto typeAnnotation = AllocNode<ir::ETSNullType>();
             typeAnnotation->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
             return std::make_pair(typeAnnotation, true);
         }
         case lexer::TokenType::KEYW_UNDEFINED: {
-            typeAnnotation = AllocNode<ir::ETSUndefinedType>();
+            auto typeAnnotation = AllocNode<ir::ETSUndefinedType>();
             typeAnnotation->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
             return std::make_pair(typeAnnotation, true);
         }
         case lexer::TokenType::LITERAL_STRING: {
-            typeAnnotation = AllocNode<ir::ETSStringLiteralType>(Lexer()->GetToken().String());
+            auto typeAnnotation = AllocNode<ir::ETSStringLiteralType>(Lexer()->GetToken().String());
             typeAnnotation->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
             return std::make_pair(typeAnnotation, true);
@@ -398,8 +397,9 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
             return std::make_pair(ParseETSTupleType(options), true);
         case lexer::TokenType::KEYW_THIS:
             return std::make_pair(ParseThisType(options), true);
-        default:
-            return std::make_pair(typeAnnotation, true);
+        default: {
+            return {nullptr, false};
+        }
     }
 }
 
@@ -489,6 +489,10 @@ ir::TypeNode *ETSParser::ParseTypeAnnotationNoPreferParam(TypeAnnotationParsingO
     if (typeAnnotation == nullptr) {
         if (reportError) {
             LogSyntaxError("Invalid Type");
+            auto typeNode = AllocNode<ir::OpaqueTypeNode>();
+            typeNode->SetRange({Lexer()->GetToken().Start(), Lexer()->GetToken().End()});
+            Lexer()->NextToken();
+            return typeNode;
         }
         return nullptr;
     }

@@ -15,6 +15,9 @@
 
 #include "ETSparser.h"
 
+#include "ir/opaqueTypeNode.h"
+#include "ir/statements/emptyStatement.h"
+#include "ir/visitor/AstVisitor.h"
 #include "lexer/lexer.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/ets/etsTuple.h"
@@ -560,16 +563,11 @@ ir::Expression *ETSParser::ParsePotentialAsExpression(ir::Expression *primaryExp
 
 //  Extracted from 'ParseNewExpression()' to reduce function's size
 ir::ClassDefinition *ETSParser::CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
-                                                                      ir::TypeNode *typeReference,
-                                                                      ir::TypeNode *baseTypeReference)
+                                                                      ir::TypeNode *typeReference)
 {
     lexer::SourcePosition endLoc = typeReference->End();
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
-        if (baseTypeReference != nullptr) {
-            LogSyntaxError("Can not use 'new' on primitive types.", baseTypeReference->Start());
-        }
-
         Lexer()->NextToken();
 
         while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
@@ -611,24 +609,14 @@ ir::Expression *ETSParser::ParseNewExpression()
 
     Lexer()->NextToken();  // eat new
 
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
-    ir::TypeNode *baseTypeReference = ParseBaseTypeReference(&options);
-    ir::TypeNode *typeReference = baseTypeReference;
-    if (typeReference == nullptr) {
-        options |= TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE | TypeAnnotationParsingOptions::ALLOW_WILDCARD |
-                   TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY;
-        typeReference = ParseTypeReference(&options);
-        if (typeReference == nullptr) {
-            typeReference = ParseTypeAnnotation(&options);
-        }
-    } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        LogSyntaxError("Invalid { after base types.");
-        Lexer()->NextToken();  // eat '{'
-    }
-
-    if (typeReference == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    TypeAnnotationParsingOptions options =
+        TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
+        TypeAnnotationParsingOptions::ALLOW_WILDCARD | TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY;
+    // ir::TypeNode *typeReference = ParseTypeReference(&options);
+    // if (typeReference == nullptr) {
+    auto typeReference = ParseTypeAnnotation(&options);
+    // }
+    ASSERT(typeReference != nullptr);
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
         Lexer()->NextToken();
@@ -660,8 +648,7 @@ ir::Expression *ETSParser::ParseNewExpression()
     }
 
     ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
-    ir::ClassDefinition *classDefinition =
-        CreateClassDefinitionForNewExpression(arguments, typeReference, baseTypeReference);
+    ir::ClassDefinition *classDefinition = CreateClassDefinitionForNewExpression(arguments, typeReference);
 
     auto *newExprNode =
         AllocNode<ir::ETSNewClassInstanceExpression>(typeReference, std::move(arguments), classDefinition);
@@ -800,7 +787,7 @@ ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
     if (unaryExpressionNode == nullptr) {
-        return nullptr;
+        return AllocNode<ir::Identifier>(Allocator());
     }
 
     if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {

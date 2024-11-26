@@ -60,22 +60,6 @@ private:
                                          checker::Type *&funcReturnType, ir::TypeNode *returnTypeAnnotation,
                                          ETSChecker *checker) const;
     void CheckClassProperty(ETSChecker *checker, ir::ScriptFunction *scriptFunc) const;
-    checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
-    {
-        checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
-        if (calleeType->IsTypeError()) {
-            expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
-            return checker->GlobalTypeError();
-        }
-
-        if (!calleeType->IsETSObjectType()) {
-            checker->LogTypeError("This expression is not constructible.", expr->Start());
-            expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
-            return checker->GlobalTypeError();
-        }
-
-        return calleeType;
-    }
 
     checker::Type *CheckEnumMemberExpression(ETSEnumType *const baseType, ir::MemberExpression *const expr) const;
 

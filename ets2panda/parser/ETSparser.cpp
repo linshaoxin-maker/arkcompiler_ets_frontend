@@ -634,10 +634,7 @@ ir::AstNode *ETSParser::ParseAnnotationProperty(ir::Identifier *fieldName, ir::M
 
     if (typeAnnotation == nullptr && (memberModifiers & ir::ModifierFlags::ANNOTATION_DECLARATION) != 0) {
         auto nameField = fieldName->Name().Mutf8();
-        auto logField = " '" + nameField + "'.";
-        if (nameField == ERROR_LITERAL) {
-            logField = ".";
-        }
+        auto logField = !fieldName->IsDummy() ? " '" + nameField + "'." : ".";
         ThrowSyntaxError("Missing type annotation for property" + logField, Lexer()->GetToken().Start());
     }
 
@@ -1510,10 +1507,7 @@ std::pair<ImportSpecifierVector, ImportDefaultSpecifierVector> ETSParser::ParseN
         }
     }
     Lexer()->NextToken();  // eat '}'
-    std::pair<ArenaVector<ir::ImportSpecifier *>, ArenaVector<ir::ImportDefaultSpecifier *>> resultSpecifiers(
-        result, resultDefault);
-
-    return resultSpecifiers;
+    return {result, resultDefault};
 }
 
 void ETSParser::ParseNameSpaceSpecifier(ArenaVector<ir::AstNode *> *specifiers, bool isReExport)

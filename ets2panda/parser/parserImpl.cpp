@@ -1260,9 +1260,7 @@ ir::Identifier *ParserImpl::ExpectIdentifier([[maybe_unused]] bool isReference, 
     auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
     //  NOTE: here actual token can be changed!
     ident->SetRange({tokenStart, lexer_->GetToken().End()});
-
     lexer_->NextToken();
-
     return ident;
 }
 
