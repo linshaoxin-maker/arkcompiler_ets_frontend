@@ -13,10 +13,8 @@
  * limitations under the License.
  */
 
-#include "utils/logger.h"
 #include "varbinder/ETSBinder.h"
 #include "checker/ETSchecker.h"
-#include "checker/ets/castingContext.h"
 #include "checker/ets/function_helpers.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
@@ -37,11 +35,8 @@
 #include "ir/expressions/callExpression.h"
 #include "ir/expressions/functionExpression.h"
 #include "ir/expressions/identifier.h"
-#include "ir/expressions/literals/numberLiteral.h"
-#include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/expressions/memberExpression.h"
 #include "ir/expressions/objectExpression.h"
-#include "ir/expressions/thisExpression.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/doWhileStatement.h"
 #include "ir/statements/expressionStatement.h"
@@ -56,7 +51,6 @@
 #include "ir/ts/tsTypeParameterInstantiation.h"
 #include "parser/program/program.h"
 #include "util/helpers.h"
-#include "util/language.h"
 
 namespace ark::es2panda::checker {
 
@@ -409,7 +403,9 @@ bool ETSChecker::CheckInvokable(Signature *substitutedSig, ir::Expression *argum
     if (argumentType->IsTypeError()) {
         return true;
     }
+
     auto *targetType = substitutedSig->Params()[index]->TsType();
+    flags |= TypeRelationFlag::ONLY_CHECK_WIDENING;
 
     auto const invocationCtx =
         checker::InvocationContext(Relation(), argument, argumentType, targetType, argument->Start(),
@@ -423,6 +419,8 @@ bool ETSChecker::ValidateSignatureInvocationContext(Signature *substitutedSig, i
                                                     const Type *targetType, std::size_t index, TypeRelationFlag flags)
 {
     Type *argumentType = argument->Check(this);
+    flags |= TypeRelationFlag::ONLY_CHECK_WIDENING;
+
     auto const invocationCtx = checker::InvocationContext(
         Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
         {"Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1}, flags);
@@ -1125,32 +1123,13 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
 
 Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func)
 {
-    auto *const returnTypeAnnotation = func->ReturnTypeAnnotation();
-    checker::Type *returnType {};
-
-    if (returnTypeAnnotation == nullptr) {
-        // implicit void return type
-        returnType = GlobalVoidType();
-
-        if (func->IsAsyncFunc()) {
-            auto implicitPromiseVoid = [this]() {
-                const auto &promiseGlobal = GlobalBuiltinPromiseType()->AsETSObjectType();
-                auto substitutuon = NewSubstitution();
-                ETSChecker::EmplaceSubstituted(substitutuon, promiseGlobal->TypeArguments()[0]->AsETSTypeParameter(),
-                                               GlobalVoidType());
-                return promiseGlobal->Substitute(Relation(), substitutuon);
-            };
-
-            returnType = implicitPromiseVoid();
-        }
-    } else if (func->IsEntryPoint() && returnTypeAnnotation->GetType(this) == GlobalVoidType()) {
-        returnType = GlobalVoidType();
-    } else {
-        returnType = returnTypeAnnotation->GetType(this);
-        returnTypeAnnotation->SetTsType(returnType);
+    if (auto typeAnnotation = func->ReturnTypeAnnotation(); typeAnnotation != nullptr) {
+        return typeAnnotation->GetType(this);
     }
-
-    return returnType;
+    if (func->IsAsyncFunc()) {
+        return CreatePromiseOf(GlobalVoidType());
+    }
+    return GlobalVoidType();
 }
 
 SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
@@ -1754,9 +1733,12 @@ bool ETSChecker::AreOverrideEquivalent(Signature *const s1, Signature *const s2)
     // their names and type parameters (if any) are the same, and their formal parameter
     // types are also the same (after the formal parameter types of N are adapted to the type parameters of M).
     // Signatures s1 and s2 are override-equivalent only if s1 and s2 are the same.
+    if (s1->Function()->Id()->Name() != s2->Function()->Id()->Name()) {
+        return false;
+    }
 
     SavedTypeRelationFlagsContext savedFlagsCtx(Relation(), TypeRelationFlag::OVERRIDING_CONTEXT);
-    return s1->Function()->Id()->Name() == s2->Function()->Id()->Name() && Relation()->IsCompatibleTo(s1, s2);
+    return Relation()->IsCompatibleTo(s1, s2);
 }
 
 bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const s2)
@@ -1867,7 +1849,7 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *retType = Allocator()->New<ETSAsyncFuncReturnType>(Allocator(), Relation(), promiseType);
         returnTypeAnn->SetTsType(retType);
-    }
+    }  // NOTE(vpukhov): #19874 - returnTypeAnn is not set
 
     ir::MethodDefinition *implMethod =
         CreateMethod(implName.View(), modifiers, flags, std::move(params), paramScope, returnTypeAnn, body);
@@ -1931,7 +1913,7 @@ ir::MethodDefinition *ETSChecker::CreateAsyncProxy(ir::MethodDefinition *asyncMe
         }
         implMethod->Id()->SetVariable(implMethod->Function()->Id()->Variable());
     }
-    VarBinder()->AsETSBinder()->BuildProxyMethod(implMethod->Function(), classDef->InternalName(), isStatic,
+    VarBinder()->AsETSBinder()->BuildProxyMethod(implMethod->Function(), classDef->InternalName(),
                                                  asyncFunc->IsExternal());
     implMethod->SetParent(asyncMethod->Parent());
 
@@ -1962,6 +1944,13 @@ ir::MethodDefinition *ETSChecker::CreateMethod(const util::StringView &name, ir:
     paramScope->BindNode(func);
     scope->BindParamScope(paramScope);
     paramScope->BindFunctionScope(scope);
+
+    if (!func->IsStatic()) {
+        auto classDef = VarBinder()->GetScope()->AsClassScope()->Node()->AsClassDefinition();
+        VarBinder()->AsETSBinder()->AddFunctionThisParam(func);
+        func->Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS).variable->SetTsType(classDef->TsType());
+    }
+
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
     auto *nameClone = nameId->Clone(Allocator(), nullptr);

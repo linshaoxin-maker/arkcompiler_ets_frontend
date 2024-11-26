@@ -426,6 +426,9 @@ void ETSCompiler::Compile(const ir::AssignmentExpression *expr) const
 
     if (expr->Right()->IsNullLiteral()) {
         etsg->LoadAccumulatorNull(expr, exprType);
+    } else if (expr->Right()->IsUndefinedLiteral()) {
+        etsg->LoadAccumulatorUndefined(expr);
+        etsg->SetAccumulatorType(exprType);
     } else {
         expr->Right()->Compile(etsg);
         etsg->ApplyConversion(expr->Right(), exprType);
@@ -456,6 +459,29 @@ void ETSCompiler::Compile(const ir::AwaitExpression *expr) const
     etsg->CallVirtual(expr->Argument(), compiler::Signatures::BUILTIN_PROMISE_AWAIT_RESOLUTION, argumentReg);
     etsg->CastToReftype(expr->Argument(), expr->TsType(), IS_UNCHECKED_CAST);
     etsg->SetAccumulatorType(expr->TsType());
+}
+
+void ETSCompiler::UnimplementedPathError(const ir::AstNode *node, util::StringView message) const
+{
+    ETSGen *etsg = GetETSGen();
+
+    compiler::RegScope rs(etsg);
+    const auto errorReg = etsg->AllocReg();
+    const auto msgReg = etsg->AllocReg();
+    etsg->LoadAccumulatorString(node, message);
+    etsg->StoreAccumulator(node, msgReg);
+    etsg->NewObject(node, Signatures::BUILTIN_ERROR, errorReg);
+    etsg->CallExact(node, Signatures::BUILTIN_ERROR_CTOR, errorReg, msgReg);
+    etsg->EmitThrow(node, errorReg);
+}
+
+void ETSCompiler::Compile(const ir::ImportExpression *expr) const
+{
+    ETSGen *etsg = GetETSGen();
+    expr->Source()->Compile(etsg);
+
+    UnimplementedPathError(expr, "Dynamic import is not supported");
+    etsg->SetAccumulatorType(expr->TsType());  // dead code
 }
 
 static void CompileNullishCoalescing(compiler::ETSGen *etsg, ir::BinaryExpression const *const node)
@@ -949,7 +975,10 @@ void ETSCompiler::Compile(const ir::Identifier *expr) const
 {
     ETSGen *etsg = GetETSGen();
 
-    auto const *const smartType = expr->TsType();
+    auto const *smartType = expr->TsType();
+    if (smartType->IsETSTypeParameter() || smartType->IsETSPartialTypeParameter() || smartType->IsETSNonNullishType()) {
+        smartType = etsg->Checker()->GetApparentType(smartType);
+    }
     auto ttctx = compiler::TargetTypeContext(etsg, smartType);
 
     ASSERT(expr->Variable() != nullptr);
@@ -1212,7 +1241,12 @@ void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
     etsg->ApplyConversion(expr->Argument(), nullptr);
     etsg->ApplyCast(expr->Argument(), expr->TsType());
 
-    etsg->Unary(expr, expr->OperatorType());
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_DOLLAR_DOLLAR) {
+        UnimplementedPathError(expr, "$$ operator can only be used with ARKUI plugin");
+        etsg->SetAccumulatorType(expr->TsType());  // dead code
+    } else {
+        etsg->Unary(expr, expr->OperatorType());
+    }
 
     ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
 }
@@ -1813,6 +1847,7 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
+        case checker::TypeFlag::ETS_PARTIAL_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_UNION:
         case checker::TypeFlag::ETS_NULL:
         case checker::TypeFlag::ETS_UNDEFINED: {

@@ -12,9 +12,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public @interface MyAnno {
-    testProperty1: string
-}
 
+class A {}
+function A[][][].test() {}
 
-/* @@? 15:1 Error SyntaxError: Annotation declaration can not have access modifier  */
+/* @@? 17:1 Node {
+  "type": "MethodDefinition",
+  "kind": "extensionmethod",
+  "accessibility": "public",
+  "static": true
+} */
+
+/* @@? 17:10 Node {
+  "type": "Identifier",
+  "name": "A"
+} */
+
+/* @@? 17:11 Node {
+  "type": "TSArrayType"
+} */
+
+/* @@? 17:13 Node {
+  "type": "TSArrayType"
+} */
+
+/* @@? 17:15 Node {
+  "type": "TSArrayType"
+} */
+
+/* @@? 17:18 Node {
+  "type": "Identifier",
+  "name": "test"
+} */
+
+/* @@? 17:23 Node {
+  "type": "Identifier",
+  "name": "=t"
+} */
+
+/* @@? 17:25 Node {
+  "type": "BlockStatement",
+  "statements": []
+} */

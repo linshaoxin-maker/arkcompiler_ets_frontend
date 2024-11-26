@@ -458,13 +458,19 @@ ir::MethodDefinition *ETSParser::ParseClassMethodDefinition(ir::Identifier *meth
         newStatus |= ParserStatus::ALLOW_THIS_TYPE;
     }
 
-    ir::ScriptFunction *func = ParseFunction(newStatus, className);
+    ir::ETSTypeReference *typeAnnotation = nullptr;
+    if (className != nullptr) {
+        auto *typeRefPart = AllocNode<ir::ETSTypeReferencePart>(className, nullptr, nullptr);
+        typeAnnotation = AllocNode<ir::ETSTypeReference>(typeRefPart);
+    }
+
+    ir::ScriptFunction *func = ParseFunction(newStatus, typeAnnotation);
     func->SetIdent(methodName);
     auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
     funcExpr->SetRange(func->Range());
     func->AddModifier(modifiers);
 
-    if (className != nullptr) {
+    if (typeAnnotation != nullptr) {
         func->AddFlag(ir::ScriptFunctionFlags::INSTANCE_EXTENSION_METHOD);
     }
     auto *method = AllocNode<ir::MethodDefinition>(methodKind, methodName->Clone(Allocator(), nullptr)->AsExpression(),
@@ -920,7 +926,7 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags, i
 
     auto *func = AllocNode<ir::ScriptFunction>(
         Allocator(), ir::ScriptFunction::ScriptFunctionData {body, std::move(signature), functionContext.Flags(), flags,
-                                                             true, GetContext().GetLanguage()});
+                                                             GetContext().GetLanguage()});
 
     if ((flags & ir::ModifierFlags::STATIC) == 0 && body == nullptr) {
         func->AddModifier(ir::ModifierFlags::ABSTRACT);
@@ -1068,7 +1074,7 @@ void ETSParser::CheckPredefinedMethods(ir::ScriptFunction const *function, const
 void ETSParser::CreateImplicitConstructor([[maybe_unused]] ir::MethodDefinition *&ctor,
                                           ArenaVector<ir::AstNode *> &properties,
                                           [[maybe_unused]] ir::ClassDefinitionModifiers modifiers,
-                                          const lexer::SourcePosition &startLoc)
+                                          ir::ModifierFlags flags, const lexer::SourcePosition &startLoc)
 {
     if (std::any_of(properties.cbegin(), properties.cend(), [](ir::AstNode *prop) {
             return prop->IsMethodDefinition() && prop->AsMethodDefinition()->IsConstructor();
@@ -1081,6 +1087,9 @@ void ETSParser::CreateImplicitConstructor([[maybe_unused]] ir::MethodDefinition 
     }
 
     auto *methodDef = BuildImplicitConstructor(ir::ClassDefinitionModifiers::SET_CTOR_ID, startLoc);
+    if ((flags & ir::ModifierFlags::DECLARE) != 0) {
+        methodDef->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+    }
     properties.push_back(methodDef);
 }
 

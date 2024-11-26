@@ -17,7 +17,6 @@
 
 #include "compiler/core/ETSGen.h"
 #include "varbinder/varbinder.h"
-#include "varbinder/variableFlags.h"
 #include "varbinder/ETSBinder.h"
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
@@ -39,6 +38,7 @@
 #include "checker/ETSchecker.h"
 #include "checker/types/type.h"
 #include "checker/types/ets/types.h"
+#include "checker/types/ets/etsPartialTypeParameter.h"
 #include "public/public.h"
 
 #include "assembly-program.h"
@@ -100,6 +100,9 @@ static pandasm::Type PandasmTypeWithRank(checker::Type const *type, uint32_t ran
     }
     if (type->IsETSNonNullishType()) {
         return PandasmTypeWithRank(type->AsETSNonNullishType()->GetUnderlying());
+    }
+    if (type->IsETSPartialTypeParameter()) {
+        return PandasmTypeWithRank(type->AsETSPartialTypeParameter()->GetUnderlying());
     }
     if (type->IsETSUnionType()) {
         return PandasmTypeWithRank(type->AsETSUnionType()->GetAssemblerLUB());
@@ -173,28 +176,6 @@ void ETSFunctionEmitter::GenVariableSignature(pandasm::debuginfo::LocalVariable 
 
 void ETSFunctionEmitter::GenFunctionAnnotations([[maybe_unused]] pandasm::Function *func) {}
 
-template <typename T>
-static pandasm::Function GenExternalFunction(T signature, bool isCtor)
-{
-    auto iter = signature.begin();
-    std::string name(*iter++);
-
-    auto func = pandasm::Function(name, EXTENSION);
-
-    while (iter != signature.end()) {
-        auto paramName = *iter++;
-        func.params.emplace_back(pandasm::Type(paramName, 0), EXTENSION);
-    }
-
-    func.returnType = pandasm::Type(Signatures::PRIMITIVE_VOID, 0);
-    if (isCtor) {
-        func.metadata->SetAttribute(Signatures::CONSTRUCTOR);
-    }
-    func.metadata->SetAttribute(Signatures::EXTERNAL);
-
-    return func;
-}
-
 static pandasm::Function GenExternalFunction(checker::Signature *signature, bool isCtor)
 {
     auto func = pandasm::Function(signature->InternalName().Mutf8(), EXTENSION);
@@ -230,17 +211,19 @@ void ETSEmitter::GenAnnotation()
     }
 
     for (auto *classDecl : globalRecordTable->ClassDefinitions()) {
-        GenClassRecord(classDecl, false);
+        GenClassRecord(classDecl, classDecl->IsDeclare());
     }
 
     for (auto *interfaceDecl : globalRecordTable->InterfaceDeclarations()) {
-        GenInterfaceRecord(interfaceDecl, false);
+        GenInterfaceRecord(interfaceDecl, interfaceDecl->IsDeclare());
     }
 
     for (auto *signature : globalRecordTable->Signatures()) {
         auto *scriptFunc = signature->Node()->AsScriptFunction();
-        auto func = scriptFunc->Declare() ? GenExternalFunction(scriptFunc->Signature(), scriptFunc->IsConstructor())
-                                          : GenScriptFunction(scriptFunc);
+        auto func = GenScriptFunction(scriptFunc);
+        if (scriptFunc->IsDeclare()) {
+            func.metadata->SetAttribute(Signatures::EXTERNAL);
+        }
         if (scriptFunc->IsAsyncFunc()) {
             std::vector<pandasm::AnnotationData> annotations;
             annotations.push_back(GenAnnotationAsync(scriptFunc));
@@ -420,7 +403,6 @@ void ETSEmitter::GenInterfaceRecord(const ir::TSInterfaceDeclaration *interfaceD
     auto *baseType = interfaceDecl->TsType()->AsETSObjectType();
 
     auto interfaceRecord = pandasm::Record(interfaceDecl->InternalName().Mutf8(), Program()->lang);
-
     if (external) {
         interfaceRecord.metadata->SetAttribute(Signatures::EXTERNAL);
     }
@@ -861,7 +843,7 @@ pandasm::AnnotationElement ETSEmitter::GenCustomAnnotationElement(const ir::Clas
 
 pandasm::AnnotationData ETSEmitter::GenCustomAnnotation(ir::AnnotationUsage *anno, std::string &baseName)
 {
-    auto *annoDecl = anno->Ident()->Variable()->Declaration()->Node()->AsAnnotationDeclaration();
+    auto *annoDecl = anno->GetBaseName()->Variable()->Declaration()->Node()->AsAnnotationDeclaration();
     pandasm::AnnotationData annotation(annoDecl->InternalName().Mutf8());
     if (annoDecl->IsImportDeclaration()) {
         auto annoRecord = pandasm::Record(annoDecl->InternalName().Mutf8(), Program()->lang);
@@ -882,7 +864,7 @@ std::vector<pandasm::AnnotationData> ETSEmitter::GenCustomAnnotations(
 {
     std::vector<pandasm::AnnotationData> annotations;
     for (auto *anno : annotationUsages) {
-        auto newBaseName = GenerateMangledName(baseName, anno->Ident()->Name().Mutf8());
+        auto newBaseName = GenerateMangledName(baseName, anno->GetBaseName()->Name().Mutf8());
         annotations.emplace_back(GenCustomAnnotation(anno, newBaseName));
     }
     return annotations;

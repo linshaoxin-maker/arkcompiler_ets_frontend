@@ -17,6 +17,8 @@
 #include "checker/ets/narrowingWideningConverter.h"
 #include "checker/types/globalTypesHolder.h"
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/types/ets/etsPartialTypeParameter.h"
+#include "checker/types/typeFlag.h"
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/expression.h"
@@ -225,6 +227,10 @@ static bool MatchConstituentOrConstraint(const Type *type, Pred const &pred, Trv
         auto tparam = type->AsETSNonNullishType()->GetUnderlying();
         return traverse(tparam->GetConstraintType());
     }
+    if (type->IsETSPartialTypeParameter()) {
+        auto tparam = type->AsETSPartialTypeParameter()->GetUnderlying();
+        return traverse(tparam->GetConstraintType());
+    }
     return false;
 }
 
@@ -307,7 +313,7 @@ bool Type::IsETSArrowType() const
         TypeFlag::TYPE_ERROR | TypeFlag::ETS_NULL | TypeFlag::ETS_UNDEFINED | TypeFlag::ETS_OBJECT |
         TypeFlag::ETS_TYPE_PARAMETER | TypeFlag::WILDCARD | TypeFlag::ETS_NONNULLISH |
         TypeFlag::ETS_REQUIRED_TYPE_PARAMETER | TypeFlag::ETS_NEVER | TypeFlag::ETS_UNION | TypeFlag::ETS_ARRAY |
-        TypeFlag::FUNCTION;
+        TypeFlag::FUNCTION | TypeFlag::ETS_PARTIAL_TYPE_PARAMETER;
 
     // Issues
     if (type->IsETSVoidType()) {  // NOTE(vpukhov): #19701 void refactoring
@@ -726,7 +732,7 @@ bool ETSChecker::CheckDuplicateAnnotations(const ArenaVector<ir::AnnotationUsage
 {
     std::unordered_set<util::StringView> seenAnnotations;
     for (const auto &anno : annotations) {
-        auto annoName = anno->Ident()->Name();
+        auto annoName = anno->GetBaseName()->Name();
         if (seenAnnotations.find(annoName) != seenAnnotations.end()) {
             LogTypeError({"Duplicate annotations are not allowed. The annotation '", annoName,
                           "' has already been applied to this element."},
@@ -756,46 +762,60 @@ void ETSChecker::CheckAnnotationPropertyType(ir::ClassProperty *property)
     }
 }
 
-void ETSChecker::CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
-                                               ETSChecker *checker)
+void ETSChecker::CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl)
 {
     auto *param = st->Properties().at(0)->AsClassProperty();
     if (annoDecl->Properties().size() > 1) {
-        checker->LogTypeError({"Annotation '", st->Ident()->Name(), "' requires multiple fields to be specified."},
-                              st->Start());
+        LogTypeError({"Annotation '", st->GetBaseName()->Name(), "' requires multiple fields to be specified."},
+                     st->Start());
     }
     auto singleField = annoDecl->Properties().at(0)->AsClassProperty();
-    auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(), singleField->TsType(),
+    auto ctx = checker::AssignmentContext(Relation(), param->Value(), param->TsType(), singleField->TsType(),
                                           param->Start(), {}, TypeRelationFlag::NO_THROW);
     if (!ctx.IsAssignable()) {
-        checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
-                               param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
-                               singleField->TsType(), "'."},
-                              param->Start());
+        LogTypeError({"The value provided for annotation '", st->GetBaseName()->Name(), "' field '",
+                      param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                      singleField->TsType(), "'."},
+                     param->Start());
+    }
+}
+
+void ETSChecker::ProcessRequiredFields(ArenaUnorderedMap<util::StringView, ir::ClassProperty *> &fieldMap,
+                                       ir::AnnotationUsage *st, ETSChecker *checker) const
+{
+    for (const auto &entry : fieldMap) {
+        if (entry.second->Value() == nullptr) {
+            checker->LogTypeError({"The required field '", entry.first,
+                                   "' must be specified. Fields without default values cannot be omitted."},
+                                  st->Start());
+            continue;
+        }
+        auto *clone = entry.second->Clone(checker->Allocator(), st);
+        clone->Check(checker);
+        st->AddProperty(clone);
     }
 }
 
 void ETSChecker::CheckMultiplePropertiesAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
-                                                   ETSChecker *checker,
                                                    ArenaUnorderedMap<util::StringView, ir::ClassProperty *> &fieldMap)
 {
     for (auto *it : st->Properties()) {
         auto *param = it->AsClassProperty();
         auto result = fieldMap.find(param->Id()->Name());
         if (result == fieldMap.end()) {
-            checker->LogTypeError({"The parameter '", param->Id()->Name(),
-                                   "' does not match any declared property in the annotation '",
-                                   annoDecl->Ident()->Name(), "'."},
-                                  param->Start());
+            LogTypeError({"The parameter '", param->Id()->Name(),
+                          "' does not match any declared property in the annotation '", annoDecl->Ident()->Name(),
+                          "'."},
+                         param->Start());
             continue;
         }
-        auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(),
-                                              result->second->TsType(), param->Start(), {}, TypeRelationFlag::NO_THROW);
+        auto ctx = checker::AssignmentContext(Relation(), param->Value(), param->TsType(), result->second->TsType(),
+                                              param->Start(), {}, TypeRelationFlag::NO_THROW);
         if (!ctx.IsAssignable()) {
-            checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
-                                   param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
-                                   result->second->TsType(), "'."},
-                                  param->Start());
+            LogTypeError({"The value provided for annotation '", st->GetBaseName()->Name(), "' field '",
+                          param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                          result->second->TsType(), "'."},
+                         param->Start());
         }
         fieldMap.erase(result);
     }

@@ -23,7 +23,6 @@
 #include "checker/types/ets/etsTupleType.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
 #include "evaluate/scopedDebugInfoPlugin.h"
-#include "types/ts/undefinedType.h"
 #include "ir/statements/namespaceDeclaration.h"
 
 namespace ark::es2panda::checker {
@@ -67,7 +66,7 @@ checker::Type *ETSAnalyzer::Check(ir::ClassDefinition *node) const
         checker->CheckClassDefinition(node);
     }
 
-    return nullptr;
+    return node->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ClassProperty *st) const
@@ -363,13 +362,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSLaunchExpression *expr) const
         return tsType;
     }(expr->expr_->TsType());
 
-    checker::Substitution *substitution = checker->NewSubstitution();
-    auto launchPromiseType = checker->GlobalBuiltinPromiseType();
-    ASSERT(launchPromiseType->TypeArguments().size() == 1);
-    checker::ETSChecker::EmplaceSubstituted(
-        substitution, launchPromiseType->TypeArguments()[0]->AsETSTypeParameter()->GetOriginal(), exprType);
-
-    expr->SetTsType(launchPromiseType->Substitute(checker->Relation(), substitution));
+    expr->SetTsType(checker->CreatePromiseOf(exprType));
     return expr->TsType();
 }
 
@@ -939,6 +932,7 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
     }
 
     ETSChecker *checker = GetETSChecker();
+
     auto *const leftType = expr->Left()->Check(checker);
 
     if (IsInvalidArrayMemberAssignment(expr, checker)) {
@@ -1045,6 +1039,28 @@ checker::Type *ETSAnalyzer::Check(ir::AwaitExpression *expr) const
 
     Type *type = argType->AsETSObjectType()->TypeArguments().at(0);
     expr->SetTsType(UnwrapPromiseType(type));
+    return expr->TsType();
+}
+
+checker::Type *ETSAnalyzer::Check(ir::ImportExpression *expr) const
+{
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    Type *const argType = expr->Source()->Check(checker);
+    if (argType->IsTypeError()) {
+        expr->SetTsType(checker->GlobalTypeError());
+        return expr->TsType();
+    }
+    if (!checker->Relation()->IsSupertypeOf(checker->GlobalBuiltinETSStringType(), argType)) {
+        checker->LogTypeError("'import' expressions require string as argument.", expr->Start());
+        expr->SetTsType(checker->GlobalTypeError());
+        return expr->TsType();
+    }
+
+    expr->SetTsType(checker->CreatePromiseOf(checker->GlobalBuiltinJSValueType()));
     return expr->TsType();
 }
 
@@ -1569,6 +1585,23 @@ static bool ValidatePreferredType(ir::ObjectExpression *expr, ETSChecker *checke
     return true;
 }
 
+static void SetTypeforRecordProperties(const ir::ObjectExpression *expr, checker::ETSObjectType *objType,
+                                       ETSChecker *checker)
+{
+    auto recordProperties = expr->Properties();
+    auto typeArguments = objType->TypeArguments();
+    auto valueType = typeArguments[1];  //  Record<K, V>  type arguments
+
+    for (auto recordProperty : recordProperties) {
+        if (!recordProperty->AsProperty()->Value()->IsObjectExpression()) {
+            continue;
+        }
+        auto recordPropertyExpr = recordProperty->AsProperty()->Value()->AsObjectExpression();
+        recordPropertyExpr->SetPreferredType(valueType);
+        recordPropertyExpr->Check(checker);
+    }
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1611,6 +1644,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         // Here we just set the type to pass the checker
         // See Record Lowering for details
         expr->SetTsType(objType);
+        SetTypeforRecordProperties(expr, objType, checker);
         return objType;
     }
 
@@ -2174,19 +2208,30 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationDeclaration *st) const
 checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
 {
     ETSChecker *checker = GetETSChecker();
-    for (auto *it : st->Properties()) {
-        it->Check(checker);
+
+    if (!st->Expr()->IsIdentifier()) {
+        st->Expr()->Check(checker);
     }
 
-    if (!st->Ident()->Variable()->Declaration()->Node()->IsAnnotationDeclaration()) {
-        checker->LogTypeError({"'", st->Ident()->Name(), "' is not an annotation."}, st->Ident()->Start());
+    for (auto *it : st->Properties()) {
+        it->Check(checker);
+        auto property = it->AsClassProperty();
+        if (property->Value() != nullptr && property->Value()->IsMemberExpression() &&
+            !property->TsType()->IsETSEnumType()) {
+            checker->LogTypeError("Invalid value for annotation field, expected a constant literal.",
+                                  property->Value()->Start());
+        }
+    }
+
+    if (!st->GetBaseName()->Variable()->Declaration()->Node()->IsAnnotationDeclaration()) {
+        checker->LogTypeError({"'", st->GetBaseName()->Name(), "' is not an annotation."}, st->GetBaseName()->Start());
         return nullptr;
     }
 
-    auto *annoDecl = st->Ident()->Variable()->Declaration()->Node()->AsAnnotationDeclaration();
+    auto *annoDecl = st->GetBaseName()->Variable()->Declaration()->Node()->AsAnnotationDeclaration();
     annoDecl->Check(checker);
-    ArenaUnorderedMap<util::StringView, ir::ClassProperty *> fieldMap {checker->Allocator()->Adapter()};
 
+    ArenaUnorderedMap<util::StringView, ir::ClassProperty *> fieldMap {checker->Allocator()->Adapter()};
     for (auto *it : annoDecl->Properties()) {
         auto *field = it->AsClassProperty();
         fieldMap.insert(std::make_pair(field->Id()->Name(), field));
@@ -2200,32 +2245,14 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
 
     if (st->Properties().size() == 1 &&
         st->Properties().at(0)->AsClassProperty()->Id()->Name() == compiler::Signatures::ANNOTATION_KEY_VALUE) {
-        checker->CheckSinglePropertyAnnotation(st, annoDecl, checker);
+        checker->CheckSinglePropertyAnnotation(st, annoDecl);
         fieldMap.clear();
     } else {
-        checker->CheckMultiplePropertiesAnnotation(st, annoDecl, checker, fieldMap);
+        checker->CheckMultiplePropertiesAnnotation(st, annoDecl, fieldMap);
     }
 
-    for (const auto &it : fieldMap) {
-        if (it.second->Value() == nullptr) {
-            checker->LogTypeError({"The required field '", it.first,
-                                   "' must be specified. Fields without default values cannot be omitted."},
-                                  st->Start());
-            continue;
-        }
-        auto *clone = it.second->Clone(checker->Allocator(), st);
-        clone->Check(checker);
-        st->AddProperty(clone);
-    }
+    checker->ProcessRequiredFields(fieldMap, st, checker);
 
-    for (auto *it : st->Properties()) {
-        auto property = it->AsClassProperty();
-        if (property->Value() != nullptr && property->Value()->IsMemberExpression() &&
-            !property->TsType()->IsETSEnumType()) {
-            checker->LogTypeError("Invalid value for annotation field, expected a constant literal.",
-                                  property->Value()->Start());
-        }
-    }
     return nullptr;
 }
 
@@ -2817,28 +2844,24 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
 {
-    ETSChecker *checker = GetETSChecker();
+    if (st->TsType() == nullptr) {
+        ETSChecker *checker = GetETSChecker();
 
-    checker::ETSObjectType *interfaceType {};
+        checker::ETSObjectType *interfaceType = checker->BuildBasicInterfaceProperties(st);
+        ASSERT(interfaceType != nullptr);
 
-    if (st->TsType() != nullptr) {
-        return st->TsType();
+        interfaceType->SetSuperType(checker->GlobalETSObjectType());
+        checker->CheckInvokeMethodsLegitimacy(interfaceType);
+        st->SetTsType(interfaceType);
+
+        checker::ScopeContext scopeCtx(checker, st->Scope());
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::IN_INTERFACE, interfaceType);
+
+        for (auto *it : st->Body()->Body()) {
+            it->Check(checker);
+        }
     }
-
-    interfaceType = checker->BuildBasicInterfaceProperties(st);
-    ASSERT(interfaceType != nullptr);
-    interfaceType->SetSuperType(checker->GlobalETSObjectType());
-    checker->CheckInvokeMethodsLegitimacy(interfaceType);
-    st->SetTsType(interfaceType);
-
-    checker::ScopeContext scopeCtx(checker, st->Scope());
-    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::IN_INTERFACE, interfaceType);
-
-    for (auto *it : st->Body()->Body()) {
-        it->Check(checker);
-    }
-
-    return nullptr;
+    return st->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const

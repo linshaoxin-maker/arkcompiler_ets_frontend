@@ -18,7 +18,7 @@
 class named_types  {
     text : ets.lang.String ;
     public static /* @@ label */class inner<T> {
-        public class innertoo  {
+        public /*@@ label1 */class innertoo  {
         }
 
     }
@@ -31,3 +31,4 @@ class auxilliary  {
 }
 
 /* @@@ label Error SyntaxError: Local type declaration (class, struct, interface and enum) support is not yet implemented.  */
+/* @@@ label1 Error SyntaxError: Local type declaration (class, struct, interface and enum) support is not yet implemented. */

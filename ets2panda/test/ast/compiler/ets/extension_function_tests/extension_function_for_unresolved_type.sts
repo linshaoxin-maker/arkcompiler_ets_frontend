@@ -13,4 +13,8 @@
  * limitations under the License.
  */
 
-declare type t = int;
+function Fruit.name(): int {
+    return 1;
+}
+
+/* @@? 16:10 Error SyntaxError: Cannot find type 'Fruit'.  */
