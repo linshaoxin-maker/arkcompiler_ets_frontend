@@ -1,0 +1,112 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+import("//arkcompiler/runtime_core/ark_config.gni")
+
+config("panda_guard_public_config") {
+  include_dirs = [ "$ets_frontend_root/panda_guard" ]
+}
+
+panda_guard_sources = [
+  "configs/guard_args_parser.cpp",
+  "configs/guard_context.cpp",
+  "guard_driver.cpp",
+]
+
+panda_guard_configs = [ ":panda_guard_public_config" ]
+
+ohos_static_library("panda_guard_frontend_static") {
+  sources = panda_guard_sources
+
+  configs = panda_guard_configs
+
+  external_deps = [
+    "json:nlohmann_json_static",
+    "runtime_core:abc2program_frontend_static",
+    "runtime_core:libarkassembler_frontend_static",
+    "runtime_core:libarkbase_static",
+    "runtime_core:libarkcompiler_frontend_static",
+    "runtime_core:libarkfile_frontend_static",
+    sdk_libc_secshared_dep,
+  ]
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
+ohos_executable("panda_guard") {
+  sources = [ "guard_main.cpp" ]
+
+  configs = panda_guard_configs
+
+  deps = [ ":panda_guard_frontend_static" ]
+
+  install_enable = false
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
+if (is_linux || (is_build_sdk && is_ohos)) {
+  ohos_copy("panda_guard_build_ets") {
+    deps = [ ":panda_guard" ]
+    sources = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard" ]
+    outputs = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard-ets" ]
+    module_source_dir = "${root_out_dir}/arkcompiler/ets_frontend"
+    module_install_name = "panda_guard"
+    part_name = "ets_frontend"
+    subsystem_name = "arkcompiler"
+  }
+}
+
+if (is_mingw) {
+  ohos_copy("panda_guard_build_win_ets") {
+    deps = [ ":panda_guard" ]
+    sources = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard.exe" ]
+    outputs = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard-win-ets" ]
+    module_source_dir = "${root_out_dir}/arkcompiler/ets_frontend"
+    module_install_name = "panda_guard.exe"
+    part_name = "ets_frontend"
+    subsystem_name = "arkcompiler"
+  }
+}
+
+if (is_mac) {
+  ohos_copy("panda_guard_build_mac_ets") {
+    deps = [ ":panda_guard" ]
+    sources = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard" ]
+    outputs = [ "${root_out_dir}/arkcompiler/ets_frontend/panda_guard-mac-ets" ]
+    module_source_dir = "${root_out_dir}/arkcompiler/ets_frontend"
+    module_install_name = "panda_guard"
+    part_name = "ets_frontend"
+    subsystem_name = "arkcompiler"
+  }
+}
+
+group("panda_guard_build") {
+  if (host_os == "linux") {
+    deps = [ ":panda_guard(${toolchain_linux})" ]
+  }
+
+  if (host_os == "mac") {
+    deps = [ ":panda_guard(${toolchain_mac})" ]
+  }
+
+  if (host_os == "ohos") {
+    deps = [ ":panda_guard(${toolchain_ohos})" ]
+  }
+}
+
+group("panda_guard_build_win") {
+  deps = [ ":panda_guard(${toolchain_win})" ]
+}
