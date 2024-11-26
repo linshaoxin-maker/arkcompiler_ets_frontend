@@ -59,7 +59,11 @@ Tranformation "one to many" is supported to express map of e.g. `std::vector<int
 
           # Cast C argument to C++ class, to call method from it.
             call_cast:
-              call_var: 'es2panda_FunctionSignature *ast'
+              call_var:
+                name: ast
+                type:
+                  name: es2panda_FunctionSignature
+                  ptr_depth: 1
               start: >-
                 (reinterpret_cast<?const? ir::FunctionSignature *>(ast))->
 
@@ -263,7 +267,11 @@ There are 4 keys in first layer:
         FunctionSignature in `cppToCTypes.yaml`:
         ```yaml
         call_cast:
-            call_var: 'es2panda_FunctionSignature *ast'
+            call_var:
+                name: ast
+                type:
+                    name: es2panda_FunctionSignature
+                    ptr_depth: 1
             start: >-
                 (reinterpret_cast<?const? ir::FunctionSignature *>(ast))->
         ```
@@ -362,8 +370,49 @@ ninja gen_api   # only generates *.inc files.
 
 ninja es2panda-public   # compiles es2panda_lib
 ```
-
 You can find generated files in `<build>/tools/es2panda/generated/es2panda_lib`.
+
+## IDL
+
+### How to check IDL for correctness:
+```bash
+# Cmake
+mkdir build && cd build && cmake -GNinja -DCMAKE_BUILD_TYPE=Debug <runtime_core>/static_core
+
+# Run generation
+ninja gen_api
+
+# Cd to generated dir
+cd <build>/tools/es2panda/generated/es2panda_lib
+mkdir test
+
+# Check idl for correctness
+cp ./es2panda_lib.idl ./test/
+npx @azanat/idlize --idl2h --input-dir=<build>/tools/es2panda/generated/es2panda_lib/test
+
+# See results
+cat <build>/tools/es2panda/generated/es2panda_lib/generated/headers/arkoala_api_generated.h
+```
+
+
+### How to interpret type names in .idl:
+For example let's see type `es2panda_Variable_const_ptr_ptr` from `es2panda_lib.idl`:
+
+Read from right:
+- `_ptr_ptr`: means that ptr_depth = 2 e.g. `**` in C/C++.
+- `_const`: means that type has `const` modifier
+- `es2panda_Variable`: base type, that is used in es2panda API
+
+As result:
+```c++
+// Type in .idl:
+es2panda_Variable_const_ptr_ptr
+
+// Equals to
+
+// Type in .h/.cpp
+const es2panda_Variable **
+```
 
 ## Tests:
 Tests are located in `ets_frontend/ets2panda/test/unit/public`, their names start with "e2p_test_plugin".
