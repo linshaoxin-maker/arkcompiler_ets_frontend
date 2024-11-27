@@ -15,49 +15,49 @@
     ],
     "nodes": [
         {
-            "line": 21,
+            "line": 22,
             "column": 3,
             "problem": "PropertyAccessByIndex",
             "suggest": "",
             "rule": "Indexed access is not supported for fields (arkts-no-props-by-index)"
         },
         {
-            "line": 24,
+            "line": 25,
             "column": 10,
             "problem": "PropertyAccessByIndex",
             "suggest": "",
             "rule": "Indexed access is not supported for fields (arkts-no-props-by-index)"
         },
         {
-            "line": 49,
+            "line": 50,
             "column": 3,
             "problem": "PropertyAccessByIndex",
             "suggest": "",
             "rule": "Indexed access is not supported for fields (arkts-no-props-by-index)"
         },
         {
-            "line": 56,
+            "line": 57,
             "column": 5,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
         },
         {
-            "line": 107,
+            "line": 108,
             "column": 5,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
         },
         {
-            "line": 117,
+            "line": 118,
             "column": 5,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
         },
         {
-            "line": 158,
+            "line": 159,
             "column": 3,
             "problem": "PropertyAccessByIndex",
             "suggest": "",

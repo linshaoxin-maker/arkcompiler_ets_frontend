@@ -1811,6 +1811,7 @@ export class TypeScriptLinter {
       this.tsUtils.isLibraryType(type) ||
       TsUtils.isAnyType(type) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isIndexableArray) ||
+      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isCollectionArrayType) ||
       this.tsUtils.isOrDerivedFrom(type, TsUtils.isTuple) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdRecordType) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStringType) ||
@@ -2349,7 +2350,8 @@ export class TypeScriptLinter {
       if (
         spreadExprType &&
         (this.useRtLogic || ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
-        this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)
+        (this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray) ||
+        this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isCollectionArrayType))
       ) {
         return;
       }
