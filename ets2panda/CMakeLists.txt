@@ -357,6 +357,7 @@ set(ES2PANDA_LIB_SRC
   ir/ets/etsUnionType.cpp
   ir/ets/etsWildcardType.cpp
   ir/ets/etsImportSource.cpp
+  ir/ets/etsKeyofType.cpp
   ir/ts/tsAnyKeyword.cpp
   ir/ts/tsArrayType.cpp
   ir/ts/tsAsExpression.cpp

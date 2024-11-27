@@ -122,6 +122,11 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::ETSNullType *node) const
     UNREACHABLE();
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSKeyofType *node) const
+{
+    UNREACHABLE();
+}
+
 void ETSCompiler::Compile([[maybe_unused]] const ir::ETSUndefinedType *node) const
 {
     UNREACHABLE();

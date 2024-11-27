@@ -124,6 +124,11 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSPrimitiveType *node) co
     UNREACHABLE();
 }
 
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSKeyofType *node) const
+{
+    UNREACHABLE();
+}
+
 checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSStructDeclaration *node) const
 {
     UNREACHABLE();

@@ -546,6 +546,12 @@ checker::Type *ETSAnalyzer::Check(ir::ETSStructDeclaration *node) const
     return nullptr;
 }
 
+checker::Type *ETSAnalyzer::Check(ir::ETSKeyofType *node) const
+{
+    ETSChecker *checker = GetETSChecker();
+    return node->GetType(checker);
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ETSTypeReference *node) const
 {
     ETSChecker *checker = GetETSChecker();

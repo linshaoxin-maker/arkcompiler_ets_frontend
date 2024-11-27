@@ -510,19 +510,30 @@ ir::TypeNode *ETSParser::ParseTypeAnnotationNoPreferParam(TypeAnnotationParsingO
 ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
 {
     // if there is prefix readonly parameter type, change the return result to ETSTypeReference, like Readonly<>
+    // If there is a prefix keyof keyword, then the result is changed to ETSKeyofType
     if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_READONLY) {
         auto startPos = Lexer()->GetToken().Start();
         Lexer()->NextToken();  // eat 'readonly'
         ir::TypeNode *typeAnnotation = ParseTypeAnnotationNoPreferParam(options);
         if (!typeAnnotation->IsTSArrayType() && !typeAnnotation->IsETSTuple()) {
-            ThrowSyntaxError("'readonly' type modifier is only permitted on array and tuple types.");
+            LogSyntaxError("'readonly' type modifier is only permitted on array and tuple types.");
         }
         typeAnnotation->SetStart(startPos);
         typeAnnotation->AddModifier(ir::ModifierFlags::READONLY_PARAMETER);
         return typeAnnotation;
+    } else if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_KEYOF) {
+        auto startPos = Lexer()->GetToken().Start();
+        Lexer()->NextToken();  // eat 'keyof'
+        ir::TypeNode *typeAnnotation = ParseTypeAnnotationNoPreferParam(options);
+        if (!typeAnnotation->IsETSTypeReference()) {
+            LogSyntaxError("The `keyof` keyword can only be used for class or interface type", startPos);
+        }
+        auto keyoftype = AllocNode<ir::ETSKeyofType>(typeAnnotation);
+        keyoftype->SetRange(Lexer()->GetToken().Loc());
+        return keyoftype;
+    } else {
+        return ParseTypeAnnotationNoPreferParam(options);
     }
-
-    return ParseTypeAnnotationNoPreferParam(options);
 }
 
 }  // namespace ark::es2panda::parser
