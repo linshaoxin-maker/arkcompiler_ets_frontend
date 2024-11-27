@@ -1,0 +1,4 @@
+-keep-global-name 
+RemoteHarClass
+-keep-property-name 
+remoteHarMethod
