@@ -22,7 +22,7 @@
 
 namespace ark::es2panda::varbinder {
 // Note: if the bool operand is present, the expression cannot be evaluated during compilation
-using EnumMemberResult = std::variant<double, util::StringView, bool>;
+using EnumMemberResult = std::variant<double, util::UString, bool>;
 
 class TSBinding : public util::UString {
 public:

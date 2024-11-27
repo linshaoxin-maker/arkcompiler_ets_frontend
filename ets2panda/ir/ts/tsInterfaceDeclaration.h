@@ -100,14 +100,14 @@ public:
         return id_;
     }
 
-    const util::StringView &InternalName() const
+    util::StringView InternalName() const
     {
-        return internalName_;
+        return internalName_.View();
     }
 
-    void SetInternalName(util::StringView internalName)
+    void SetInternalName(util::UString internalName) noexcept
     {
-        internalName_ = internalName;
+        internalName_ = std::move(internalName);
     }
 
     bool IsStatic() const
@@ -203,7 +203,7 @@ private:
     TSTypeParameterDeclaration *typeParams_;
     TSInterfaceBody *body_;
     ArenaVector<TSInterfaceHeritage *> extends_;
-    util::StringView internalName_ {};
+    util::UString internalName_ {};
     bool isStatic_;
     bool isExternal_;
     es2panda::Language lang_;

@@ -46,15 +46,15 @@ ir::Expression *ETSParser::ParseLaunchExpression(ExpressionParseFlags flags)
 static constexpr char const NO_DEFAULT_FOR_REST[] = "Rest parameter cannot have the default value.";
 // NOLINTEND(modernize-avoid-c-arrays)
 
-static std::string GetArgumentsSourceView(lexer::Lexer *lexer, const util::StringView::Iterator &lexerPos)
+static util::StringView GetArgumentsSourceView(lexer::Lexer *lexer, const util::StringView::Iterator &lexerPos)
 {
-    std::string value = lexer->SourceView(lexerPos.Index(), lexer->Save().Iterator().Index()).Mutf8();
+    std::string_view value = lexer->SourceView(lexerPos.Index(), lexer->Save().Iterator().Index()).Utf8();
     while (value.back() == ' ') {
-        value.pop_back();
+        value.remove_suffix(1);
     }
 
     if (value.back() == ')' || value.back() == ',') {
-        value.pop_back();
+        value.remove_suffix(1);
     }
 
     return value;
@@ -91,8 +91,8 @@ ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpress
 
         paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), defaultValue);
 
-        std::string value = GetArgumentsSourceView(Lexer(), lexerPos);
-        paramExpression->SetLexerSaved(util::UString(value, Allocator()).View());
+        util::StringView value = GetArgumentsSourceView(Lexer(), lexerPos);
+        paramExpression->SetLexerSaved(value);
         paramExpression->SetRange({paramIdent->Start(), paramExpression->Initializer()->End()});
     } else if (paramIdent == nullptr) {  // Error processing.
         return nullptr;
@@ -100,7 +100,7 @@ ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpress
         auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
 
         const auto typeAnnotationValue = [this, typeAnnotation,
-                                          defaultUndef]() -> std::pair<ir::Expression *, std::string> {
+                                          defaultUndef]() -> std::pair<ir::Expression *, util::StringView> {
             if (typeAnnotation == nullptr) {
                 return std::make_pair(nullptr, "");
             }
@@ -110,7 +110,7 @@ ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpress
         paramExpression =
             AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), std::get<0>(typeAnnotationValue));
         if (defaultUndef != nullptr) {
-            paramExpression->SetLexerSaved(util::UString(std::get<1>(typeAnnotationValue), Allocator()).View());
+            paramExpression->SetLexerSaved(std::get<1>(typeAnnotationValue));
         }
         paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
     } else {
@@ -601,7 +601,7 @@ ir::ClassDefinition *ETSParser::CreateClassDefinitionForNewExpression(ArenaVecto
 
         auto newIdent = AllocNode<ir::Identifier>("#0", Allocator());
         classDefinition = AllocNode<ir::ClassDefinition>(
-            "#0", newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
+            util::UString("#0"s, Allocator()), newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
             typeReference->Clone(Allocator(), nullptr), std::move(properties), modifiers, ir::ModifierFlags::NONE,
             Language(Language::Id::ETS));
 

@@ -56,17 +56,17 @@ namespace ark::es2panda::checker {
 void GlobalTypesHolder::AddETSEscompatLayer()
 {
     // ETS escompat layer
-    builtinNameMappings_.emplace("Array", GlobalTypeId::ETS_ARRAY_BUILTIN);
-    builtinNameMappings_.emplace("Date", GlobalTypeId::ETS_DATE_BUILTIN);
-    builtinNameMappings_.emplace("Error", GlobalTypeId::ETS_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("OutOfMemoryError", GlobalTypeId::ETS_OUT_OF_MEMORY_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("NoSuchMethodError", GlobalTypeId::ETS_NO_SUCH_METHOD_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("DivideByZeroError", GlobalTypeId::ETS_DIVIDE_BY_ZERO_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("NullPointerError", GlobalTypeId::ETS_NULL_POINTER_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("UncaughtExceptionError", GlobalTypeId::ETS_UNCAUGHT_EXCEPTION_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("Map", GlobalTypeId::ETS_MAP_BUILTIN);
-    builtinNameMappings_.emplace("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
-    builtinNameMappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
+    AddMapping("Array", GlobalTypeId::ETS_ARRAY_BUILTIN);
+    AddMapping("Date", GlobalTypeId::ETS_DATE_BUILTIN);
+    AddMapping("Error", GlobalTypeId::ETS_ERROR_BUILTIN);
+    AddMapping("OutOfMemoryError", GlobalTypeId::ETS_OUT_OF_MEMORY_ERROR_BUILTIN);
+    AddMapping("NoSuchMethodError", GlobalTypeId::ETS_NO_SUCH_METHOD_ERROR_BUILTIN);
+    AddMapping("DivideByZeroError", GlobalTypeId::ETS_DIVIDE_BY_ZERO_ERROR_BUILTIN);
+    AddMapping("NullPointerError", GlobalTypeId::ETS_NULL_POINTER_ERROR_BUILTIN);
+    AddMapping("UncaughtExceptionError", GlobalTypeId::ETS_UNCAUGHT_EXCEPTION_ERROR_BUILTIN);
+    AddMapping("Map", GlobalTypeId::ETS_MAP_BUILTIN);
+    AddMapping("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
+    AddMapping("Set", GlobalTypeId::ETS_SET_BUILTIN);
 }
 
 void GlobalTypesHolder::AddFunctionTypes(ArenaAllocator *allocator)
@@ -74,29 +74,29 @@ void GlobalTypesHolder::AddFunctionTypes(ArenaAllocator *allocator)
     // ETS throwing functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS); id++, nargs++) {
-        builtinNameMappings_.emplace(util::UString("ThrowingFunction" + std::to_string(nargs), allocator).View(),
+        builtinNameMappings_.emplace(util::UString("ThrowingFunction" + std::to_string(nargs), allocator),
                                      static_cast<GlobalTypeId>(id));
     }
 
-    builtinNameMappings_.emplace("ThrowingFunctionN", GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS);
+    AddMapping("ThrowingFunctionN", GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS);
 
     // ETS rethrowing functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS); id++, nargs++) {
-        builtinNameMappings_.emplace(util::UString("RethrowingFunction" + std::to_string(nargs), allocator).View(),
+        builtinNameMappings_.emplace(util::UString("RethrowingFunction" + std::to_string(nargs), allocator),
                                      static_cast<GlobalTypeId>(id));
     }
 
-    builtinNameMappings_.emplace("RethrowingFunctionN", GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS);
+    AddMapping("RethrowingFunctionN", GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS);
 
     // ETS functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
-        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
+        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator),
                                      static_cast<GlobalTypeId>(id));
     }
 
-    builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
+    AddMapping("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
 }
 
 void GlobalTypesHolder::AddTSSpecificTypes(ArenaAllocator *allocator)
@@ -152,48 +152,48 @@ void GlobalTypesHolder::AddEtsSpecificTypes(ArenaAllocator *allocator)
 
 void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
 {
-    builtinNameMappings_.emplace("Boolean", GlobalTypeId::ETS_BOOLEAN_BUILTIN);
-    builtinNameMappings_.emplace("Byte", GlobalTypeId::ETS_BYTE_BUILTIN);
-    builtinNameMappings_.emplace("Char", GlobalTypeId::ETS_CHAR_BUILTIN);
-    builtinNameMappings_.emplace("Comparable", GlobalTypeId::ETS_COMPARABLE_BUILTIN);
-    builtinNameMappings_.emplace("Console", GlobalTypeId::ETS_CONSOLE_BUILTIN);
-    builtinNameMappings_.emplace("Double", GlobalTypeId::ETS_DOUBLE_BUILTIN);
-    builtinNameMappings_.emplace("Exception", GlobalTypeId::ETS_EXCEPTION_BUILTIN);
-    builtinNameMappings_.emplace("Float", GlobalTypeId::ETS_FLOAT_BUILTIN);
-    builtinNameMappings_.emplace("Floating", GlobalTypeId::ETS_FLOATING_BUILTIN);
-    builtinNameMappings_.emplace("Int", GlobalTypeId::ETS_INTEGER_BUILTIN);
-    builtinNameMappings_.emplace("Integral", GlobalTypeId::ETS_INTEGRAL_BUILTIN);
-    builtinNameMappings_.emplace("Long", GlobalTypeId::ETS_LONG_BUILTIN);
-    builtinNameMappings_.emplace("Object", GlobalTypeId::ETS_OBJECT_BUILTIN);
-    builtinNameMappings_.emplace("Runtime", GlobalTypeId::ETS_RUNTIME_BUILTIN);
-    builtinNameMappings_.emplace("RuntimeLinker", GlobalTypeId::ETS_RUNTIME_LINKER_BUILTIN);
-    builtinNameMappings_.emplace("Short", GlobalTypeId::ETS_SHORT_BUILTIN);
-    builtinNameMappings_.emplace("StackTraceElement", GlobalTypeId::ETS_STACK_TRACE_ELEMENT_BUILTIN);
-    builtinNameMappings_.emplace("StackTrace", GlobalTypeId::ETS_STACK_TRACE_BUILTIN);
-    builtinNameMappings_.emplace("NullPointerException", GlobalTypeId::ETS_NULL_POINTER_EXCEPTION_BUILTIN);
-    builtinNameMappings_.emplace("ArrayIndexOutOfBoundsError",
-                                 GlobalTypeId::ETS_ARRAY_INDEX_OUT_OF_BOUNDS_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("ArithmeticError", GlobalTypeId::ETS_ARITHMETIC_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("ClassNotFoundException", GlobalTypeId::ETS_CLASS_NOT_FOUND_EXCEPTION_BUILTIN);
-    builtinNameMappings_.emplace("ClassCastError", GlobalTypeId::ETS_CLASS_CAST_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("String", GlobalTypeId::ETS_STRING_BUILTIN);
-    builtinNameMappings_.emplace("BigInt", GlobalTypeId::ETS_BIG_INT_BUILTIN);
-    builtinNameMappings_.emplace("StringBuilder", GlobalTypeId::ETS_STRING_BUILDER_BUILTIN);
-    builtinNameMappings_.emplace("Type", GlobalTypeId::ETS_TYPE_BUILTIN);
-    builtinNameMappings_.emplace("Types", GlobalTypeId::ETS_TYPES_BUILTIN);
-    builtinNameMappings_.emplace("Promise", GlobalTypeId::ETS_PROMISE_BUILTIN);
-    builtinNameMappings_.emplace("Box", GlobalTypeId::ETS_BOX_BUILTIN);
-    builtinNameMappings_.emplace("BooleanBox", GlobalTypeId::ETS_BOOLEAN_BOX_BUILTIN);
-    builtinNameMappings_.emplace("ByteBox", GlobalTypeId::ETS_BYTE_BOX_BUILTIN);
-    builtinNameMappings_.emplace("CharBox", GlobalTypeId::ETS_CHAR_BOX_BUILTIN);
-    builtinNameMappings_.emplace("ShortBox", GlobalTypeId::ETS_SHORT_BOX_BUILTIN);
-    builtinNameMappings_.emplace("IntBox", GlobalTypeId::ETS_INT_BOX_BUILTIN);
-    builtinNameMappings_.emplace("LongBox", GlobalTypeId::ETS_LONG_BOX_BUILTIN);
-    builtinNameMappings_.emplace("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
-    builtinNameMappings_.emplace("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
+    AddMapping("Boolean", GlobalTypeId::ETS_BOOLEAN_BUILTIN);
+    AddMapping("Byte", GlobalTypeId::ETS_BYTE_BUILTIN);
+    AddMapping("Char", GlobalTypeId::ETS_CHAR_BUILTIN);
+    AddMapping("Comparable", GlobalTypeId::ETS_COMPARABLE_BUILTIN);
+    AddMapping("Console", GlobalTypeId::ETS_CONSOLE_BUILTIN);
+    AddMapping("Double", GlobalTypeId::ETS_DOUBLE_BUILTIN);
+    AddMapping("Exception", GlobalTypeId::ETS_EXCEPTION_BUILTIN);
+    AddMapping("Float", GlobalTypeId::ETS_FLOAT_BUILTIN);
+    AddMapping("Floating", GlobalTypeId::ETS_FLOATING_BUILTIN);
+    AddMapping("Int", GlobalTypeId::ETS_INTEGER_BUILTIN);
+    AddMapping("Integral", GlobalTypeId::ETS_INTEGRAL_BUILTIN);
+    AddMapping("Long", GlobalTypeId::ETS_LONG_BUILTIN);
+    AddMapping("Object", GlobalTypeId::ETS_OBJECT_BUILTIN);
+    AddMapping("Runtime", GlobalTypeId::ETS_RUNTIME_BUILTIN);
+    AddMapping("RuntimeLinker", GlobalTypeId::ETS_RUNTIME_LINKER_BUILTIN);
+    AddMapping("Short", GlobalTypeId::ETS_SHORT_BUILTIN);
+    AddMapping("StackTraceElement", GlobalTypeId::ETS_STACK_TRACE_ELEMENT_BUILTIN);
+    AddMapping("StackTrace", GlobalTypeId::ETS_STACK_TRACE_BUILTIN);
+    AddMapping("NullPointerException", GlobalTypeId::ETS_NULL_POINTER_EXCEPTION_BUILTIN);
+    AddMapping("ArrayIndexOutOfBoundsError", GlobalTypeId::ETS_ARRAY_INDEX_OUT_OF_BOUNDS_ERROR_BUILTIN);
+    AddMapping("ArithmeticError", GlobalTypeId::ETS_ARITHMETIC_ERROR_BUILTIN);
+    AddMapping("ClassNotFoundException", GlobalTypeId::ETS_CLASS_NOT_FOUND_EXCEPTION_BUILTIN);
+    AddMapping("ClassCastError", GlobalTypeId::ETS_CLASS_CAST_ERROR_BUILTIN);
+    AddMapping("String", GlobalTypeId::ETS_STRING_BUILTIN);
+    AddMapping("BigInt", GlobalTypeId::ETS_BIG_INT_BUILTIN);
+    AddMapping("StringBuilder", GlobalTypeId::ETS_STRING_BUILDER_BUILTIN);
+    AddMapping("Type", GlobalTypeId::ETS_TYPE_BUILTIN);
+    AddMapping("Types", GlobalTypeId::ETS_TYPES_BUILTIN);
+    AddMapping("Promise", GlobalTypeId::ETS_PROMISE_BUILTIN);
+    AddMapping("Box", GlobalTypeId::ETS_BOX_BUILTIN);
+    AddMapping("BooleanBox", GlobalTypeId::ETS_BOOLEAN_BOX_BUILTIN);
+    AddMapping("ByteBox", GlobalTypeId::ETS_BYTE_BOX_BUILTIN);
+    AddMapping("CharBox", GlobalTypeId::ETS_CHAR_BOX_BUILTIN);
+    AddMapping("ShortBox", GlobalTypeId::ETS_SHORT_BOX_BUILTIN);
+    AddMapping("IntBox", GlobalTypeId::ETS_INT_BOX_BUILTIN);
+    AddMapping("LongBox", GlobalTypeId::ETS_LONG_BOX_BUILTIN);
+    AddMapping("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
+    AddMapping("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
 }
 
-GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
+GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator)
+    : builtinNameMappings_(allocator->Adapter()), allocator_(allocator)
 {
     // TS specific types
     AddTSSpecificTypes(allocator);
@@ -206,23 +206,23 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     // ETS escompat layer
     AddETSEscompatLayer();
 
-    builtinNameMappings_.emplace("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
+    AddMapping("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
 
     // ETS functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
-        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
+        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator),
                                      static_cast<GlobalTypeId>(id));
     }
 
-    builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
+    AddMapping("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
 
     // Function types
     AddFunctionTypes(allocator);
 
     // ETS interop js specific types
-    builtinNameMappings_.emplace("JSRuntime", GlobalTypeId::ETS_INTEROP_JSRUNTIME_BUILTIN);
-    builtinNameMappings_.emplace("JSValue", GlobalTypeId::ETS_INTEROP_JSVALUE_BUILTIN);
+    AddMapping("JSRuntime", GlobalTypeId::ETS_INTEROP_JSRUNTIME_BUILTIN);
+    AddMapping("JSValue", GlobalTypeId::ETS_INTEROP_JSVALUE_BUILTIN);
 }
 
 Type *GlobalTypesHolder::GlobalNumberType()
@@ -714,11 +714,16 @@ Type *GlobalTypesHolder::GlobalTypeError()
 
 void GlobalTypesHolder::InitializeBuiltin(const util::StringView name, Type *type)
 {
-    const auto typeId = builtinNameMappings_.find(name);
+    const auto typeId = builtinNameMappings_.find(util::UString(name, allocator_));
     if (typeId == builtinNameMappings_.end()) {
         util::Helpers::LogDebug("Did not find '", name, "' builtin in GlobalTypesHolder, it should be added.");
         return;
     }
     globalTypes_.at(static_cast<size_t>(typeId->second)) = type;
+}
+
+void GlobalTypesHolder::AddMapping(util::StringView name, GlobalTypeId typeId)
+{
+    builtinNameMappings_.try_emplace(util::UString(name, allocator_), typeId);
 }
 }  // namespace ark::es2panda::checker

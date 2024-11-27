@@ -275,13 +275,13 @@ void VarBinder::LookupIdentReference(ir::Identifier *ident)
     ident->SetVariable(res.variable);
 }
 
-util::StringView VarBinder::BuildFunctionName(util::StringView name, uint32_t idx)
+util::UString VarBinder::BuildFunctionName(util::StringView name, uint32_t idx)
 {
     std::stringstream ss;
     ss << "func_" << name << "_" << std::to_string(idx);
     util::UString internalName(ss.str(), Allocator());
 
-    return internalName.View();
+    return internalName;
 }
 
 bool VarBinder::BuildInternalName(ir::ScriptFunction *scriptFunc)

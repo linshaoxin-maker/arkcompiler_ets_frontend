@@ -34,14 +34,14 @@ public:
     {
     }
 
-    const util::StringView &InternalName() const
+    util::StringView InternalName() const
     {
-        return internalName_;
+        return internalName_.View();
     }
 
-    void SetInternalName(util::StringView internalName)
+    void SetInternalName(util::UString internalName)
     {
-        internalName_ = internalName;
+        internalName_ = std::move(internalName);
     }
 
     [[nodiscard]] const Identifier *Ident() const noexcept
@@ -110,7 +110,7 @@ public:
     }
 
 private:
-    util::StringView internalName_ {};
+    util::UString internalName_ {};
     varbinder::LocalScope *scope_ {};
     Identifier *ident_;
     ArenaVector<AstNode *> properties_;

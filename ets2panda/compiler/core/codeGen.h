@@ -120,7 +120,7 @@ public:
     [[nodiscard]] std::uint32_t ParamCount() const noexcept;
     [[nodiscard]] std::uint32_t FormalParametersCount() const noexcept;
     [[nodiscard]] std::uint32_t InternalParamCount() const noexcept;
-    [[nodiscard]] const util::StringView &InternalName() const noexcept;
+    [[nodiscard]] util::StringView InternalName() const noexcept;
     [[nodiscard]] const util::StringView &FunctionName() const noexcept;
     [[nodiscard]] varbinder::VarBinder *VarBinder() const noexcept;
 

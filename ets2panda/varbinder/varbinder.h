@@ -246,7 +246,7 @@ protected:
     void ResolveReferences(const ir::AstNode *parent);
     void VisitScriptFunctionWithPotentialTypeParams(ir::ScriptFunction *func);
     void VisitScriptFunction(ir::ScriptFunction *func);
-    util::StringView BuildFunctionName(util::StringView name, uint32_t idx);
+    util::UString BuildFunctionName(util::StringView name, uint32_t idx);
 
     void AddCompilableFunctionScope(varbinder::FunctionScope *funcScope);
 

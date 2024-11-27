@@ -965,7 +965,7 @@ ir::ClassDefinition *TypedParser::ParseClassDefinition(ir::ClassDefinitionModifi
     }
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
-        privateBinding.View(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
+        privateBinding, identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
         std::move(properties), modifiers, flags, GetContext().GetLanguage());
 
     classDefinition->SetRange(bodyRange);

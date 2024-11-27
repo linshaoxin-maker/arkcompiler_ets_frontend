@@ -217,7 +217,7 @@ public:
     void *operator new(size_t) = delete;
     void *operator new[](size_t) = delete;
 
-    util::StringView FormRecordName() const;
+    util::UString FormRecordName() const;
 
 private:
     BoundContext *prev_;

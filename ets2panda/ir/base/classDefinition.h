@@ -69,13 +69,13 @@ public:
     NO_COPY_SEMANTIC(ClassDefinition);
     NO_MOVE_SEMANTIC(ClassDefinition);
     // CC-OFFNXT(G.FUN.01-CPP) solid logic
-    explicit ClassDefinition(const util::StringView &privateId, Identifier *ident,
-                             TSTypeParameterDeclaration *typeParams, TSTypeParameterInstantiation *superTypeParams,
+    explicit ClassDefinition(util::UString privateId, Identifier *ident, TSTypeParameterDeclaration *typeParams,
+                             TSTypeParameterInstantiation *superTypeParams,
                              ArenaVector<TSClassImplements *> &&implements, MethodDefinition *ctor,
                              Expression *superClass, ArenaVector<AstNode *> &&body, ClassDefinitionModifiers modifiers,
                              ModifierFlags flags, Language lang)
         : TypedAstNode(AstNodeType::CLASS_DEFINITION, flags),
-          privateId_(privateId),
+          privateId_(std::move(privateId)),
           ident_(ident),
           typeParams_(typeParams),
           superTypeParams_(superTypeParams),
@@ -158,19 +158,19 @@ public:
 
     void SetIdent(ir::Identifier *ident) noexcept;
 
-    [[nodiscard]] const util::StringView &PrivateId() const noexcept
+    [[nodiscard]] const util::StringView PrivateId() const noexcept
     {
-        return privateId_;
+        return privateId_.View();
     }
 
-    [[nodiscard]] const util::StringView &InternalName() const noexcept
+    [[nodiscard]] const util::StringView InternalName() const noexcept
     {
-        return privateId_;
+        return privateId_.View();
     }
 
-    void SetInternalName(util::StringView internalName) noexcept
+    void SetInternalName(util::UString internalName) noexcept
     {
-        privateId_ = internalName;
+        privateId_ = std::move(internalName);
     }
 
     [[nodiscard]] Expression *Super() noexcept
@@ -425,7 +425,7 @@ private:
     void DumpBody(ir::SrcDumper *dumper) const;
 
     varbinder::LocalScope *scope_ {nullptr};
-    util::StringView privateId_ {};
+    util::UString privateId_ {};
     Identifier *ident_ {};
     TSTypeParameterDeclaration *typeParams_ {};
     TSTypeParameterInstantiation *superTypeParams_ {};

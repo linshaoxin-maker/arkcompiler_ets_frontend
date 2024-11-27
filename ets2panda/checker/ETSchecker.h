@@ -688,7 +688,7 @@ public:
     ir::ClassDefinition *CreateClassPrototype(util::StringView name, parser::Program *classDeclProgram);
     varbinder::Variable *SearchNamesInMultiplePrograms(const std::set<const parser::Program *> &programs,
                                                        const std::set<util::StringView> &classNamesToFind);
-    util::StringView GetQualifiedClassName(const parser::Program *classDefProgram, util::StringView className);
+    util::UString GetQualifiedClassName(const parser::Program *classDefProgram, util::StringView className);
     std::pair<ir::ScriptFunction *, ir::Identifier *> CreateScriptFunctionForConstructor(
         varbinder::FunctionScope *scope);
     ir::MethodDefinition *CreateNonStaticClassInitializer(varbinder::ClassScope *classScope,
