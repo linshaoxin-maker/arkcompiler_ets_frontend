@@ -50,6 +50,53 @@
 #include "util/helpers.h"
 
 namespace ark::es2panda::checker {
+
+void ETSChecker::ValidateObjectProperty(varbinder::Variable *var, const util::StringView &name, ETSObjectType *obj,
+                                        const lexer::SourcePosition &pos)
+{
+    if (var->HasFlag(varbinder::VariableFlags::METHOD)) {
+        // Property with getters/setters, check that setter exists
+        // Example:
+        // interface Style {
+        //   get color(): string
+        //   set color(s: string)
+        // }
+        ValidateSetterForProperty(var, name, pos);
+    } else {
+        // Just a property without getters/setters, check that it is visible
+        // Example:
+        // interface Style {
+        //   color: string
+        // }
+        if (var->HasFlag(varbinder::VariableFlags::PRIVATE) || var->HasFlag(varbinder::VariableFlags::PROTECTED)) {
+            if (!IsPrivateProtectedPropertyVisible(var, obj)) {
+                std::ignore = TypeError(var, FormatMsg({"Property ", var->Name(), " is not visible here."}), pos);
+            }
+        }
+    }
+}
+
+bool ETSChecker::IsPrivateProtectedPropertyVisible(varbinder::Variable *var, ETSObjectType *obj)
+{
+    ASSERT(var->HasFlag(varbinder::VariableFlags::PRIVATE) || var->HasFlag(varbinder::VariableFlags::PROTECTED));
+
+    if ((Context().ContainingClass() == obj ||
+         Context().ContainingClass()->GetOriginalBaseType() == obj->GetOriginalBaseType()) &&
+        obj->IsPropertyInherited(var)) {
+        return true;
+    }
+
+    if (var->HasFlag(varbinder::VariableFlags::PROTECTED) && Context().ContainingClass()->IsDescendantOf(obj) &&
+        obj->IsPropertyInherited(var)) {
+        return true;
+    }
+
+    auto *currentOutermost = Context().ContainingClass()->OutermostClass();
+    auto *objOutermost = obj->OutermostClass();
+    return (currentOutermost != nullptr && objOutermost != nullptr && currentOutermost == objOutermost &&
+            obj->IsPropertyInherited(var));
+}
+
 void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType *obj, const lexer::SourcePosition &pos)
 {
     if ((Context().Status() & CheckerStatus::IGNORE_VISIBILITY) != 0U) {
@@ -60,26 +107,19 @@ void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType 
     }
 
     if (var->HasFlag(varbinder::VariableFlags::PRIVATE) || var->HasFlag(varbinder::VariableFlags::PROTECTED)) {
-        if ((Context().ContainingClass() == obj ||
-             Context().ContainingClass()->GetOriginalBaseType() == obj->GetOriginalBaseType()) &&
-            obj->IsPropertyInherited(var)) {
-            return;
+        if (!IsPrivateProtectedPropertyVisible(var, obj)) {
+            std::ignore = TypeError(var, FormatMsg({"Property ", var->Name(), " is not visible here."}), pos);
         }
+    }
+}
 
-        if (var->HasFlag(varbinder::VariableFlags::PROTECTED) && Context().ContainingClass()->IsDescendantOf(obj) &&
-            obj->IsPropertyInherited(var)) {
-            return;
-        }
-
-        auto *currentOutermost = Context().ContainingClass()->OutermostClass();
-        auto *objOutermost = obj->OutermostClass();
-
-        if (currentOutermost != nullptr && objOutermost != nullptr && currentOutermost == objOutermost &&
-            obj->IsPropertyInherited(var)) {
-            return;
-        }
-
-        std::ignore = TypeError(var, FormatMsg({"Property ", var->Name(), " is not visible here."}), pos);
+void ETSChecker::ValidateSetterForProperty(varbinder::Variable *var, const util::StringView &name,
+                                           const lexer::SourcePosition &pos)
+{
+    const auto *const type = var->TsType();
+    ASSERT(type);
+    if (!type->HasTypeFlag(checker::TypeFlag::SETTER)) {
+        std::ignore = TypeError(var, FormatMsg({"Setter is not defined for property ", name}), pos);
     }
 }
 

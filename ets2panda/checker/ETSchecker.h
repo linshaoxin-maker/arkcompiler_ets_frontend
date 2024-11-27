@@ -566,6 +566,11 @@ public:
     }
     std::optional<const ir::AstNode *> FindJumpTarget(ir::AstNode *node);
     void ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType *obj, const lexer::SourcePosition &pos);
+    bool IsPrivateProtectedPropertyVisible(varbinder::Variable *var, ETSObjectType *obj);
+    void ValidateObjectProperty(varbinder::Variable *var, const util::StringView &name, ETSObjectType *obj,
+                                const lexer::SourcePosition &pos);
+    void ValidateSetterForProperty(varbinder::Variable *var, const util::StringView &name,
+                                   const lexer::SourcePosition &pos);
     varbinder::VariableFlags GetAccessFlagFromNode(const ir::AstNode *node);
     Type *CheckSwitchDiscriminant(ir::Expression *discriminant);
     Type *MaybeUnboxInRelation(Type *objectType);
