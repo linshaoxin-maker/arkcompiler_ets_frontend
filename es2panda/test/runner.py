@@ -1797,7 +1797,7 @@ class TestVersionControl(Test):
         Test.__init__(self, test_path, flags)
         self.beta_version_default = 3
         self.version_with_sub_version_list = [12]
-        self.target_api_version_list = ["9", "10", "11", "12", "15"]
+        self.target_api_version_list = ["9", "10", "11", "12", "15", "16"]
         self.target_api_sub_version_list = ["beta1", "beta2", "beta3"]
         self.specific_api_version_list = ["API11", "API12beta3"]
         self.output = None
@@ -2187,6 +2187,13 @@ def add_directory_for_version_control(runners, args):
         "js",
         [],
         "API15",
+        "bytecode_feature",
+    )
+    runner.add_directory(
+        "version_control/API16/bytecode_feature",
+        "ts",
+        [],
+        "API16",
         "bytecode_feature",
     )
     runners.append(runner)
