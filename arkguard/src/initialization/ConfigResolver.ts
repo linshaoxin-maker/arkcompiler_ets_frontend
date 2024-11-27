@@ -1193,12 +1193,12 @@ export function getRelativeSourcePath(
 /**
  * selfConfig: {ruleOptions：{enable:true, rules:[Array]},consumerRules:[]}
  * sdkApis:   
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\api',
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\arkts',
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\kits',
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\hms\\ets\\api',
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\hms\\ets\\kits',
- * 'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\api'
+ * 'sdk\\default\\openharmony\\ets\\api',
+ * 'sdk\\default\\openharmony\\ets\\arkts',
+ * '\sdk\\default\\openharmony\\ets\\kits',
+ * 'sdk\\default\\hms\\ets\\api',
+ * 'sdk\\default\\hms\\ets\\kits',
+ * 'sdk\\default\\openharmony\\ets\\api'
  * obfuscationCacheDir: D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\cache\\default\\default@CompileArkTS\\esmodule\\release\\obfuscation
  * exportRulePath: D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\intermediates\\obfuscation\\default\\obfuscation.txt
  * dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] }
@@ -1212,17 +1212,17 @@ export interface sourceObConfig {
   dependencies: ObfuscationDependencies;
 }
 
-export interface Obfuscation{
+export interface Obfuscation {
   ruleOptions?: RuleOptions; 
-  consumerRules?: string[]; //absolutePath
-  consumerFiles?: string|string[];
+  consumerRules?: string[];  //absolute path of consumer-rules.txt
+  consumerFiles?: string|string[];  //relative path of consumer-rules.txt
   libDir?: string;
 }
 
-export interface RuleOptions{
+export interface RuleOptions {
   enable?: boolean;
-  files?: string | string[];
-  rules?: string[]; //build-profile.json 'files' path
+  files?: string | string[]; //should be relative path of obfuscation.txt, but undefined now
+  rules?: string[];  //absolute path of obfuscation.txt
 }
 
 export interface ObfuscationDependencies {
