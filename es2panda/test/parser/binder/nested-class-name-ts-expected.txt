@@ -81,7 +81,6 @@ label_1:
 label_0: 
 	ldai 0x2a
 	callruntime.defineprivateproperty 0x0, 0x0, 0x2, a2
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -102,7 +101,6 @@ label_1:
 label_0: 
 	lda.str test
 	callruntime.defineprivateproperty 0x0, 0x0, 0x0, a2
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -133,7 +131,6 @@ label_6:
 	throw
 label_1: 
 	poplexenv
-	ldundefined
 	returnundefined
 label_8: 
 }
