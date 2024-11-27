@@ -30,13 +30,8 @@ import type { Autofix } from './autofixes/Autofixer';
 import { Autofixer } from './autofixes/Autofixer';
 import type { ReportAutofixCallback } from './autofixes/ReportAutofixCallback';
 import { SYMBOL, SYMBOL_CONSTRUCTOR, TsUtils } from './utils/TsUtils';
-import { ALLOWED_STD_SYMBOL_API } from './utils/consts/AllowedStdSymbolAPI';
 import { FUNCTION_HAS_NO_RETURN_ERROR_CODE } from './utils/consts/FunctionHasNoReturnErrorCode';
 import { LIMITED_STANDARD_UTILITY_TYPES } from './utils/consts/LimitedStandardUtilityTypes';
-import { LIMITED_STD_GLOBAL_FUNC } from './utils/consts/LimitedStdGlobalFunc';
-import { LIMITED_STD_OBJECT_API } from './utils/consts/LimitedStdObjectAPI';
-import { LIMITED_STD_PROXYHANDLER_API } from './utils/consts/LimitedStdProxyHandlerAPI';
-import { LIMITED_STD_REFLECT_API } from './utils/consts/LimitedStdReflectAPI';
 import {
   NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS,
   NON_INITIALIZABLE_PROPERTY_DECORATORS,
@@ -64,6 +59,14 @@ import {
   OBJECT_IS_POSSIBLY_UNDEFINED_ERROR_CODE,
   TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE
 } from './utils/functions/LibraryTypeCallDiagnosticChecker';
+import {
+  ALLOWED_STD_SYMBOL_API,
+  LIMITED_STD_API,
+  LIMITED_STD_GLOBAL_API,
+  LIMITED_STD_OBJECT_API,
+  LIMITED_STD_PROXYHANDLER_API,
+  LIMITED_STD_REFLECT_API
+} from './utils/consts/LimitedStdAPI';
 import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAPI';
 import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
 import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
@@ -96,7 +99,6 @@ export class TypeScriptLinter {
 
   currentErrorLine: number;
   currentWarningLine: number;
-  walkedComments: Set<number>;
   libraryTypeCallDiagnosticChecker: LibraryTypeCallDiagnosticChecker;
   supportedStdCallApiChecker: SupportedStdCallApiChecker;
 
@@ -113,7 +115,6 @@ export class TypeScriptLinter {
   static ideMode: boolean = false;
   static testMode: boolean = false;
   static useRelaxedRules = false;
-  static useSdkLogic = false;
   static advancedClassChecks = false;
 
   static initGlobals(): void {
@@ -147,29 +148,29 @@ export class TypeScriptLinter {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly enableAutofix: boolean,
     private readonly arkts2: boolean,
+    private readonly useRtLogic: boolean,
     private readonly cancellationToken?: ts.CancellationToken,
     private readonly incrementalLintInfo?: IncrementalLintInfo,
     private readonly tscStrictDiagnostics?: Map<string, ts.Diagnostic[]>,
     private readonly reportAutofixCb?: ReportAutofixCallback,
     private readonly isEtsFileCb?: IsEtsFileCallback,
-    compatibleSdkVersion?: string,
+    compatibleSdkVersion?: number,
     compatibleSdkVersionStage?: string
   ) {
     this.tsUtils = new TsUtils(
       this.tsTypeChecker,
       TypeScriptLinter.testMode,
       TypeScriptLinter.advancedClassChecks,
-      TypeScriptLinter.useSdkLogic,
+      useRtLogic,
       this.arkts2
     );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
-    this.walkedComments = new Set<number>();
     this.libraryTypeCallDiagnosticChecker = new LibraryTypeCallDiagnosticChecker(
       TypeScriptLinter.filteredDiagnosticMessages
     );
     this.supportedStdCallApiChecker = new SupportedStdCallApiChecker(this.tsUtils, this.tsTypeChecker);
-    this.compatibleSdkVersion = Number(compatibleSdkVersion) || DEFAULT_COMPATIBLE_SDK_VERSION;
+    this.compatibleSdkVersion = compatibleSdkVersion ?? DEFAULT_COMPATIBLE_SDK_VERSION;
     this.compatibleSdkVersionStage = compatibleSdkVersionStage || DEFAULT_COMPATIBLE_SDK_VERSION_STAGE;
     this.initEtsHandlers();
     this.initCounters();
@@ -648,10 +649,7 @@ export class TypeScriptLinter {
   private checkForLoopDestructuring(forInit: ts.ForInitializer): void {
     if (ts.isVariableDeclarationList(forInit) && forInit.declarations.length === 1) {
       const varDecl = forInit.declarations[0];
-      if (
-        !TypeScriptLinter.useSdkLogic &&
-        (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name))
-      ) {
+      if (this.useRtLogic && (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name))) {
         this.incrementCounters(varDecl, FaultID.DestructuringDeclaration);
       }
     }
@@ -739,7 +737,12 @@ export class TypeScriptLinter {
       this.incrementCounters(propertyAccessNode.name, FaultID.Prototype);
     }
 
-    if (!!exprSym && this.tsUtils.isSymbolAPI(exprSym) && !ALLOWED_STD_SYMBOL_API.includes(exprSym.getName())) {
+    if (
+      !this.arkts2 &&
+      !!exprSym &&
+      this.tsUtils.isStdSymbolAPI(exprSym) &&
+      !ALLOWED_STD_SYMBOL_API.includes(exprSym.getName())
+    ) {
       this.incrementCounters(propertyAccessNode, FaultID.SymbolType);
     }
     if (TypeScriptLinter.advancedClassChecks && this.tsUtils.isClassObjectExpression(propertyAccessNode.expression)) {
@@ -766,7 +769,7 @@ export class TypeScriptLinter {
     const decorators = ts.getDecorators(node);
     this.filterOutDecoratorsDiagnostics(
       decorators,
-      TypeScriptLinter.useSdkLogic ? NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC : NON_INITIALIZABLE_PROPERTY_DECORATORS,
+      this.useRtLogic ? NON_INITIALIZABLE_PROPERTY_DECORATORS : NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC,
       { begin: propName.getStart(), end: propName.getStart() },
       PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE
     );
@@ -1047,7 +1050,7 @@ export class TypeScriptLinter {
   private handleMissingReturnType(
     funcLikeDecl: ts.FunctionLikeDeclaration | ts.MethodSignature
   ): [boolean, ts.TypeNode | undefined] {
-    if (!TypeScriptLinter.useSdkLogic && funcLikeDecl.type) {
+    if (this.useRtLogic && funcLikeDecl.type) {
       return [false, funcLikeDecl.type];
     }
 
@@ -1055,8 +1058,8 @@ export class TypeScriptLinter {
     const isSignature = ts.isMethodSignature(funcLikeDecl);
     if (isSignature || !funcLikeDecl.body) {
       // Ambient flag is not exposed, so we apply dirty hack to make it visible
-      const isAmbientDeclaration = TsUtils.isAmbientNode(funcLikeDecl);
-      if ((isSignature || isAmbientDeclaration) && !funcLikeDecl.type) {
+      const isDeclareDeclaration = TsUtils.isAmbientNode(funcLikeDecl);
+      if ((isSignature || isDeclareDeclaration) && !funcLikeDecl.type) {
         this.incrementCounters(funcLikeDecl, FaultID.LimitedReturnTypeInference);
       }
       return [false, undefined];
@@ -1201,7 +1204,8 @@ export class TypeScriptLinter {
 
   private processBinaryAssignment(node: ts.Node, tsLhsExpr: ts.Expression, tsRhsExpr: ts.Expression): void {
     if (ts.isObjectLiteralExpression(tsLhsExpr)) {
-      this.incrementCounters(node, FaultID.DestructuringAssignment);
+      const autofix = this.autofixer?.fixObjectLiteralExpressionDestructAssignment(node as ts.BinaryExpression);
+      this.incrementCounters(node, FaultID.DestructuringAssignment, autofix);
     } else if (ts.isArrayLiteralExpression(tsLhsExpr)) {
       // Array destructuring is allowed only for Arrays/Tuples and without spread operator.
       const rhsType = this.tsTypeChecker.getTypeAtLocation(tsRhsExpr);
@@ -1216,7 +1220,8 @@ export class TypeScriptLinter {
         hasNestedObjectDestructuring ||
         TsUtils.destructuringAssignmentHasSpreadOperator(tsLhsExpr)
       ) {
-        this.incrementCounters(node, FaultID.DestructuringAssignment);
+        const autofix = this.autofixer?.fixArrayBindingPatternAssignment(node as ts.BinaryExpression, isArrayOrTuple);
+        this.incrementCounters(node, FaultID.DestructuringAssignment, autofix);
       }
     }
 
@@ -1291,7 +1296,7 @@ export class TypeScriptLinter {
   private handleVariableDeclaration(node: ts.Node): void {
     const tsVarDecl = node as ts.VariableDeclaration;
     if (
-      TypeScriptLinter.useSdkLogic ||
+      !this.useRtLogic ||
       ts.isVariableDeclarationList(tsVarDecl.parent) && ts.isVariableStatement(tsVarDecl.parent.parent)
     ) {
       this.handleDeclarationDestructuring(tsVarDecl);
@@ -1315,13 +1320,9 @@ export class TypeScriptLinter {
   private handleDeclarationDestructuring(decl: ts.VariableDeclaration | ts.ParameterDeclaration): void {
     const faultId = ts.isVariableDeclaration(decl) ? FaultID.DestructuringDeclaration : FaultID.DestructuringParameter;
     if (ts.isObjectBindingPattern(decl.name)) {
-      this.incrementCounters(decl, faultId);
+      const autofix = this.autofixer?.fixObjectBindingPatternDeclarations(decl, faultId);
+      this.incrementCounters(decl, faultId, autofix);
     } else if (ts.isArrayBindingPattern(decl.name)) {
-      if (!TypeScriptLinter.useRelaxedRules) {
-        this.incrementCounters(decl, faultId);
-        return;
-      }
-
       // Array destructuring is allowed only for Arrays/Tuples and without spread operator.
       const rhsType = this.tsTypeChecker.getTypeAtLocation(decl.initializer ?? decl.name);
       const isArrayOrTuple =
@@ -1331,11 +1332,13 @@ export class TypeScriptLinter {
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(decl.name);
 
       if (
+        !TypeScriptLinter.useRelaxedRules ||
         !isArrayOrTuple ||
         hasNestedObjectDestructuring ||
         TsUtils.destructuringDeclarationHasSpreadOperator(decl.name)
       ) {
-        this.incrementCounters(decl, faultId);
+        const autofix = this.autofixer?.fixArrayBindingPatternDeclarations(decl, isArrayOrTuple);
+        this.incrementCounters(decl, faultId, autofix);
       }
     }
   }
@@ -1691,6 +1694,9 @@ export class TypeScriptLinter {
       const faultId = this.arkts2 ? FaultID.GlobalThisError : FaultID.GlobalThis;
       this.incrementCounters(node, faultId);
     } else {
+      if (this.arkts2) {
+        this.checkLimitedStdlibApi(tsIdentifier, tsIdentSym);
+      }
       this.handleRestrictedValues(tsIdentifier, tsIdentSym);
     }
   }
@@ -1808,8 +1814,8 @@ export class TypeScriptLinter {
       this.tsUtils.isOrDerivedFrom(type, TsUtils.isTuple) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdRecordType) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStringType) ||
-      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdMapType) ||
-      TsUtils.isIntrinsicObjectType(type) ||
+      !this.arkts2 &&
+        (this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdMapType) || TsUtils.isIntrinsicObjectType(type)) ||
       TsUtils.isEnumType(type) ||
       // we allow EsObject here beacuse it is reported later using FaultId.EsObjectType
       TsUtils.isEsObjectType(typeNode)
@@ -1916,11 +1922,17 @@ export class TypeScriptLinter {
     this.handleImportCall(tsCallExpr);
     this.handleRequireCall(tsCallExpr);
     if (calleeSym !== undefined) {
-      this.handleStdlibAPICall(tsCallExpr, calleeSym);
-      this.handleFunctionApplyBindPropCall(tsCallExpr, calleeSym);
+      if (!this.arkts2) {
+        this.handleStdlibAPICall(tsCallExpr, calleeSym);
+        this.handleFunctionApplyBindPropCall(tsCallExpr, calleeSym);
+      }
       if (TsUtils.symbolHasEsObjectType(calleeSym)) {
         const faultId = this.arkts2 ? FaultID.EsObjectTypeError : FaultID.EsObjectType;
         this.incrementCounters(tsCallExpr, faultId);
+      }
+      // Need to process Symbol call separately in order to not report two times when using Symbol API
+      if (this.arkts2 && this.tsUtils.isStdSymbol(calleeSym)) {
+        this.incrementCounters(tsCallExpr, FaultID.SymbolType);
       }
     }
     if (callSignature !== undefined && !this.tsUtils.isLibrarySymbol(calleeSym)) {
@@ -2076,7 +2088,7 @@ export class TypeScriptLinter {
   }
 
   private static readonly LimitedApis = new Map<string, { arr: Array<string> | null; fault: FaultID }>([
-    ['global', { arr: LIMITED_STD_GLOBAL_FUNC, fault: FaultID.LimitedStdLibApi }],
+    ['global', { arr: LIMITED_STD_GLOBAL_API, fault: FaultID.LimitedStdLibApi }],
     ['Object', { arr: LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi }],
     ['ObjectConstructor', { arr: LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi }],
     ['Reflect', { arr: LIMITED_STD_REFLECT_API, fault: FaultID.LimitedStdLibApi }],
@@ -2089,7 +2101,7 @@ export class TypeScriptLinter {
     const name = calleeSym.getName();
     const parName = this.tsUtils.getParentSymbolName(calleeSym);
     if (parName === undefined) {
-      if (LIMITED_STD_GLOBAL_FUNC.includes(name)) {
+      if (LIMITED_STD_GLOBAL_API.includes(name)) {
         this.incrementCounters(callExpr, FaultID.LimitedStdLibApi);
         return;
       }
@@ -2107,6 +2119,23 @@ export class TypeScriptLinter {
         !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
     ) {
       this.incrementCounters(callExpr, lookup.fault);
+    }
+  }
+
+  private checkLimitedStdlibApi(node: ts.Identifier, symbol: ts.Symbol): void {
+    const parName = this.tsUtils.getParentSymbolName(symbol);
+    const entries = LIMITED_STD_API.get(parName);
+    if (!entries) {
+      return;
+    }
+    for (const entry of entries) {
+      if (
+        entry.api.includes(symbol.name) &&
+        !this.supportedStdCallApiChecker.isSupportedStdCallAPI(node, parName, symbol.name)
+      ) {
+        this.incrementCounters(node, entry.faultId);
+        return;
+      }
     }
   }
 
@@ -2161,7 +2190,7 @@ export class TypeScriptLinter {
       this.libraryTypeCallDiagnosticChecker,
       inLibCall
     );
-    if (hasFiltered) {
+    if (this.useRtLogic && hasFiltered) {
       this.filterOutDiagnostics(
         { begin: callExpr.getStart(), end: callExpr.getEnd() },
         OBJECT_IS_POSSIBLY_UNDEFINED_ERROR_CODE
@@ -2280,7 +2309,7 @@ export class TypeScriptLinter {
 
     const hasSingleTypeArgument = !!typeRef.typeArguments && typeRef.typeArguments.length === 1;
     let argType;
-    if (TypeScriptLinter.useSdkLogic) {
+    if (!this.useRtLogic) {
       const firstTypeArg = !!typeRef.typeArguments && hasSingleTypeArgument && typeRef.typeArguments[0];
       argType = firstTypeArg && this.tsTypeChecker.getTypeFromTypeNode(firstTypeArg);
     } else {
@@ -2319,9 +2348,7 @@ export class TypeScriptLinter {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
       if (
         spreadExprType &&
-        (!TypeScriptLinter.useSdkLogic ||
-          ts.isCallLikeExpression(node.parent) ||
-          ts.isArrayLiteralExpression(node.parent)) &&
+        (this.useRtLogic || ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
         this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)
       ) {
         return;
@@ -2533,7 +2560,7 @@ export class TypeScriptLinter {
      * We use a dirty hack to retrieve list of parsed comment directives by accessing
      * internal properties of SourceFile node.
      */
-
+    /* CC-OFFNXT(no_explicit_any) std lib */
     // Handle comment directive '@ts-nocheck'
     const pragmas = (sourceFile as any).pragmas;
     if (pragmas && pragmas instanceof Map) {
@@ -2544,6 +2571,7 @@ export class TypeScriptLinter {
          * The value is either a single entry or an array of entries.
          * Wrap up single entry with array to simplify processing.
          */
+        /* CC-OFFNXT(no_explicit_any) std lib */
         const noCheckEntries: any[] = Array.isArray(noCheckPragma) ? noCheckPragma : [noCheckPragma];
         for (const entry of noCheckEntries) {
           this.processNoCheckEntry(entry);
@@ -2551,6 +2579,7 @@ export class TypeScriptLinter {
       }
     }
 
+    /* CC-OFFNXT(no_explicit_any) std lib */
     // Handle comment directives '@ts-ignore' and '@ts-expect-error'
     const commentDirectives = (sourceFile as any).commentDirectives;
     if (commentDirectives && Array.isArray(commentDirectives)) {
@@ -2575,7 +2604,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private processNoCheckEntry(entry: any): void {
+  private processNoCheckEntry(entry: any): void { // CC-OFF(no_explicit_any) std lib
     if (entry.range?.kind === undefined || entry.range?.pos === undefined || entry.range?.end === undefined) {
       return;
     }
@@ -2784,7 +2813,6 @@ export class TypeScriptLinter {
       this.autofixer = new Autofixer(this.tsTypeChecker, this.tsUtils, sourceFile, this.cancellationToken);
     }
 
-    this.walkedComments.clear();
     this.sourceFile = sourceFile;
     this.fileExportSendableDeclCaches = undefined;
     this.visitSourceFile(this.sourceFile);

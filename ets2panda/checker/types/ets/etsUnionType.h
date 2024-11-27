@@ -53,10 +53,14 @@ public:
     bool HasType(Type *type) const;
     bool HasNullishType(const ETSChecker *checker) const;
 
+    bool IsOverlapWith(TypeRelation *relation, Type *type);
+
     Type *FindExactOrBoxedType(ETSChecker *checker, Type *type) const;
 
     static void NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &types);
     static void ReduceSubtypes(TypeRelation *relation, ArenaVector<Type *> &types);
+
+    static ArenaVector<Type *> GetNonConstantTypes(ETSChecker *checker, const ArenaVector<Type *> &types);
 
     std::tuple<bool, bool> ResolveConditionExpr() const override;
 
@@ -92,6 +96,8 @@ private:
     [[nodiscard]] checker::Type *GetAssignableBuiltinType(
         checker::ETSChecker *checker, checker::ETSObjectType *sourceType, bool isBool, bool isChar,
         std::map<std::uint32_t, checker::Type *> &numericTypes) const noexcept;
+
+    bool IsAssignableType(checker::Type *sourceType) const noexcept;
 
     static Type *ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un);
 

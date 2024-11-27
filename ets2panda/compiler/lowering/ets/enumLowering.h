@@ -42,7 +42,6 @@ public:
 
 private:
     struct FunctionInfo {
-        varbinder::FunctionParamScope *paramScope;
         ArenaVector<ir::Expression *> &&params;
         ArenaVector<ir::Statement *> &&body;
         ir::TypeNode *returnTypeAnnotation;
@@ -51,10 +50,11 @@ private:
     };
 
     [[nodiscard]] ir::ScriptFunction *MakeFunction(FunctionInfo &&functionInfo);
-    ir::ClassDefinition *CreateClass(ir::TSEnumDeclaration *const enumDecl);
+    ir::ClassDeclaration *CreateClass(ir::TSEnumDeclaration *const enumDecl);
     ir::ClassProperty *CreateOrdinalField(ir::ClassDefinition *const enumClass);
     void CreateCCtorForEnumClass(ir::ClassDefinition *const enumClass);
     void CreateCtorForEnumClass(ir::ClassDefinition *const enumClass);
+    ir::ScriptFunction *CreateFunctionForCtorOfEnumClass(ir::ClassDefinition *const enumClass);
 
     void CreateEnumIntClassFromEnumDeclaration(ir::TSEnumDeclaration *const enumDecl);
     void CreateEnumStringClassFromEnumDeclaration(ir::TSEnumDeclaration *const enumDecl);

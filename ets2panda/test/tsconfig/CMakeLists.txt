@@ -15,18 +15,5 @@ if(NOT PANDA_REGRESSION_TESTS)
     return()
 endif()
 
-function(add_es2panda_tsconfig_test tsproject)
-    set(TSPROJECT_TARGET_NAME es2panda-tsconfig-test-${tsproject})
-    add_custom_target(${TSPROJECT_TARGET_NAME}
-        DEPENDS es2panda
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        COMMAND ./test.sh $<TARGET_FILE:es2panda> ${tsproject} '${PANDA_RUN_PREFIX}' '${PANDA_ROOT}'
-    )
-    add_dependencies(es2panda_tests ${TSPROJECT_TARGET_NAME})
-endfunction()
-
-add_es2panda_tsconfig_test(empty_include)
-add_es2panda_tsconfig_test(ets)
-add_es2panda_tsconfig_test(extends)
-add_es2panda_tsconfig_test(include)
-add_es2panda_tsconfig_test(paths)
+add_subdirectory(test-config)
+add_subdirectory(test-build)

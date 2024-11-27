@@ -178,6 +178,16 @@ void JSCompiler::Compile([[maybe_unused]] const ir::ETSUndefinedType *node) cons
     UNREACHABLE();
 }
 
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSNeverType *node) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSStringLiteralType *node) const
+{
+    UNREACHABLE();
+}
+
 void JSCompiler::Compile([[maybe_unused]] const ir::ETSUnionType *node) const
 {
     UNREACHABLE();

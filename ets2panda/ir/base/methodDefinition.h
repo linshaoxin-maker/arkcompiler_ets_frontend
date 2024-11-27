@@ -38,7 +38,7 @@ public:
     NO_MOVE_SEMANTIC(MethodDefinition);
 
     using OverloadsT = ArenaVector<MethodDefinition *>;
-
+    // CC-OFFNXT(G.FUN.01-CPP) solid logic
     explicit MethodDefinition(MethodDefinitionKind const kind, Expression *const key, Expression *const value,
                               ModifierFlags const modifiers, ArenaAllocator *const allocator, bool const isComputed)
         : ClassElement(AstNodeType::METHOD_DEFINITION, key, value, modifiers, allocator, isComputed),
@@ -149,6 +149,8 @@ public:
     }
 
 private:
+    void DumpPrefix(ir::SrcDumper *dumper) const;
+
     MethodDefinitionKind kind_;
     // Overloads are stored like in an 1:N fashion.
     // The very firstly processed method becomes the base(1) and the others tied into it as overloads(N).

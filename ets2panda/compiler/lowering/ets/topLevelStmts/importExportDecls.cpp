@@ -33,88 +33,51 @@ void ImportExportDecls::ParseDefaultSources()
 
 /**
  * @brief checks if `prog` matches with the path in `stmt` (an ImportDeclaration statement)
-
- * If match is found, `prog` is inserted into a container (`triggeringCCtorMethodsAndPrograms`) that will be used when
- * calling the  triggeringCCtorMethod inside the entrypoint's `_$init$_`.
  *
- * The structure of `triggeringCCtorMethodsAndPrograms` is delineated in the `CollectImportedProgramsFromStmts` method.
-
  * @return true if `prog` is part of a package
  * @return false otherwise
  */
-void ImportExportDecls::MatchImportDeclarationPathWithProgram(
-    ark::es2panda::ir::ETSImportDeclaration *stmt, parser::Program *prog, const util::StringView moduleName,
-    const GlobalClassHandler *globalClass,
-    GlobalClassHandler::TriggeringCCtorMethodsAndPrograms *triggeringCCtorMethodsAndPrograms)
+bool ImportExportDecls::MatchResolvedPathWithProgram(std::string_view resolvedPath, parser::Program *prog)
 {
     if (util::Helpers::IsStdLib(prog)) {
-        return;
+        return false;
     }
-    auto resolvedImportPath = stmt->ResolvedSource()->Str().Utf8();
-    if (!((prog->IsPackageModule() && prog->SourceFileFolder().Is(resolvedImportPath)) ||
-          prog->AbsoluteName().Is(resolvedImportPath)) ||
-        prog->IsDeclarationModule()) {
-        return;
+    if (prog->IsDeclarationModule()) {
+        return false;
     }
-
-    if (triggeringCCtorMethodsAndPrograms->count(moduleName) == 0) {
-        triggeringCCtorMethodsAndPrograms->emplace(moduleName, prog->Allocator()->Adapter());
+    if (prog->AbsoluteName().Is(resolvedPath)) {
+        return true;
     }
-    auto triggeringCCtorMethodName =
-        globalClass->FormTriggeringCCtorMethodName(stmt->AsETSImportDeclaration()->Source()->Str());
-    triggeringCCtorMethodsAndPrograms->at(moduleName).emplace_back(std::pair(triggeringCCtorMethodName, prog));
-    AddImportSpecifierForTriggeringCCtorMethod(stmt, globalClass, triggeringCCtorMethodName);
+    if (prog->IsPackageModule() && prog->SourceFileFolder().Is(resolvedPath)) {
+        return true;
+    }
+    return false;
 }
 
 /**
- * @brief Collects imported programs and local names for the functions that are to trigger the owner classes of the
- * imported programs
+ * @brief Collects imported programs to initialize from the owner classes of the imported programs
  *
- * The function to trigger the CCtor in the imported program is named `_$trigger_cctor$_`. A local
- * alias is assigned to this function. The `_$init$_` of the entrypoint program's owner class will use this alias
- * when calling the special function.
- *
- * The alias for the special function and the program is stored in std::pairs. The pairs that belong to the same
- * package form a vector. The vectors are stored in an unordered map, the key being the name of the package name.
+ * If match is found, `prog` is inserted into a container (`moduleDependencies`) that will be used when
+ * calling the initializers inside the entrypoint's `_$init$_`.
  */
-void ImportExportDecls::CollectImportedProgramsFromStmts(
-    ark::es2panda::ir::ETSImportDeclaration *stmt, parser::Program *program, const GlobalClassHandler *globalClass,
-    GlobalClassHandler::TriggeringCCtorMethodsAndPrograms *triggeringCCtorMethodsAndPrograms)
+void ImportExportDecls::CollectImportedProgramsFromStmts(ark::es2panda::ir::ETSImportDeclaration *stmt,
+                                                         parser::Program *program,
+                                                         GlobalClassHandler::ModuleDependencies *moduleDependencies)
 {
-    for (auto const &directExtSource : program->DirectExternalSources()) {
-        for (auto prog : directExtSource.second) {
-            MatchImportDeclarationPathWithProgram(stmt, prog, directExtSource.first, globalClass,
-                                                  triggeringCCtorMethodsAndPrograms);
-            if (prog->IsPackageModule()) {
-                break;
-            }
+    for (auto const &[_, programs] : program->DirectExternalSources()) {
+        (void)_;
+        parser::Program *first = programs.front();
+        if (MatchResolvedPathWithProgram(stmt->ResolvedSource()->Str().Utf8(), first)) {
+            moduleDependencies->insert(first);
         }
     }
 }
 
-/**
- * @brief  Adds specifier of the TriggeringCCtorMethod to the import declaration `stmt`.
- *
- * Adds specifier of the TriggeringCCtorMethod to the import declaration (`stmt`). The specifier have a different
- * local name, to avoid collision with the `_$trigger_cctor$_` in different modules.
- */
-void ImportExportDecls::AddImportSpecifierForTriggeringCCtorMethod(ark::es2panda::ir::ETSImportDeclaration *stmt,
-                                                                   const GlobalClassHandler *globalClass,
-                                                                   util::StringView triggeringCCtorMethodName)
-{
-    ir::ImportSpecifier *specifier =
-        parser_->AsETSParser()->GetTriggeringCCTORSpecifier(triggeringCCtorMethodName, globalClass->TRIGGER_CCTOR);
-    stmt->Specifiers().push_back(specifier);
-    specifier->SetParent(stmt);
-}
-
-GlobalClassHandler::TriggeringCCtorMethodsAndPrograms ImportExportDecls::HandleGlobalStmts(
-    ArenaVector<parser::Program *> &programs, GlobalClassHandler *globalClass)
+GlobalClassHandler::ModuleDependencies ImportExportDecls::HandleGlobalStmts(ArenaVector<parser::Program *> &programs)
 {
     VerifySingleExportDefault(programs);
     VerifyTypeExports(programs);
-    GlobalClassHandler::TriggeringCCtorMethodsAndPrograms triggeringCCtorMethodsAndPrograms {
-        programs.front()->Allocator()->Adapter()};
+    GlobalClassHandler::ModuleDependencies moduleDependencies {programs.front()->Allocator()->Adapter()};
     if (!programs.empty()) {
         std::sort(programs.begin(), programs.end(), ProgramFileNameLessThan);
     }
@@ -127,8 +90,7 @@ GlobalClassHandler::TriggeringCCtorMethodsAndPrograms ImportExportDecls::HandleG
             // not support type imports and re-exports.
             if (stmt->IsETSImportDeclaration() && !stmt->AsETSImportDeclaration()->IsTypeKind() &&
                 !util::Helpers::IsStdLib(program) && !program->IsDeclarationModule()) {
-                CollectImportedProgramsFromStmts(stmt->AsETSImportDeclaration(), program, globalClass,
-                                                 &triggeringCCtorMethodsAndPrograms);
+                CollectImportedProgramsFromStmts(stmt->AsETSImportDeclaration(), program, &moduleDependencies);
             }
             stmt->Accept(this);
             if (stmt->IsExportNamedDeclaration()) {
@@ -140,28 +102,34 @@ GlobalClassHandler::TriggeringCCtorMethodsAndPrograms ImportExportDecls::HandleG
             util::StringView originalName = varbinder_->FindNameInAliasMap(program->SourceFilePath(), exportName);
 
             ASSERT(!originalName.Empty());
-
-            if (fieldMap_.find(originalName) == fieldMap_.end() && !isType &&
-                importedSpecifiersForExportCheck_.count(originalName) == 0) {
-                util::ErrorHandler::ThrowSyntaxError(
-                    varbinder_->Program(), "Cannot find name '" + originalName.Mutf8() + "' to export", startLoc);
+            auto result = fieldMap_.find(originalName);
+            if (result == fieldMap_.end() && !isType && importedSpecifiersForExportCheck_.count(originalName) == 0) {
+                util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), varbinder_->Program(),
+                                                   "Cannot find name '" + originalName.Mutf8() + "' to export",
+                                                   startLoc);
+            }
+            if (result != fieldMap_.end() && result->second->IsAnnotationDeclaration() && exportName != originalName) {
+                util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), varbinder_->Program(),
+                                                   "Can not rename annotation '" + originalName.Mutf8() +
+                                                       "' in export or import statements.",
+                                                   startLoc);
             }
             if (!isType) {
                 HandleSelectiveExportWithAlias(originalName, exportName, startLoc);
             }
         }
     }
-    return triggeringCCtorMethodsAndPrograms;
+    return moduleDependencies;
 }
 
 void ImportExportDecls::PopulateAliasMap(const ir::ExportNamedDeclaration *decl, const util::StringView &path)
 {
     for (auto spec : decl->Specifiers()) {
         if (!varbinder_->AddSelectiveExportAlias(path, spec->Local()->Name(), spec->Exported()->Name())) {
-            util::ErrorHandler::ThrowSyntaxError(varbinder_->Program(),
-                                                 "The given name '" + spec->Local()->Name().Mutf8() +
-                                                     "' is already used in another export",
-                                                 spec->Start());
+            util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), varbinder_->Program(),
+                                               "The given name '" + spec->Local()->Name().Mutf8() +
+                                                   "' is already used in another export",
+                                               spec->Start());
         }
     }
 }
@@ -175,9 +143,9 @@ void ImportExportDecls::HandleSelectiveExportWithAlias(util::StringView original
         if ((field->Modifiers() & ir::ModifierFlags::EXPORTED) != 0) {
             // Note (oeotvos) Needs to be discussed, whether we would like to allow exporting the same program
             // element using its original name and also an alias, like: export {test_func, test_func as foo}.
-            util::ErrorHandler::ThrowSyntaxError(
-                varbinder_->Program(), "Cannot export '" + originalFieldName.Mutf8() + "', it was already exported",
-                startLoc);
+            util::ErrorHandler::LogSyntaxError(
+                parser_->ErrorLogger(), varbinder_->Program(),
+                "Cannot export '" + originalFieldName.Mutf8() + "', it was already exported", startLoc);
         }
         field->AddModifier(ir::ModifierFlags::EXPORT);
     }
@@ -188,8 +156,8 @@ void ImportExportDecls::HandleSelectiveExportWithAlias(util::StringView original
             // have an alias yet.
             if (((declItem->second->Modifiers() & ir::ModifierFlags::EXPORTED) != 0) &&
                 !declItem->second->HasExportAlias()) {
-                util::ErrorHandler::ThrowSyntaxError(
-                    varbinder_->Program(),
+                util::ErrorHandler::LogSyntaxError(
+                    parser_->ErrorLogger(), varbinder_->Program(),
                     "The given name '" + exportName.Mutf8() + "' is already used in another export", startLoc);
             }
         }
@@ -227,6 +195,11 @@ void ImportExportDecls::VisitTSInterfaceDeclaration(ir::TSInterfaceDeclaration *
     fieldMap_.emplace(interfaceDecl->Id()->Name(), interfaceDecl);
 }
 
+void ImportExportDecls::VisitAnnotationDeclaration(ir::AnnotationDeclaration *annotationDecl)
+{
+    fieldMap_.emplace(annotationDecl->Ident()->Name(), annotationDecl);
+}
+
 void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *exportDecl)
 {
     for (auto spec : exportDecl->Specifiers()) {
@@ -235,8 +208,8 @@ void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *
             exportedTypes_.insert(local->Name());
         }
         if (!exportNameMap_.emplace(local->Name(), local->Start()).second) {
-            util::ErrorHandler::ThrowSyntaxError(
-                varbinder_->Program(),
+            util::ErrorHandler::LogSyntaxError(
+                parser_->ErrorLogger(), varbinder_->Program(),
                 "The given name '" + local->Name().Mutf8() + "' is already used in another export", local->Start());
         }
     }
@@ -264,12 +237,14 @@ void ImportExportDecls::HandleSimpleType(std::set<util::StringView> &exportedTyp
     }
 
     if (exportedStatements.find(name) != exportedStatements.end()) {
-        util::ErrorHandler::ThrowSyntaxError(
-            program, "Name '" + name.Mutf8() + "' cannot be exported and type exported at the same time.", pos);
+        util::ErrorHandler::LogSyntaxError(
+            parser_->ErrorLogger(), program,
+            "Name '" + name.Mutf8() + "' cannot be exported and type exported at the same time.", pos);
     }
 
     if (exportedTypes.find(name) != exportedTypes.end()) {
-        util::ErrorHandler::ThrowSyntaxError(program, "Cannot export the same '" + name.Mutf8() + "' type twice.", pos);
+        util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), program,
+                                           "Cannot export the same '" + name.Mutf8() + "' type twice.", pos);
     } else {
         exportedTypes.insert(name);
     }
@@ -316,7 +291,8 @@ void ImportExportDecls::VerifyType(ir::Statement *stmt, parser::Program *program
     }
 
     if (!stmt->IsExportNamedDeclaration()) {
-        util::ErrorHandler::ThrowSyntaxError(program, "Can only type export class or interface!", stmt->Start());
+        util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), program, "Can only type export class or interface!",
+                                           stmt->Start());
     }
 
     for (auto spec : stmt->AsExportNamedDeclaration()->Specifiers()) {
@@ -325,8 +301,9 @@ void ImportExportDecls::VerifyType(ir::Statement *stmt, parser::Program *program
 
         auto element = typesMap.find(nameFind);
         if (element == typesMap.end()) {
-            util::ErrorHandler::ThrowSyntaxError(program, "Can only type export class or interface!",
-                                                 spec->Local()->Start());
+            util::ErrorHandler::LogSyntaxError(parser_->ErrorLogger(), program,
+                                               "Can only type export class or interface!", spec->Local()->Start());
+            continue;
         }
         if (!element->second->IsExportedType()) {
             element->second->AddModifier(ir::ModifierFlags::EXPORT_TYPE);
@@ -342,13 +319,14 @@ void ImportExportDecls::VerifyType(ir::Statement *stmt, parser::Program *program
 void ImportExportDecls::VerifySingleExportDefault(const ArenaVector<parser::Program *> &programs)
 {
     bool metDefaultExport = false;
-    auto verifyDefault = [&metDefaultExport](ir::Statement *stmt, parser::Program *program) {
+    auto logger = parser_->ErrorLogger();
+    auto verifyDefault = [&metDefaultExport, logger](ir::Statement *stmt, parser::Program *program) {
         if ((stmt->Modifiers() & ir::ModifierFlags::DEFAULT_EXPORT) == 0) {
             return;
         }
         if (metDefaultExport) {
-            util::ErrorHandler::ThrowSyntaxError(program, "Only one default export is allowed in a module",
-                                                 stmt->Start());
+            util::ErrorHandler::LogSyntaxError(logger, program, "Only one default export is allowed in a module",
+                                               stmt->Start());
         }
         metDefaultExport = true;
     };

@@ -59,7 +59,26 @@ import { needReadApiInfo, readProjectPropertiesByCollectedPaths } from './common
 import type { ReseverdSetForArkguard } from './common/ApiReader';
 import { ApiExtractor } from './common/ApiExtractor';
 import esInfo from './configs/preset/es_reserved_properties.json';
-import { EventList, TimeSumPrinter, TimeTracker } from './utils/PrinterUtils';
+import {
+  EventList,
+  TimeSumPrinter,
+  TimeTracker,
+  endSingleFileEvent,
+  initPerformancePrinter,
+  startSingleFileEvent,
+} from './utils/PrinterUtils';
+
+export {
+  EventList,
+  TimeSumPrinter,
+  blockPrinter,
+  endFilesEvent,
+  endSingleFileEvent,
+  printTimeSumData,
+  printTimeSumInfo,
+  startFilesEvent,
+  startSingleFileEvent,
+} from './utils/PrinterUtils';
 import { Extension, type ProjectInfo, type FilePathObj } from './common/type';
 export { FileUtils } from './utils/FileUtils';
 export { MemoryUtils } from './utils/MemoryUtils';
@@ -89,6 +108,9 @@ export {
   writeObfuscationNameCache,
   writeUnobfuscationContent
 } from './initialization/ConfigResolver';
+export {
+  collectReservedNameForObf
+} from './utils/NodeUtils';
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renameFileNameModule = require('./transformers/rename/RenameFileNameTransformer');
@@ -100,10 +122,11 @@ export interface PerformancePrinter {
   filesPrinter?: TimeTracker;
   singleFilePrinter?: TimeTracker;
   timeSumPrinter?: TimeSumPrinter;
-  iniPrinter: TimeTracker;
 }
 export let performancePrinter: PerformancePrinter = {
-  iniPrinter: new TimeTracker(),
+  filesPrinter: new TimeTracker(),
+  singleFilePrinter: new TimeTracker(),
+  timeSumPrinter: new TimeSumPrinter(),
 };
 
 // When the module is compiled, call this function to clear global collections.
@@ -155,16 +178,23 @@ export class ArkObfuscator {
   // Pass the collected whitelists related to property obfuscation to Arkguard.
   public addReservedSetForPropertyObf(properties: ReseverdSetForArkguard): void {
     if (properties.structPropertySet && properties.structPropertySet.size > 0) {
-      UnobfuscationCollections.reservedStruct = properties.structPropertySet;
+      for (let reservedProperty of properties.structPropertySet) {
+        UnobfuscationCollections.reservedStruct.add(reservedProperty);
+      }
     }
+
     if (properties.stringPropertySet && properties.stringPropertySet.size > 0) {
       UnobfuscationCollections.reservedStrProp = properties.stringPropertySet;
     }
+
     if (properties.exportNameAndPropSet && properties.exportNameAndPropSet.size > 0) {
       UnobfuscationCollections.reservedExportNameAndProp = properties.exportNameAndPropSet;
     }
+
     if (properties.enumPropertySet && properties.enumPropertySet.size > 0) {
-      UnobfuscationCollections.reservedEnum = properties.enumPropertySet;
+      for (let reservedEnum of properties.enumPropertySet) {
+        UnobfuscationCollections.reservedEnum.add(reservedEnum);
+      }
     }
   }
 
@@ -247,9 +277,10 @@ export class ArkObfuscator {
      */
     cleanFileMangledNames = enableTopLevel && !exportObfuscation && !propertyObfuscation;
 
-    this.initPerformancePrinter();
     // load transformers
     this.mTransformers = new TransformerManager(this.mCustomProfiles).getTransformers();
+
+    initPerformancePrinter(this.mCustomProfiles);
 
     if (needReadApiInfo(this.mCustomProfiles)) {
       // if -enable-property-obfuscation or -enable-export-obfuscation, collect language reserved keywords.
@@ -264,30 +295,6 @@ export class ArkObfuscator {
     }
 
     return true;
-  }
-
-  private initPerformancePrinter(): void {
-    if (this.mCustomProfiles.mPerformancePrinter) {
-      const printConfig = this.mCustomProfiles.mPerformancePrinter;
-      const printPath = printConfig.mOutputPath;
-
-      if (printConfig.mFilesPrinter) {
-        performancePrinter.filesPrinter = performancePrinter.iniPrinter;
-        performancePrinter.filesPrinter.setOutputPath(printPath);
-      } else {
-        performancePrinter.iniPrinter = undefined;
-      }
-
-      if (printConfig.mSingleFilePrinter) {
-        performancePrinter.singleFilePrinter = new TimeTracker(printPath);
-      }
-
-      if (printConfig.mSumPrinter) {
-        performancePrinter.timeSumPrinter = new TimeSumPrinter(printPath);
-      }
-    } else {
-      performancePrinter = undefined;
-    }
   }
 
   /**
@@ -410,22 +417,22 @@ export class ArkObfuscator {
   }
 
   private createAst(content: SourceFile | string, sourceFilePath: string): SourceFile {
-    performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter, sourceFilePath);
+    startSingleFileEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter);
     let ast: SourceFile;
     if (typeof content === 'string') {
       ast = TypeUtils.createObfSourceFile(sourceFilePath, content);
     } else {
       ast = content;
     }
-    performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter);
+    endSingleFileEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter);
 
     return ast;
   }
 
   private obfuscateAst(ast: SourceFile): SourceFile {
-    performancePrinter?.singleFilePrinter?.startEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
+    startSingleFileEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
     let transformedResult: TransformationResult<Node> = transform(ast, this.mTransformers, this.mCompilerOptions);
-    performancePrinter?.singleFilePrinter?.endEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
+    endSingleFileEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
     ast = transformedResult.transformed[0] as SourceFile;
     return ast;
   }
@@ -460,16 +467,18 @@ export class ArkObfuscator {
     // convert ast to output source file and generate sourcemap if needed.
     let sourceMapGenerator: SourceMapGenerator = undefined;
     if (this.mCustomProfiles.mEnableSourceMap) {
+      startSingleFileEvent(EventList.GET_SOURCEMAP_GENERATOR, performancePrinter.timeSumPrinter);
       sourceMapGenerator = getSourceMapGenerator(sourceFilePath);
+      endSingleFileEvent(EventList.GET_SOURCEMAP_GENERATOR, performancePrinter.timeSumPrinter);
     }
 
+    startSingleFileEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
     if (sourceFilePath.endsWith('.js')) {
       TypeUtils.tsToJs(ast);
     }
     this.handleTsHarComments(ast, originalFilePath);
-    performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
     this.createObfsPrinter(ast.isDeclarationFile).writeFile(ast, this.mTextWriter, sourceMapGenerator);
-    performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
+    endSingleFileEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
 
     result.filePath = ast.fileName;
     result.content = this.mTextWriter.getText();
@@ -489,6 +498,7 @@ export class ArkObfuscator {
 
   private handleSourceMapAndNameCache(sourceMapGenerator: SourceMapGenerator, sourceFilePath: string,
     result: ObfuscationResultType, previousStageSourceMap?: RawSourceMap): void {
+    startSingleFileEvent(EventList.SOURCEMAP_MERGE, performancePrinter.timeSumPrinter);
     let sourceMapJson: RawSourceMap = sourceMapGenerator.toJSON();
     sourceMapJson.sourceRoot = '';
     sourceMapJson.file = path.basename(sourceFilePath);
@@ -496,6 +506,8 @@ export class ArkObfuscator {
       sourceMapJson = mergeSourceMap(previousStageSourceMap as RawSourceMap, sourceMapJson);
     }
     result.sourceMap = sourceMapJson;
+    endSingleFileEvent(EventList.SOURCEMAP_MERGE, performancePrinter.timeSumPrinter);
+    startSingleFileEvent(EventList.CREATE_NAMECACHE, performancePrinter.timeSumPrinter);
     let nameCache = renameIdentifierModule.nameCache;
     if (this.mCustomProfiles.mEnableNameCache) {
       let newIdentifierCache!: Object;
@@ -518,6 +530,7 @@ export class ArkObfuscator {
       nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
       result.nameCache = { [IDENTIFIER_CACHE]: newIdentifierCache, [MEM_METHOD_CACHE]: newMemberMethodCache };
     }
+    endSingleFileEvent(EventList.CREATE_NAMECACHE, performancePrinter.timeSumPrinter);
   }
 
   private clearCaches(): void {

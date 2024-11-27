@@ -50,11 +50,6 @@ static ir::ClassProperty *CreateAnonClassField(ir::MethodDefinition *ifaceMethod
 
     // Field type annotation
     auto *fieldType = ifaceMethod->Function()->Signature()->ReturnType();
-    if (IsInterfaceType(fieldType)) {
-        auto *anonClass = fieldType->AsETSObjectType()->GetDeclNode()->AsTSInterfaceDeclaration()->GetAnonClass();
-        ASSERT(anonClass != nullptr);
-        fieldType = anonClass->Definition()->TsType();
-    }
     ASSERT(fieldType != nullptr);
     auto *fieldTypeNode = checker->AllocNode<ir::OpaqueTypeNode>(fieldType);
 
@@ -93,11 +88,6 @@ static ir::MethodDefinition *CreateAnonClassFieldGetterSetter(checker::ETSChecke
 
         // ifaceMethod is getter, so it should have return type
         auto *retType = ifaceMethod->Function()->Signature()->ReturnType();
-        if (IsInterfaceType(retType)) {
-            auto *anonClass = retType->AsETSObjectType()->GetDeclNode()->AsTSInterfaceDeclaration()->GetAnonClass();
-            ASSERT(anonClass != nullptr);
-            retType = anonClass->Definition()->TsType();
-        }
         ASSERT(retType != nullptr);
 
         // Field identifier
@@ -116,7 +106,7 @@ static ir::MethodDefinition *CreateAnonClassFieldGetterSetter(checker::ETSChecke
             auto *thisExpr = checker->AllocNode<ir::ThisExpression>();
             auto *lhs = checker->AllocNode<ir::MemberExpression>(
                 thisExpr, fieldId->Clone(allocator, nullptr), ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
-            auto *rhs = param->Ident()->Clone(allocator, nullptr);
+            auto *rhs = param->Ident()->CloneReference(allocator, nullptr);
 
             auto *assignment =
                 checker->AllocNode<ir::AssignmentExpression>(lhs, rhs, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
@@ -158,7 +148,9 @@ static void FillClassBody(checker::ETSChecker *checker, ArenaVector<ir::AstNode 
         auto *ifaceMethod = it->AsMethodDefinition();
 
         if (!ifaceMethod->Function()->IsGetter() && !ifaceMethod->Function()->IsSetter()) {
-            checker->ThrowTypeError("Interface has methods", objExpr->Start());
+            checker->LogTypeError("Interface has methods", objExpr->Start());
+            objExpr->SetTsType(checker->GlobalTypeError());
+            return;
         }
 
         if (!ifaceMethod->Function()->IsGetter()) {
@@ -189,9 +181,9 @@ static void FillAnonClassBody(checker::ETSChecker *checker, ArenaVector<ir::AstN
     FillClassBody(checker, classBody, ifaceNode->Body()->Body(), objExpr);
 }
 
-static checker::ETSObjectType *GenerateAnonClassTypeFromInterface(checker::ETSChecker *checker,
-                                                                  ir::TSInterfaceDeclaration *ifaceNode,
-                                                                  ir::ObjectExpression *objExpr)
+static checker::Type *GenerateAnonClassTypeFromInterface(checker::ETSChecker *checker,
+                                                         ir::TSInterfaceDeclaration *ifaceNode,
+                                                         ir::ObjectExpression *objExpr)
 {
     if (ifaceNode->GetAnonClass() != nullptr) {
         return ifaceNode->GetAnonClass()->Definition()->TsType()->AsETSObjectType();
@@ -215,7 +207,8 @@ static checker::ETSObjectType *GenerateAnonClassTypeFromInterface(checker::ETSCh
     // Class type params
     if (ifaceNode->TypeParams() != nullptr) {
         // NOTE: to be done
-        checker->ThrowTypeError("Object literal cannot be of typed interface type", objExpr->Start());
+        checker->LogTypeError("Object literal cannot be of typed interface type", objExpr->Start());
+        return checker->GlobalTypeError();
     }
 
     // Class implements
@@ -235,7 +228,7 @@ static void HandleInterfaceLowering(checker::ETSChecker *checker, ir::ObjectExpr
     const auto *const targetType = objExpr->TsType();
     ASSERT(targetType->AsETSObjectType()->GetDeclNode()->IsTSInterfaceDeclaration());
     auto *ifaceNode = targetType->AsETSObjectType()->GetDeclNode()->AsTSInterfaceDeclaration();
-    auto *resultType = GenerateAnonClassTypeFromInterface(checker, ifaceNode, objExpr);
+    checker::Type *resultType = GenerateAnonClassTypeFromInterface(checker, ifaceNode, objExpr);
 
     if (const auto *const parent = objExpr->Parent(); parent->IsArrayExpression()) {
         for (auto *elem : parent->AsArrayExpression()->Elements()) {

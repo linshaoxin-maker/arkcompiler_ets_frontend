@@ -16,4 +16,4 @@
 
 this."foo";
 
-/* @@? 17:6 Error SyntaxError: Identifier expected.  */
+/* @@? 17:6 Error SyntaxError: Identifier expected, got 'string literal'.  */

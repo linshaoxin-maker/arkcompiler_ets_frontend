@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-#include "helpers.h"
 #include "identifierHasVariable.h"
-#include "ir/base/scriptFunction.h"
 #include "ir/expressions/memberExpression.h"
 #include "ir/ts/tsEnumDeclaration.h"
-#include "ir/typeNode.h"
 
 namespace ark::es2panda::compiler::ast_verifier {
 
@@ -48,31 +45,8 @@ CheckResult IdentifierHasVariable::operator()(CheckContext &ctx, const ir::AstNo
 
 bool IdentifierHasVariable::CheckMoreAstExceptions(const ir::Identifier *ast) const
 {
-    // NOTE(kkonkuznetsov): skip async functions
-    auto parent = ast->Parent();
-    while (parent != nullptr) {
-        if (parent->IsScriptFunction()) {
-            auto script = parent->AsScriptFunction();
-            if (script->IsAsyncFunc()) {
-                return true;
-            }
-
-            break;
-        }
-
-        parent = parent->Parent();
-    }
-
-    // NOTE(kkonkuznetsov): skip reexport declarations
-    if (ast->Parent() != nullptr && ast->Parent()->Parent() != nullptr) {
-        parent = ast->Parent()->Parent();
-        if (parent->IsETSReExportDeclaration()) {
-            return true;
-        }
-    }
-
     // NOTE(kkonkuznetsov): object expressions
-    parent = ast->Parent();
+    const auto *parent = ast->Parent();
     while (parent != nullptr) {
         if (parent->IsObjectExpression()) {
             return true;
@@ -97,30 +71,17 @@ bool IdentifierHasVariable::CheckMoreAstExceptions(const ir::Identifier *ast) co
 
 bool IdentifierHasVariable::CheckAstExceptions(const ir::Identifier *ast) const
 {
-    // NOTE(kkonkuznetsov): skip enums
-    if (ast->Parent()->IsMemberExpression() &&
-        (ast->Parent()->AsMemberExpression()->Object()->TsType() == nullptr ||
-         ast->Parent()->AsMemberExpression()->Object()->TsType()->IsETSEnumType())) {
-        return true;
-    }
-
     // NOTE(kkonkuznetsov): skip length property
     if (ast->Parent()->IsMemberExpression() && ast->Name().Is("length")) {
         return true;
     }
 
-    // NOTE(kkonkuznetsov): skip anonymous class id
-    if (ast->Parent()->Parent() != nullptr && ast->Parent()->Parent()->IsETSNewClassInstanceExpression()) {
-        return true;
-    }
-
     // NOTE(kkonkuznetsov): skip package declarations
-    auto parent = ast->Parent();
+    const auto *parent = ast->Parent();
     while (parent != nullptr) {
         if (parent->IsETSPackageDeclaration()) {
             return true;
         }
-
         parent = parent->Parent();
     }
 

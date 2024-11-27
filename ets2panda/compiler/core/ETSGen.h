@@ -393,8 +393,7 @@ public:
     void ApplyConversion(const ir::AstNode *node, const checker::Type *targetType);
     void ApplyCast(const ir::AstNode *node, const checker::Type *targetType);
     void ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnboxingFlags targetType);
-    void EmitUnboxingConversion(const ir::AstNode *node);
-    checker::Type *EmitBoxedType(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node);
+    void EmitBoxingConversion(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node);
     void EmitBoxingConversion(const ir::AstNode *node);
     void SwapBinaryOpArgs(const ir::AstNode *node, VReg lhs);
     VReg MoveAccToReg(const ir::AstNode *node);
@@ -666,8 +665,6 @@ public:
     NO_COPY_SEMANTIC(ETSGen);
     NO_MOVE_SEMANTIC(ETSGen);
 
-    void EmitUnboxEnum(const ir::AstNode *node, const checker::Type *enumType);
-
 private:
     const VReg dummyReg_ = VReg::RegStart();
 
@@ -681,11 +678,11 @@ private:
     util::StringView FormClassPropReference(varbinder::Variable const *var);
     void UnaryMinus(const ir::AstNode *node);
     void UnaryTilde(const ir::AstNode *node);
-    void UnaryDollarDollar(const ir::AstNode *node);
 
     util::StringView ToAssemblerType(const es2panda::checker::Type *type) const;
-    void TestIsInstanceConstituent(const ir::AstNode *node, Label *ifTrue, Label *ifFalse, checker::Type const *target,
-                                   bool acceptUndefined);
+    void TestIsInstanceConstant(const ir::AstNode *node, Label *ifTrue, VReg srcReg, checker::Type const *target);
+    void TestIsInstanceConstituent(const ir::AstNode *node, std::tuple<Label *, Label *> label, VReg srcReg,
+                                   checker::Type const *target, bool acceptUndefined);
     void CheckedReferenceNarrowingObject(const ir::AstNode *node, const checker::Type *target);
 
     void HandleLooseNullishEquality(const ir::AstNode *node, VReg lhs, VReg rhs, Label *ifFalse, Label *ifTrue);

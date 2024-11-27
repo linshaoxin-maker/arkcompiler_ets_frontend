@@ -15,21 +15,19 @@
 
 import {
   factory,
-  forEachChild,
   isComputedPropertyName,
   isConstructorDeclaration,
   isElementAccessExpression,
-  isEnumMember,
   isIdentifier,
-  isClassDeclaration,
   isNumericLiteral,
   isPrivateIdentifier,
   isStringLiteralLike,
-  isTypeNode,
   setParentRecursive,
   visitEachChild,
-  isStringLiteral,
-  isSourceFile
+  isSourceFile,
+  isIndexedAccessTypeNode,
+  isLiteralTypeNode,
+  isUnionTypeNode,
 } from 'typescript';
 
 import type {
@@ -43,7 +41,10 @@ import type {
   ClassDeclaration,
   ClassExpression,
   StructDeclaration,
-  PropertyName
+  PropertyName,
+  StringLiteral,
+  LiteralTypeNode,
+  TypeNode
 } from 'typescript';
 
 import type {IOptions} from '../../configs/IOptions';
@@ -53,9 +54,8 @@ import {getNameGenerator, NameGeneratorType} from '../../generator/NameFactory';
 import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import {NodeUtils} from '../../utils/NodeUtils';
-import {collectPropertyNamesAndStrings, isViewPUBasedClass} from '../../utils/OhsUtil';
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
-import { EventList } from '../../utils/PrinterUtils';
+import { EventList, endSingleFileEvent, startSingleFileEvent } from '../../utils/PrinterUtils';
 import {
   isInPropertyWhitelist,
   isReservedProperty,
@@ -86,7 +86,6 @@ namespace secharmony {
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
       let options: NameGeneratorOptions = {};
       let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
-      let currentConstructorParams: Set<string> = new Set<string>();
 
       return renamePropertiesTransformer;
 
@@ -95,38 +94,25 @@ namespace secharmony {
           return node;
         }
 
-        collectReservedNames(node);
-
-        performancePrinter?.singleFilePrinter?.startEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
+        startSingleFileEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = renameProperties(node);
         UpdateMemberMethodName(nameCache, PropCollections.globalMangledTable, classInfoInMemberMethodCache);
         let parentNodes = setParentRecursive(ret, true);
-        performancePrinter?.singleFilePrinter?.endEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
+        endSingleFileEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         return parentNodes;
       }
 
       function renameProperties(node: Node): Node {
-        if (isConstructorDeclaration(node)) {
-          currentConstructorParams.clear();
-        }
-
-        if (NodeUtils.isClassPropertyInConstructorParams(node)) {
-          currentConstructorParams.add((node as Identifier).escapedText.toString());
-          return renameProperty(node, false);
-        }
-
-        if (NodeUtils.isClassPropertyInConstructorBody(node, currentConstructorParams)) {
-          if (currentConstructorParams.has((node as Identifier).escapedText.toString())) {
-            return renameProperty(node, false);
-          }
-        }
-
         if (!NodeUtils.isPropertyNode(node)) {
           return visitEachChild(node, renameProperties, context);
         }
 
         if (isElementAccessExpression(node.parent)) {
           return renameElementAccessProperty(node);
+        }
+
+        if (isIndexedAccessTypeNode(node.parent)) {
+          return renameIndexedAccessProperty(node);
         }
 
         if (isComputedPropertyName(node)) {
@@ -139,6 +125,39 @@ namespace secharmony {
       function renameElementAccessProperty(node: Node): Node {
         if (isStringLiteralLike(node)) {
           return renameProperty(node, false);
+        }
+        return visitEachChild(node, renameProperties, context);
+      }
+
+      function renameIndexedAccessProperty(node: Node): Node {
+        if (NodeUtils.isStringLiteralTypeNode(node)) {
+          let prop = renameProperty((node as LiteralTypeNode).literal, false);
+          if (prop !== (node as LiteralTypeNode).literal) {
+            return factory.createLiteralTypeNode(prop as StringLiteral);
+          }
+          return visitEachChild(node, renameProperties, context);
+        }
+
+        if (!isUnionTypeNode(node)) {
+          return visitEachChild(node, renameProperties, context);
+        }
+
+        let isChanged: boolean = false;
+        const elemTypes = node.types.map((elemType) => {
+          if (!elemType) {
+            return elemType;
+          }
+          if (NodeUtils.isStringLiteralTypeNode(elemType)) {
+            const prop = renameProperty((elemType as LiteralTypeNode).literal, false);
+            if (prop !== (elemType as LiteralTypeNode).literal) {
+              isChanged = true;
+              return factory.createLiteralTypeNode(prop as StringLiteral);
+            }
+          }
+          return elemType;
+        });
+        if (isChanged) {
+          return factory.createUnionTypeNode(elemTypes);
         }
         return visitEachChild(node, renameProperties, context);
       }
@@ -223,56 +242,6 @@ namespace secharmony {
         PropCollections.globalMangledTable.set(original, mangledName);
         PropCollections.newlyOccupiedMangledProps.add(mangledName);
         return mangledName;
-      }
-
-      function visitEnumInitializer(childNode: Node): void {
-        if (!isIdentifier(childNode)) {
-          forEachChild(childNode, visitEnumInitializer);
-          return;
-        }
-
-        if (NodeUtils.isPropertyNode(childNode)) {
-          return;
-        }
-
-        if (isTypeNode(childNode)) {
-          return;
-        }
-
-        UnobfuscationCollections.reservedEnum.add(childNode.text);
-      }
-
-      // enum syntax has special scenarios
-      function collectReservedNames(node: Node): void {
-        // collect ViewPU class properties
-        if (isClassDeclaration(node) && isViewPUBasedClass(node)) {
-          getViewPUClassProperties(node, UnobfuscationCollections.reservedStruct);
-          return;
-        }
-
-        // collect reserved name of enum
-        // example: enum H {A, B = A + 1}, enum H = {A, B= 1 + (A + 1)}; A is reserved
-        if (isEnumMember(node) && node.initializer) {
-          // collect enum properties
-          node.initializer.forEachChild(visitEnumInitializer);
-          return;
-        }
-
-        forEachChild(node, collectReservedNames);
-      }
-
-      function getViewPUClassProperties(classNode: ClassDeclaration | ClassExpression | StructDeclaration, propertySet: Set<string>): void {
-        if (!classNode || !classNode.members) {
-          return;
-        }
-
-        classNode.members.forEach((member) => {
-          const memberName: PropertyName = member.name;
-          if (!member || !memberName) {
-            return;
-          }
-          collectPropertyNamesAndStrings(memberName, propertySet);
-        });
       }
     }
   };

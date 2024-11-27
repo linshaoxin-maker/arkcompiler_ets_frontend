@@ -16,7 +16,7 @@
 
 
 from typing import Tuple, Dict, Any
-from log_tools import console_log, warning_log
+from log_tools import debug_log
 from text_tools import (
     find_first_of_characters,
     find_first_not_restricted_character,
@@ -54,15 +54,13 @@ def is_union_value(data: str) -> bool:
 
 
 def parse_enum_class_body(data: str) -> dict:
-    console_log("Parsing enum body...")
-
     res: Dict[str, Any] = {}
 
     value_start = 0
     value_end = data.find(",", value_start)
 
     if data.find("#define") != -1:
-        warning_log("Defines in enum not realized yet. Can't parse enum body with define:\n---\n" + data + "\n---\n")
+        debug_log(f"Defines in enum not realized yet. Can't parse enum body with define:\n---\n{data}\n---\n")
         return {}
 
     if value_end == -1:
@@ -71,22 +69,22 @@ def parse_enum_class_body(data: str) -> dict:
     while value_start != -1 and value_start < len(data):
         value = data[value_start:value_end].strip(" \n")
 
-        if value != "":
-            if not is_union_value(value):
-                if "flags" not in res:
-                    res["flags"] = []
-                res["flags"].append(get_name_of_enum_value(value))
-            else:
+        if value != "" and (is_union_value(value) == False):
+            if "flags" not in res:
+                res["flags"] = []
+            res["flags"].append(get_name_of_enum_value(value))
 
-                union_flag: Dict[str, Any] = {}
-                union_flag["name"] = get_name_of_enum_value(value)
-                union_flag["flags"] = parse_enum_union(value)
+        elif value != "" and (is_union_value(value) == True):
 
-                if union_flag["flags"] != []:
-                    if "flag_unions" not in res:
-                        res["flag_unions"] = []
+            union_flag: Dict[str, Any] = {}
+            union_flag["name"] = get_name_of_enum_value(value)
+            union_flag["flags"] = parse_enum_union(value)
 
-                    res["flag_unions"].append(union_flag)
+            if (union_flag["flags"] != []) and ("flag_unions" not in res):
+                res["flag_unions"] = []
+                res["flag_unions"].append(union_flag)
+            elif (union_flag["flags"] != []) and ("flag_unions" not in res) == False:
+                res["flag_unions"].append(union_flag)
 
         if value_end == len(data):
             break
@@ -103,8 +101,13 @@ def parse_enum_class_body(data: str) -> dict:
 def parse_enum_class(data: str, start: int = 0) -> Tuple[int, Dict]:
     res = {}
 
-    start_of_name = data.find("enum class", start)
-    start_of_name = find_first_not_restricted_character(" ", data, start_of_name + len("enum class"))
+    start_of_name = data.find("enum ", start)
+
+    if data.find("enum class", start_of_name) == start_of_name:
+        start_of_name = find_first_not_restricted_character(" ", data, start_of_name + len("enum class"))
+    else:
+        start_of_name = find_first_not_restricted_character(" ", data, start_of_name + len("enum"))
+
     end_of_name = find_first_of_characters(" ;{\n", data, start_of_name)
     enum_name = data[start_of_name:end_of_name]
 
@@ -114,8 +117,8 @@ def parse_enum_class(data: str, start: int = 0) -> Tuple[int, Dict]:
     res["name"] = enum_name
     start_of_body = smart_find_first_of_characters("{", data, end_of_name)
 
-    if start_of_body == -1:
-        raise RuntimeError("Error! Empty body in enum class.")
+    if start_of_body == len(data):
+        return find_first_of_characters(";", data, end_of_name), res
 
     start_of_body, end_of_body = find_scope_borders(data, start_of_body)
 
@@ -131,8 +134,6 @@ def parse_enum_class(data: str, start: int = 0) -> Tuple[int, Dict]:
 
     if "flag_unions" in parsed_flags:
         res["flag_unions"] = parsed_flags["flag_unions"]
-
-    console_log("parsed enum: '" + enum_name + "'")
 
     end_of_body = data.find(";", end_of_body)
 

@@ -20,6 +20,8 @@
 #include "varbinder/variable.h"
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
+#include "ir/srcDump.h"
+#include "ir/statements/annotationUsage.h"
 #include "util/language.h"
 
 namespace ark::es2panda::ir {
@@ -66,7 +68,7 @@ public:
 
     NO_COPY_SEMANTIC(ClassDefinition);
     NO_MOVE_SEMANTIC(ClassDefinition);
-
+    // CC-OFFNXT(G.FUN.01-CPP) solid logic
     explicit ClassDefinition(const util::StringView &privateId, Identifier *ident,
                              TSTypeParameterDeclaration *typeParams, TSTypeParameterInstantiation *superTypeParams,
                              ArenaVector<TSClassImplements *> &&implements, MethodDefinition *ctor,
@@ -86,10 +88,11 @@ public:
           capturedVars_(body_.get_allocator()),
           localVariableIsNeeded_(body_.get_allocator()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(body_.get_allocator())
     {
     }
-
+    // CC-OFFNXT(G.FUN.01-CPP) solid logic
     explicit ClassDefinition(ArenaAllocator *allocator, Identifier *ident, ArenaVector<AstNode *> &&body,
                              ClassDefinitionModifiers modifiers, ModifierFlags flags, Language lang)
         : TypedAstNode(AstNodeType::CLASS_DEFINITION, flags),
@@ -101,7 +104,8 @@ public:
           capturedVars_(allocator->Adapter()),
           localVariableIsNeeded_(allocator->Adapter()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(body_.get_allocator())
     {
     }
 
@@ -116,8 +120,8 @@ public:
           capturedVars_(allocator->Adapter()),
           localVariableIsNeeded_(allocator->Adapter()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
-
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(body_.get_allocator())
     {
     }
 
@@ -355,6 +359,29 @@ public:
         return capturedVars_.erase(var) != 0;
     }
 
+    const ArenaVector<AnnotationUsage *> &Annotations() const
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (auto anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
+    void SetOrigEnumDecl(ir::TSEnumDeclaration *enumDecl)
+    {
+        origEnumDecl_ = enumDecl;
+    }
+
+    ir::TSEnumDeclaration *OrigEnumDecl() const
+    {
+        return origEnumDecl_;
+    }
+
     const FunctionExpression *Ctor() const;
     bool HasPrivateMethod() const;
     bool HasComputedInstanceField() const;
@@ -375,9 +402,27 @@ public:
         v->Accept(this);
     }
 
+    template <typename T>
+    static void DumpItems(ir::SrcDumper *dumper, const std::string &prefix, const ArenaVector<T *> &items)
+    {
+        if (items.empty()) {
+            return;
+        }
+        dumper->Add(prefix);
+        for (size_t i = 0; i < items.size(); ++i) {
+            items[i]->Dump(dumper);
+            if (i < items.size() - 1) {
+                dumper->Add(", ");
+            }
+        }
+    }
+
 private:
     void CompileStaticFieldInitializers(compiler::PandaGen *pg, compiler::VReg classReg,
                                         const std::vector<compiler::VReg> &staticComputedFieldKeys) const;
+
+    // This method is needed by OHOS CI code checker
+    void DumpBody(ir::SrcDumper *dumper) const;
 
     varbinder::LocalScope *scope_ {nullptr};
     util::StringView privateId_ {};
@@ -392,9 +437,11 @@ private:
     es2panda::Language lang_;
     ArenaSet<varbinder::Variable *> capturedVars_;
     ArenaSet<varbinder::Variable *> localVariableIsNeeded_;
+    TSEnumDeclaration *origEnumDecl_ {};
     static int classCounter_;
     const int localIndex_ {};
     const std::string localPrefix_ {};
+    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 

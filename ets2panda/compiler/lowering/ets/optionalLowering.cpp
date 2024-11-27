@@ -57,7 +57,6 @@ static ir::AstNode *LowerOptionalExpr(GetSource const &getSource, SetSource cons
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(varbinder, NearestScope(expr));
     auto *tmpIdent = Gensym(allocator);
     auto *tmpIdentClone = tmpIdent->Clone(allocator, nullptr);
-    tmpIdentClone->SetReference();
 
     // '0's act as placeholders
     auto *sequenceExpr = parser->CreateFormattedExpression(
@@ -131,6 +130,7 @@ bool OptionalLowering::Perform(public_lib::Context *ctx, parser::Program *progra
     }
 
     program->Ast()->TransformChildrenRecursively(
+        // CC-OFFNXT(G.FMT.14-CPP) project code style
         [ctx](ir::AstNode *const node) -> ir::AstNode * {
             if (node->IsChainExpression()) {
                 return RefineSourceRanges(LowerChain(ctx, node->AsChainExpression()));

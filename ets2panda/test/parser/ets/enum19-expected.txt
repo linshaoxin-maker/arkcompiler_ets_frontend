@@ -9,11 +9,11 @@
         "decorators": [],
         "loc": {
           "start": {
-            "line": 16,
+            "line": 20,
             "column": 6
           },
           "end": {
-            "line": 16,
+            "line": 20,
             "column": 25
           }
         }
@@ -27,11 +27,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 17,
+                "line": 21,
                 "column": 3
               },
               "end": {
-                "line": 17,
+                "line": 21,
                 "column": 6
               }
             }
@@ -52,11 +52,11 @@
           },
           "loc": {
             "start": {
-              "line": 17,
+              "line": 21,
               "column": 3
             },
             "end": {
-              "line": 17,
+              "line": 21,
               "column": 6
             }
           }
@@ -69,11 +69,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 18,
+                "line": 22,
                 "column": 3
               },
               "end": {
-                "line": 18,
+                "line": 22,
                 "column": 8
               }
             }
@@ -83,22 +83,22 @@
             "value": -1,
             "loc": {
               "start": {
-                "line": 18,
+                "line": 22,
                 "column": 12
               },
               "end": {
-                "line": 18,
+                "line": 22,
                 "column": 13
               }
             }
           },
           "loc": {
             "start": {
-              "line": 18,
+              "line": 22,
               "column": 3
             },
             "end": {
-              "line": 18,
+              "line": 22,
               "column": 13
             }
           }
@@ -111,11 +111,11 @@
             "decorators": [],
             "loc": {
               "start": {
-                "line": 19,
+                "line": 23,
                 "column": 3
               },
               "end": {
-                "line": 19,
+                "line": 23,
                 "column": 7
               }
             }
@@ -125,35 +125,36 @@
             "value": -1,
             "loc": {
               "start": {
-                "line": 19,
+                "line": 23,
                 "column": 10
               },
               "end": {
-                "line": 19,
+                "line": 23,
                 "column": 20
               }
             }
           },
           "loc": {
             "start": {
-              "line": 19,
+              "line": 23,
               "column": 3
             },
             "end": {
-              "line": 19,
+              "line": 23,
               "column": 20
             }
           }
         }
       ],
       "const": false,
+      "declare": false,
       "loc": {
         "start": {
-          "line": 16,
+          "line": 20,
           "column": 1
         },
         "end": {
-          "line": 20,
+          "line": 24,
           "column": 2
         }
       }
@@ -208,100 +209,6 @@
                 "id": {
                   "type": "Identifier",
                   "name": "_$init$_",
-                  "decorators": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "generator": false,
-                "async": false,
-                "expression": false,
-                "params": [],
-                "body": {
-                  "type": "BlockStatement",
-                  "statements": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "loc": {
-                  "start": {
-                    "line": 1,
-                    "column": 1
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
-              },
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "overloads": [],
-            "decorators": [],
-            "loc": {
-              "start": {
-                "line": 1,
-                "column": 1
-              },
-              "end": {
-                "line": 1,
-                "column": 1
-              }
-            }
-          },
-          {
-            "type": "MethodDefinition",
-            "key": {
-              "type": "Identifier",
-              "name": "_$trigger_cctor$_",
-              "decorators": [],
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "kind": "method",
-            "accessibility": "public",
-            "static": true,
-            "optional": false,
-            "computed": false,
-            "value": {
-              "type": "FunctionExpression",
-              "function": {
-                "type": "ScriptFunction",
-                "id": {
-                  "type": "Identifier",
-                  "name": "_$trigger_cctor$_",
                   "decorators": [],
                   "loc": {
                     "start": {
@@ -852,7 +759,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -999,7 +906,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1118,7 +1025,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1358,7 +1265,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -1844,7 +1751,7 @@
             },
             "accessibility": "protected",
             "static": true,
-            "readonly": false,
+            "readonly": true,
             "declare": false,
             "optional": false,
             "computed": false,
@@ -2079,9 +1986,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "NamesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#InvalidInitTypeEnum",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "NamesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -2445,9 +2382,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "NamesArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#InvalidInitTypeEnum",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "NamesArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -2551,9 +2518,39 @@
                           "right": {
                             "type": "MemberExpression",
                             "object": {
-                              "type": "Identifier",
-                              "name": "NamesArray",
-                              "decorators": [],
+                              "type": "MemberExpression",
+                              "object": {
+                                "type": "Identifier",
+                                "name": "#InvalidInitTypeEnum",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 1
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 1
+                                  }
+                                }
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "name": "NamesArray",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 1
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 1
+                                  }
+                                }
+                              },
+                              "computed": false,
+                              "optional": false,
                               "loc": {
                                 "start": {
                                   "line": 1,
@@ -2832,7 +2829,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -3005,9 +3002,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "ValuesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#InvalidInitTypeEnum",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "ValuesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -3295,9 +3322,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "StringValuesArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#InvalidInitTypeEnum",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "StringValuesArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -3526,9 +3583,39 @@
                     {
                       "type": "ReturnStatement",
                       "argument": {
-                        "type": "Identifier",
-                        "name": "ItemsArray",
-                        "decorators": [],
+                        "type": "MemberExpression",
+                        "object": {
+                          "type": "Identifier",
+                          "name": "#InvalidInitTypeEnum",
+                          "decorators": [],
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 1
+                            }
+                          }
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "name": "ItemsArray",
+                          "decorators": [],
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 1
+                            }
+                          }
+                        },
+                        "computed": false,
+                        "optional": false,
                         "loc": {
                           "start": {
                             "line": 1,
@@ -3752,9 +3839,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "ItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#InvalidInitTypeEnum",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "ItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -3810,9 +3927,39 @@
                         "argument": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "ItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#InvalidInitTypeEnum",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "ItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -3998,7 +4145,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -4129,9 +4276,39 @@
                       "argument": {
                         "type": "MemberExpression",
                         "object": {
-                          "type": "Identifier",
-                          "name": "ItemsArray",
-                          "decorators": [],
+                          "type": "MemberExpression",
+                          "object": {
+                            "type": "Identifier",
+                            "name": "#InvalidInitTypeEnum",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "name": "ItemsArray",
+                            "decorators": [],
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 1
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 1
+                              }
+                            }
+                          },
+                          "computed": false,
+                          "optional": false,
                           "loc": {
                             "start": {
                               "line": 1,
@@ -4411,9 +4588,39 @@
                         "right": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "BoxedItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#InvalidInitTypeEnum",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "BoxedItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4469,9 +4676,39 @@
                         "argument": {
                           "type": "MemberExpression",
                           "object": {
-                            "type": "Identifier",
-                            "name": "BoxedItemsArray",
-                            "decorators": [],
+                            "type": "MemberExpression",
+                            "object": {
+                              "type": "Identifier",
+                              "name": "#InvalidInitTypeEnum",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "name": "BoxedItemsArray",
+                              "decorators": [],
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 1
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 1
+                                }
+                              }
+                            },
+                            "computed": false,
+                            "optional": false,
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -4657,7 +4894,7 @@
                       "column": 1
                     }
                   }
-                }
+                },
                 "throwMarker": "throws",
                 "loc": {
                   "start": {
@@ -4724,7 +4961,7 @@
       "column": 1
     },
     "end": {
-      "line": 21,
+      "line": 25,
       "column": 1
     }
   }

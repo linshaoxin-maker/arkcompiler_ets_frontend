@@ -64,6 +64,8 @@ public:
             accumulatedChecks_.insert("VariableNameIdentifierNameSameForAll");
             accumulatedChecks_.insert("CheckAbstractMethodForAll");
             accumulatedChecks_.insert("GetterSetterValidationForAll");
+            accumulatedChecks_.insert("CheckScopeDeclarationForAll");
+            accumulatedChecks_.insert("CheckConstPropertiesForAll");
         }
     }
 

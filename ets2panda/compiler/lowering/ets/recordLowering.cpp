@@ -43,17 +43,47 @@ std::string RecordLowering::TypeToString(checker::Type *type) const
     return ss.str();
 }
 
+RecordLowering::KeyType RecordLowering::TypeToKey(checker::Type *type) const
+{
+    if (type->IsByteType()) {
+        return type->AsByteType()->GetValue();
+    }
+    if (type->IsShortType()) {
+        return type->AsShortType()->GetValue();
+    }
+    if (type->IsIntType()) {
+        return type->AsIntType()->GetValue();
+    }
+    if (type->IsLongType()) {
+        return type->AsLongType()->GetValue();
+    }
+    if (type->IsFloatType()) {
+        return type->AsFloatType()->GetValue();
+    }
+    if (type->IsDoubleType()) {
+        return type->AsDoubleType()->GetValue();
+    }
+    if (type->IsETSStringType()) {
+        return type->AsETSStringType()->GetValue();
+    }
+    UNREACHABLE();
+    return {};
+}
+
 bool RecordLowering::Perform(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            Perform(ctx, extProg);
+    if (ctx->config->options->CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB) {
+        for (auto &[_, extPrograms] : program->ExternalSources()) {
+            (void)_;
+            for (auto *extProg : extPrograms) {
+                Perform(ctx, extProg);
+            }
         }
     }
 
     // Replace Record Object Expressions with Block Expressions
     program->Ast()->TransformChildrenRecursively(
+        // CC-OFFNXT(G.FMT.14-CPP) project code style
         [this, ctx](ir::AstNode *ast) -> ir::AstNode * {
             if (ast->IsObjectExpression()) {
                 return UpdateObjectExpression(ast->AsObjectExpression(), ctx);
@@ -66,9 +96,8 @@ bool RecordLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     return true;
 }
 
-void RecordLowering::CheckDuplicateKey(ir::ObjectExpression *expr, public_lib::Context *ctx)
+void RecordLowering::CheckDuplicateKey(KeySetType &keySet, ir::ObjectExpression *expr, public_lib::Context *ctx)
 {
-    std::unordered_set<std::variant<int32_t, int64_t, float, double, util::StringView>> keySet;
     for (auto *it : expr->Properties()) {
         auto *prop = it->AsProperty();
         switch (prop->Key()->Type()) {
@@ -80,24 +109,42 @@ void RecordLowering::CheckDuplicateKey(ir::ObjectExpression *expr, public_lib::C
                     (number.IsDouble() && keySet.insert(number.GetDouble()).second)) {
                     continue;
                 }
-                ctx->checker->AsETSChecker()->ThrowTypeError(
+                ctx->checker->AsETSChecker()->LogTypeError(
                     "An object literal cannot multiple properties with same name", expr->Start());
+                break;
             }
             case ir::AstNodeType::STRING_LITERAL: {
                 if (keySet.insert(prop->Key()->AsStringLiteral()->Str()).second) {
                     continue;
                 }
-                ctx->checker->AsETSChecker()->ThrowTypeError(
+                ctx->checker->AsETSChecker()->LogTypeError(
                     "An object literal cannot multiple properties with same name", expr->Start());
+                break;
             }
             case ir::AstNodeType::IDENTIFIER: {
-                ctx->checker->AsETSChecker()->ThrowTypeError("Object literal may only specify known properties",
-                                                             expr->Start());
+                ctx->checker->AsETSChecker()->LogTypeError("Object literal may only specify known properties",
+                                                           expr->Start());
+                break;
             }
             default: {
                 UNREACHABLE();
                 break;
             }
+        }
+    }
+}
+
+void RecordLowering::CheckLiteralsCompleteness(KeySetType &keySet, ir::ObjectExpression *expr, public_lib::Context *ctx)
+{
+    auto *keyType = expr->PreferredType()->AsETSObjectType()->TypeArguments().front();
+    if (!keyType->IsETSUnionType()) {
+        return;
+    }
+    for (auto &ct : keyType->AsETSUnionType()->ConstituentTypes()) {
+        if (ct->IsConstantType() && keySet.find(TypeToKey(ct)) == keySet.end()) {
+            ctx->checker->AsETSChecker()->LogTypeError(
+                "All variants of literals listed in the union type must be listed in the object literal",
+                expr->Start());
         }
     }
 }
@@ -132,7 +179,8 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
     auto checker = ctx->checker->AsETSChecker();
     if (expr->TsType() == nullptr) {
         // Hasn't been through checker
-        checker->ThrowTypeError("Unexpected type error in Record object literal", expr->Start());
+        checker->LogTypeError("Unexpected type error in Record object literal", expr->Start());
+        return expr;
     }
 
     if (!expr->PreferredType()->IsETSObjectType()) {
@@ -152,8 +200,10 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
     auto typeArguments = expr->PreferredType()->AsETSObjectType()->TypeArguments();
     ASSERT(typeArguments.size() == NUM_ARGUMENTS);
 
-    // check Duplicate key
-    CheckDuplicateKey(expr, ctx);
+    // check keys correctness
+    KeySetType keySet;
+    CheckDuplicateKey(keySet, expr, ctx);
+    CheckLiteralsCompleteness(keySet, expr, ctx);
 
     auto *const scope = NearestScope(expr);
     checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};

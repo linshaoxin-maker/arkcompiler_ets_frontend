@@ -122,11 +122,13 @@ public:
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
+    void IsSupertypeOf(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
     ETSFunctionType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
     checker::RelationResult CastFunctionParams(TypeRelation *relation, Signature *targetInvokeSig);
     ETSFunctionType *BoxPrimitives(ETSChecker *checker);
+    void IsSubtypeOf(TypeRelation *relation, Type *target) override;
 
 private:
     ArenaVector<Signature *> callSignatures_;

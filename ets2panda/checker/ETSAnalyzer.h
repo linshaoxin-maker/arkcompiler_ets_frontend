@@ -25,7 +25,7 @@ namespace ark::es2panda::checker {
 class ETSAnalyzer final : public SemanticAnalyzer {
 public:
     explicit ETSAnalyzer(Checker *checker) : SemanticAnalyzer(checker) {};
-
+// CC-OFFNXT(G.PRE.02,G.PRE.09) name part
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_ETSANALYZER_CHECK_METHOD(_, nodeType) checker::Type *Check(ir::nodeType *node) const override;
     AST_NODE_MAPPING(DECLARE_ETSANALYZER_CHECK_METHOD)
@@ -33,11 +33,13 @@ public:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_ETSANALYZER_CHECK_METHOD(_, __, nodeType, ___) \
-    virtual checker::Type *Check(ir::nodeType *node) const override;
+    virtual checker::Type *Check(ir::nodeType *node) const override;  // CC-OFF(G.PRE.02,G.PRE.09) name part
     AST_NODE_REINTERPRET_MAPPING(DECLARE_ETSANALYZER_CHECK_METHOD)
 #undef DECLARE_ETSANALYZER_CHECK_METHOD
     checker::Type *PreferredType(ir::ObjectExpression *expr) const;
+    checker::Type *CheckDynamic(ir::ObjectExpression *expr) const;
     checker::Type *GetPreferredType(ir::ArrayExpression *expr) const;
+    void GetUnionPreferredType(ir::ArrayExpression *expr) const;
     void CheckObjectExprProps(const ir::ObjectExpression *expr, checker::PropertySearchFlags searchFlags) const;
     std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
                                                                          Type *leftType) const;
@@ -50,26 +52,32 @@ private:
                                          bool isFunctionalInterface, bool isUnionTypeWithFunctionalInterface) const;
     checker::Type *GetReturnType(ir::CallExpression *expr, checker::Type *calleeType) const;
     checker::Type *GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const;
-    checker::Type *SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr, ETSObjectType *objectType) const;
+    checker::Type *GetCallExpressionReturnType(ir::CallExpression *expr, checker::Type *calleeType) const;
     checker::Type *UnwrapPromiseType(checker::Type *type) const;
+    checker::Type *GetSmartType(ir::AssignmentExpression *expr, checker::Type *leftType,
+                                checker::Type *rightType) const;
     bool CheckInferredFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc,
                                          checker::Type *&funcReturnType, ir::TypeNode *returnTypeAnnotation,
                                          ETSChecker *checker) const;
-
+    void CheckClassProperty(ETSChecker *checker, ir::ScriptFunction *scriptFunc) const;
     checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
     {
         checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
-        if (calleeType == nullptr) {
-            return nullptr;
+        if (calleeType->IsTypeError()) {
+            expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
+            return checker->GlobalTypeError();
         }
 
         if (!calleeType->IsETSObjectType()) {
             checker->LogTypeError("This expression is not constructible.", expr->Start());
+            expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
             return checker->GlobalTypeError();
         }
 
         return calleeType;
     }
+
+    checker::Type *CheckEnumMemberExpression(ETSEnumType *const baseType, ir::MemberExpression *const expr) const;
 
     void CheckVoidTypeExpression(ETSChecker *checker, const ir::Expression *expr) const
     {
@@ -87,7 +95,7 @@ private:
         bool acceptVoid = parent->IsExpressionStatement() || parent->IsReturnStatement() ||
                           parent->IsETSLaunchExpression() || parent->IsCallExpression();
         if (!acceptVoid) {
-            checker->ThrowTypeError({"Cannot use type 'void' as value. "}, expr->Start());
+            checker->LogTypeError({"Cannot use type 'void' as value. "}, expr->Start());
         }
     }
 };

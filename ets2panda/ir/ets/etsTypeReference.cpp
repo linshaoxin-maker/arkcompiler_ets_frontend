@@ -96,7 +96,7 @@ checker::Type *ETSTypeReference::GetType(checker::ETSChecker *checker)
     if (TsType() == nullptr) {
         SetTsType(part_->GetType(checker));
     }
-    return TsTypeOrError();
+    return TsType();
 }
 
 ETSTypeReference *ETSTypeReference::Clone(ArenaAllocator *const allocator, AstNode *const parent)

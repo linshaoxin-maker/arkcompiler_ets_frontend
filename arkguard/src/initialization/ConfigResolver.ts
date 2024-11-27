@@ -24,6 +24,7 @@ import {
   type ReservedNameInfo,
   ApiExtractor,
   containWildcards,
+  EventList,
   getMapFromJson,
   performancePrinter,
   PropCollections,
@@ -38,6 +39,7 @@ import { historyUnobfuscatedPropMap } from './Initializer';
 import { LocalVariableCollections, UnobfuscationCollections } from '../utils/CommonCollections';
 import { INameObfuscationOption } from '../configs/INameObfuscationOption';
 import { WhitelistType } from '../utils/TransformUtil';
+import { endFilesEvent, startFilesEvent } from '../utils/PrinterUtils';
 
 enum OptionType {
   NONE,
@@ -245,9 +247,9 @@ export class ObConfigResolver {
       if (isFileExist(systemApiCachePath)) {
         this.getSystemApiConfigsByCache(systemApiCachePath);
       } else {
-        performancePrinter?.iniPrinter?.startEvent('  Scan system api');
+        startFilesEvent(EventList.SCAN_SYSTEMAPI, performancePrinter.timeSumPrinter);
         this.getSystemApiCache(mergedConfigs, systemApiCachePath);
-        performancePrinter?.iniPrinter?.endEvent('  Scan system api');
+        endFilesEvent(EventList.SCAN_SYSTEMAPI, performancePrinter.timeSumPrinter);
       }
     }
 
@@ -521,7 +523,7 @@ export class ObConfigResolver {
   private resolveDts(dtsFilePaths: string[], configs: MergedConfig): void {
     ApiExtractor.mPropertySet.clear();
     dtsFilePaths.forEach((token) => {
-      ApiExtractor.traverseApiFiles(token, ApiExtractor.ApiType.PROJECT);
+      ApiExtractor.traverseApiFiles(token, ApiExtractor.ApiType.KEEP_DTS);
     });
     configs.reservedNames = configs.reservedNames.concat([...ApiExtractor.mPropertySet]);
     configs.reservedPropertyNames = configs.reservedPropertyNames.concat([...ApiExtractor.mPropertySet]);
@@ -893,6 +895,7 @@ export function handleUniversalPathInObf(mergedObConfig: MergedConfig, allSource
 export function getArkguardNameCache(
   enablePropertyObfuscation: boolean,
   enableFileNameObfuscation: boolean,
+  enableExportObfuscation: boolean,
   sdkVersion: string,
   entryPackageInfo: string,
 ): string {
@@ -906,7 +909,7 @@ export function getArkguardNameCache(
   nameCacheCollection.compileSdkVersion = sdkVersion;
   nameCacheCollection.entryPackageInfo = entryPackageInfo;
 
-  if (enablePropertyObfuscation) {
+  if (enablePropertyObfuscation || enableExportObfuscation) {
     const mergedPropertyNameCache: Map<string, string> = new Map();
     fillNameCache(PropCollections.historyMangledTable, mergedPropertyNameCache);
     fillNameCache(PropCollections.globalMangledTable, mergedPropertyNameCache);
@@ -947,6 +950,7 @@ export function writeObfuscationNameCache(
   let writeContent = getArkguardNameCache(
     options.enablePropertyObfuscation,
     options.enableFileNameObfuscation,
+    options.enableExportObfuscation,
     projectConfig.etsLoaderVersion,
     entryPackageInfo,
   );
@@ -1167,7 +1171,7 @@ export function enableObfuscateFileName(isPackageModules: boolean, projectConfig
  */
 export function getRelativeSourcePath(
   filePath: string,
-  projectRootPath: string,
+  projectRootPath: string | undefined,
   belongProjectPath: string | undefined,
 ): string {
   filePath = FileUtils.toUnixPath(filePath);

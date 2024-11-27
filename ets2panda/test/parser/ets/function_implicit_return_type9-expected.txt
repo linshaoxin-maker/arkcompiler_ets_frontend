@@ -1215,23 +1215,8 @@
                             },
                             "arguments": [
                               {
-                                "type": "UnaryExpression",
-                                "operator": "-",
-                                "prefix": true,
-                                "argument": {
-                                  "type": "NumberLiteral",
-                                  "value": 1,
-                                  "loc": {
-                                    "start": {
-                                      "line": 40,
-                                      "column": 17
-                                    },
-                                    "end": {
-                                      "line": 40,
-                                      "column": 18
-                                    }
-                                  }
-                                },
+                                "type": "NumberLiteral",
+                                "value": -1,
                                 "loc": {
                                   "start": {
                                     "line": 40,
@@ -1477,8 +1462,7 @@
                             },
                             "right": {
                               "type": "StringLiteral",
-                              "value": "
-",
+                              "value": "\n",
                               "loc": {
                                 "start": {
                                   "line": 43,
@@ -1623,8 +1607,7 @@
                             },
                             "right": {
                               "type": "StringLiteral",
-                              "value": "
-",
+                              "value": "\n",
                               "loc": {
                                 "start": {
                                   "line": 44,
@@ -1769,8 +1752,7 @@
                             },
                             "right": {
                               "type": "StringLiteral",
-                              "value": "
-",
+                              "value": "\n",
                               "loc": {
                                 "start": {
                                   "line": 45,
@@ -1861,100 +1843,6 @@
               "end": {
                 "line": 46,
                 "column": 2
-              }
-            }
-          },
-          {
-            "type": "MethodDefinition",
-            "key": {
-              "type": "Identifier",
-              "name": "_$trigger_cctor$_",
-              "decorators": [],
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "kind": "method",
-            "accessibility": "public",
-            "static": true,
-            "optional": false,
-            "computed": false,
-            "value": {
-              "type": "FunctionExpression",
-              "function": {
-                "type": "ScriptFunction",
-                "id": {
-                  "type": "Identifier",
-                  "name": "_$trigger_cctor$_",
-                  "decorators": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "generator": false,
-                "async": false,
-                "expression": false,
-                "params": [],
-                "body": {
-                  "type": "BlockStatement",
-                  "statements": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "loc": {
-                  "start": {
-                    "line": 1,
-                    "column": 1
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
-              },
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "overloads": [],
-            "decorators": [],
-            "loc": {
-              "start": {
-                "line": 1,
-                "column": 1
-              },
-              "end": {
-                "line": 1,
-                "column": 1
               }
             }
           }

@@ -16,9 +16,11 @@
 #include "checker/ETSchecker.h"
 
 #include "ir/ets/etsNullishTypes.h"
+#include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "ir/ets/etsUnionType.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "varbinder/ETSBinder.h"
+#include "checker/types/ets/etsPartialTypeParameter.h"
 
 namespace ark::es2panda::checker {
 
@@ -26,7 +28,7 @@ ir::TypeNode *ETSChecker::GetUtilityTypeTypeParamNode(const ir::TSTypeParameterI
                                                       const std::string_view &utilityTypeName)
 {
     if (typeParams->Params().size() != 1) {
-        ThrowTypeError({"Invalid number of type parameters for ", utilityTypeName, " type"}, typeParams->Start());
+        LogTypeError({"Invalid number of type parameters for ", utilityTypeName, " type"}, typeParams->Start());
     }
 
     return typeParams->Params().front();
@@ -35,10 +37,25 @@ ir::TypeNode *ETSChecker::GetUtilityTypeTypeParamNode(const ir::TSTypeParameterI
 Type *ETSChecker::HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstantiation *const typeParams,
                                                  const std::string_view &utilityType)
 {
-    auto *const bareType = GetUtilityTypeTypeParamNode(typeParams, utilityType)->Check(this);
+    if (typeParams == nullptr) {
+        return GlobalTypeError();
+    }
+
+    ir::TypeNode *typeParam = GetUtilityTypeTypeParamNode(typeParams, utilityType);
+
+    Type *bareType = typeParam->Check(this);
+
+    if (bareType == nullptr) {
+        bareType = typeParam->GetType(this);
+    }
+
+    if (!bareType->IsETSReferenceType()) {
+        LogTypeError("Only reference types can be converted to utility types.", typeParams->Start());
+        return GlobalTypeError();
+    }
 
     if (utilityType == compiler::Signatures::PARTIAL_TYPE_NAME) {
-        return HandlePartialType(bareType);
+        return CreatePartialType(bareType);
     }
 
     if (utilityType == compiler::Signatures::READONLY_TYPE_NAME) {
@@ -49,39 +66,52 @@ Type *ETSChecker::HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstan
         return HandleRequiredType(bareType);
     }
 
-    ThrowTypeError("This utility type is not yet implemented.", typeParams->Start());
+    LogTypeError("This utility type is not yet implemented.", typeParams->Start());
+    return bareType;
 }
-
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 // Partial utility type
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-Type *ETSChecker::HandlePartialType(Type *const typeToBePartial)
+template <typename T>
+static T *CloneNodeIfNotNullptr(T *node, ArenaAllocator *allocator)
 {
+    return node != nullptr ? node->Clone(allocator, nullptr) : nullptr;
+}
+
+Type *ETSChecker::CreatePartialType(Type *const typeToBePartial)
+{
+    ASSERT(typeToBePartial->IsETSReferenceType());
+
     if (typeToBePartial->IsETSTypeParameter()) {
-        // NOTE (mmartin): this is not type safe!
-        return HandlePartialType(GetApparentType(typeToBePartial));
+        return CreatePartialTypeParameter(typeToBePartial->AsETSTypeParameter());
     }
 
     if (typeToBePartial->IsETSUnionType()) {
         return HandleUnionForPartialType(typeToBePartial->AsETSUnionType());
     }
 
-    if (!typeToBePartial->Variable()->Declaration()->Node()->IsClassDefinition()) {
+    auto typeDeclNode = typeToBePartial->Variable()->Declaration()->Node();
+    if (typeDeclNode->IsClassDefinition() || typeDeclNode->IsTSInterfaceDeclaration()) {
         // NOTE (mmartin): there is a bug, that modifies the declaration of the variable of a type. That could make the
         // declaration node of an ETSObjectType eg. a ClassProperty, instead of the actual class declaration. When it's
         // fixed, remove this.
-        return typeToBePartial;
+        return CreatePartialTypeClass(typeToBePartial->AsETSObjectType(), typeDeclNode);
     }
 
-    auto *const classDef = typeToBePartial->Variable()->Declaration()->Node()->AsClassDefinition();
+    return typeToBePartial;
+}
 
-    constexpr auto *PARTIAL_CLASS_SUFFIX = "$partial";
+Type *ETSChecker::CreatePartialTypeParameter(ETSTypeParameter *typeToBePartial)
+{
+    return Allocator()->New<ETSPartialTypeParameter>(typeToBePartial, this);
+}
 
-    // Partial class name for class 'T' will be 'T$partial'
-    const auto partialClassName =
-        util::UString(classDef->Ident()->Name().Mutf8() + PARTIAL_CLASS_SUFFIX, Allocator()).View();
-
-    auto *const classDefProgram = classDef->GetTopStatement()->AsETSScript()->Program();
+Type *ETSChecker::CreatePartialTypeClass(ETSObjectType *typeToBePartial, ir::AstNode *typeDeclNode)
+{
+    auto *declIdent = typeDeclNode->IsClassDefinition() ? typeDeclNode->AsClassDefinition()->Ident()
+                                                        : typeDeclNode->AsTSInterfaceDeclaration()->Id();
+    const auto partialClassName = util::UString(declIdent->Name(), Allocator()).Append(PARTIAL_CLASS_SUFFIX).View();
+    auto *const classDefProgram = typeDeclNode->GetTopStatement()->AsETSScript()->Program();
     const bool isClassDeclaredInCurrentFile = classDefProgram == VarBinder()->Program();
     auto *const programToUse = isClassDeclaredInCurrentFile ? VarBinder()->Program() : classDefProgram;
     const auto qualifiedClassName = GetQualifiedClassName(programToUse, partialClassName);
@@ -89,22 +119,22 @@ Type *ETSChecker::HandlePartialType(Type *const typeToBePartial)
     // Check if we've already generated the partial class, then don't do it again
     const auto classNameToFind =
         isClassDeclaredInCurrentFile || VarBinder()->IsGenStdLib() ? partialClassName : qualifiedClassName;
-    if (const auto *const var =
+    if (auto *var =
             SearchNamesInMultiplePrograms({programToUse, VarBinder()->Program()}, {classNameToFind, partialClassName});
         var != nullptr) {
         return var->TsType();
     }
 
-    // Create only the 'header' of the class
-    auto *const partialClassDef = CreateClassPrototype(partialClassName, programToUse);
+    if (typeDeclNode->IsTSInterfaceDeclaration()) {
+        return HandlePartialInterface(typeDeclNode->AsTSInterfaceDeclaration(), isClassDeclaredInCurrentFile,
+                                      partialClassName, programToUse, typeToBePartial);
+    }
 
-    auto *const recordTableToUse = isClassDeclaredInCurrentFile
-                                       ? VarBinder()->AsETSBinder()->GetGlobalRecordTable()
-                                       : VarBinder()->AsETSBinder()->GetExternalRecordTable().at(programToUse);
+    ir::ClassDefinition *partialClassDef = CreateClassPrototype(partialClassName, programToUse);
 
-    const varbinder::BoundContext boundCtx(recordTableToUse, partialClassDef);
     partialClassDef->SetInternalName(
-        util::UString(classDef->InternalName().Mutf8() + PARTIAL_CLASS_SUFFIX, Allocator()).View());
+        util::UString(typeDeclNode->AsClassDefinition()->InternalName().Mutf8() + PARTIAL_CLASS_SUFFIX, Allocator())
+            .View());
 
     // If class prototype was created before, then we cached it's type. In that case return it.
     // This handles cases where a Partial<T> presents in class T, because during generating T$partial we'd need the
@@ -114,6 +144,11 @@ Type *ETSChecker::HandlePartialType(Type *const typeToBePartial)
         return *found;
     }
 
+    auto *const recordTableToUse = isClassDeclaredInCurrentFile
+                                       ? VarBinder()->AsETSBinder()->GetGlobalRecordTable()
+                                       : VarBinder()->AsETSBinder()->GetExternalRecordTable().at(programToUse);
+    const varbinder::BoundContext boundCtx(recordTableToUse, partialClassDef);
+
     NamedTypeStackElement ntse(this, partialClassDef->TsType());
 
     // If class is external, put partial of it in global scope for the varbinder
@@ -122,35 +157,129 @@ Type *ETSChecker::HandlePartialType(Type *const typeToBePartial)
                                                              partialClassDef->Variable());
     }
 
-    return CreatePartialTypeClassDef(partialClassDef, classDef, typeToBePartial, recordTableToUse);
+    return CreatePartialTypeClassDef(partialClassDef, typeDeclNode->AsClassDefinition(), typeToBePartial,
+                                     recordTableToUse);
+}
+
+Type *ETSChecker::HandlePartialInterface(ir::TSInterfaceDeclaration *interfaceDecl, bool isClassDeclaredInCurrentFile,
+                                         util::StringView const &partialClassName, parser::Program *const programToUse,
+                                         ETSObjectType *const typeToBePartial)
+{
+    auto *const partialInterDecl = CreateInterfaceProto(partialClassName, interfaceDecl->IsStatic(),
+                                                        isClassDeclaredInCurrentFile, interfaceDecl->Modifiers());
+
+    const auto qualifiedName = GetQualifiedClassName(programToUse, partialClassName);
+    partialInterDecl->SetInternalName(qualifiedName);
+
+    if (const auto found = NamedTypeStack().find(partialInterDecl->TsType()); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    auto *const recordTable = isClassDeclaredInCurrentFile
+                                  ? VarBinder()->AsETSBinder()->GetGlobalRecordTable()
+                                  : VarBinder()->AsETSBinder()->GetExternalRecordTable().at(programToUse);
+    const varbinder::BoundContext boundCtx(recordTable, partialInterDecl);
+
+    NamedTypeStackElement ntse(this, partialInterDecl->TsType());
+
+    // If class is external, put partial of it in global scope for the varbinder
+    if (!isClassDeclaredInCurrentFile) {
+        VarBinder()->Program()->GlobalScope()->InsertBinding(partialInterDecl->Id()->Name(),
+                                                             partialInterDecl->Variable());
+    }
+
+    return CreatePartialTypeInterfaceDecl(interfaceDecl, typeToBePartial, partialInterDecl);
+}
+
+ir::ClassProperty *ETSChecker::CreateNullishPropertyFromAccessorInInterface(
+    ir::MethodDefinition *const accessor, ir::TSInterfaceDeclaration *const newTSInterfaceDefinition)
+{
+    auto *ident = accessor->Id()->Clone(Allocator(), nullptr);
+    auto modifierFlag = ir::ModifierFlags::NONE;
+    if (accessor->Function()->IsGetter() && accessor->Overloads().empty()) {
+        modifierFlag |= ir::ModifierFlags::READONLY;
+    }
+
+    auto *prop = Allocator()->New<ir::ClassProperty>(ident, nullptr, nullptr, modifierFlag, Allocator(), false);
+
+    prop->SetParent(newTSInterfaceDefinition);
+    ident->SetParent(prop);
+
+    prop->SetTypeAnnotation(accessor->Function()->IsGetter()
+                                ? accessor->Function()->ReturnTypeAnnotation()
+                                : accessor->Function()->Params()[0]->AsETSParameterExpression()->TypeAnnotation());
+
+    if (prop->TypeAnnotation() != nullptr) {
+        return CreateNullishProperty(prop, newTSInterfaceDefinition);
+    }
+
+    if (accessor->TsType() == nullptr) {
+        accessor->Parent()->Check(this);
+    }
+
+    ASSERT(accessor->TsType() != nullptr);
+    auto callSign = accessor->TsType()->AsETSFunctionType()->CallSignatures()[0];
+
+    auto tsType = accessor->Function()->IsGetter() ? callSign->ReturnType() : callSign->Params()[0]->TsType();
+
+    prop->SetTypeAnnotation(Allocator()->New<ir::OpaqueTypeNode>(tsType));
+
+    return CreateNullishProperty(prop, newTSInterfaceDefinition);
+}
+
+ir::ClassProperty *ETSChecker::CreateNullishPropertyFromAccessor(ir::MethodDefinition *const accessor,
+                                                                 ir::ClassDefinition *const newClassDefinition)
+{
+    auto *ident = accessor->Id()->Clone(Allocator(), nullptr);
+    auto modifierFlag = accessor->Function()->IsGetter() && accessor->Overloads().empty() ? ir::ModifierFlags::READONLY
+                                                                                          : ir::ModifierFlags::NONE;
+
+    auto *prop = Allocator()->New<ir::ClassProperty>(ident, nullptr, nullptr, modifierFlag, Allocator(), false);
+
+    prop->SetParent(newClassDefinition);
+    ident->SetParent(prop);
+
+    prop->SetTypeAnnotation(accessor->Function()->IsGetter()
+                                ? accessor->Function()->ReturnTypeAnnotation()
+                                : accessor->Function()->Params()[0]->AsETSParameterExpression()->TypeAnnotation());
+
+    if (prop->TypeAnnotation() != nullptr) {
+        return CreateNullishProperty(prop, newClassDefinition);
+    }
+
+    if (accessor->TsType() == nullptr) {
+        accessor->Parent()->Check(this);
+    }
+
+    auto callSign = accessor->TsType()->AsETSFunctionType()->CallSignatures()[0];
+
+    auto tsType = accessor->Function()->IsGetter() ? callSign->ReturnType() : callSign->Params()[0]->TsType();
+
+    prop->SetTypeAnnotation(Allocator()->New<ir::OpaqueTypeNode>(tsType));
+
+    return CreateNullishProperty(prop, newClassDefinition);
 }
 
 ir::ClassProperty *ETSChecker::CreateNullishProperty(ir::ClassProperty *const prop,
-                                                     ir::ClassDefinition *const newClassDefinition)
+                                                     ir::TSInterfaceDeclaration *const newTSInterfaceDefinition)
 {
-    auto *const classProp = prop->AsClassProperty();
-    auto *const propSavedValue = classProp->Value();
+    auto *const propSavedValue = prop->Value();
 
     // Set value to nullptr to prevent cloning it (as for arrow functions that is not possible yet), we set it
     // to 'undefined' anyway
-    classProp->SetValue(nullptr);
-    auto *const propClone = prop->Clone(Allocator(), newClassDefinition)->AsClassProperty();
+    prop->SetValue(nullptr);
+    auto *const propClone = prop->Clone(Allocator(), newTSInterfaceDefinition)->AsClassProperty();
 
     // Revert original property value
-    classProp->SetValue(propSavedValue);
-    propClone->AsClassProperty()->SetValue(Allocator()->New<ir::UndefinedLiteral>());
+    prop->SetValue(propSavedValue);
+    propClone->SetValue(Allocator()->New<ir::UndefinedLiteral>());
 
     auto *propTypeAnn = propClone->TypeAnnotation();
     ArenaVector<ir::TypeNode *> types(Allocator()->Adapter());
 
     // Handle implicit type annotation
     if (propTypeAnn == nullptr) {
-        propTypeAnn = Allocator()->New<ir::OpaqueTypeNode>(classProp->TsType());
-    }
-
-    // NOTE (mmartin): Union type check fails if it contains ETSEnum type, workaround until fix
-    if ((classProp->TsType() != nullptr) && classProp->TsType()->IsETSIntEnumType()) {
-        propTypeAnn = Allocator()->New<ir::OpaqueTypeNode>(GlobalETSObjectType());
+        propTypeAnn = Allocator()->New<ir::OpaqueTypeNode>(prop->TsType());
     }
 
     // Create new nullish type
@@ -161,53 +290,182 @@ ir::ClassProperty *ETSChecker::CreateNullishProperty(ir::ClassProperty *const pr
 
     // Set new parents
     unionType->SetParent(propClone);
-    propClone->SetParent(newClassDefinition);
-
-    // Handle bindings, variables
-    varbinder::Decl *const newDecl =
-        classProp->IsConst()
-            ? static_cast<varbinder::Decl *>(Allocator()->New<varbinder::ConstDecl>(propClone->Id()->Name()))
-            : Allocator()->New<varbinder::LetDecl>(propClone->Id()->Name());
-
-    propClone->SetVariable(Allocator()->New<varbinder::LocalVariable>(newDecl, varbinder::VariableFlags::PROPERTY));
-
-    propClone->Variable()->SetScope(classProp->IsStatic()
-                                        ? newClassDefinition->Scope()->AsClassScope()->StaticFieldScope()
-                                        : newClassDefinition->Scope()->AsClassScope()->InstanceFieldScope());
-
-    propClone->Variable()->Declaration()->BindNode(propClone);
+    propClone->SetParent(newTSInterfaceDefinition);
 
     return propClone;
 }
 
-template <typename T>
-static T *CloneNodeIfNotNullptr(T *node, ArenaAllocator *allocator)
+ir::ClassProperty *ETSChecker::CreateNullishProperty(ir::ClassProperty *const prop,
+                                                     ir::ClassDefinition *const newClassDefinition)
 {
-    return node != nullptr ? node->Clone(allocator, nullptr) : nullptr;
-}
+    auto *const propSavedValue = prop->Value();
 
-ir::ClassDefinition *ETSChecker::CreatePartialClassDeclaration(ir::ClassDefinition *const newClassDefinition,
-                                                               const ir::ClassDefinition *const classDef)
-{
-    // Build the new Partial class based on the 'T' type parameter of 'Partial<T>'
+    // Set value to nullptr to prevent cloning it (as for arrow functions that is not possible yet), we set it
+    // to 'undefined' anyway
+    prop->SetValue(nullptr);
+    auto *const propClone = prop->Clone(Allocator(), newClassDefinition)->AsClassProperty();
 
-    for (auto *const prop : classDef->Body()) {
-        // Only handle class properties (members)
-        // Method calls on partial classes will make the class not type safe, so we don't copy any methods
-        if (prop->IsClassProperty()) {
-            auto *const newProp = CreateNullishProperty(prop->AsClassProperty(), newClassDefinition);
+    // Revert original property value
+    prop->SetValue(propSavedValue);
+    propClone->SetValue(Allocator()->New<ir::UndefinedLiteral>());
+    propClone->AsClassProperty()->Value()->Check(this);
 
-            newClassDefinition->Scope()->AddBinding(Allocator(), nullptr, newProp->Variable()->Declaration(),
-                                                    ScriptExtension::ETS);
-
-            // Put the new property into the class declaration
-            newClassDefinition->Body().emplace_back(newProp);
-        }
+    ir::TypeNode *propertyTypeAnnotation = propClone->TypeAnnotation();
+    if (propertyTypeAnnotation == nullptr) {
+        propertyTypeAnnotation = Allocator()->New<ir::OpaqueTypeNode>(prop->Check(this));
     }
 
-    newClassDefinition->SetVariable(newClassDefinition->Ident()->Variable());
-    newClassDefinition->AddModifier(static_cast<const ir::AstNode *>(classDef)->Modifiers());
+    // Create new nullish type annotation
+    ArenaVector<ir::TypeNode *> types(Allocator()->Adapter());
+    types.push_back(propertyTypeAnnotation);
+    types.push_back(AllocNode<ir::ETSUndefinedType>());
+    propertyTypeAnnotation = AllocNode<ir::ETSUnionType>(std::move(types));
+    propClone->SetTypeAnnotation(propertyTypeAnnotation);
+    propClone->SetTsType(nullptr);
 
+    // Set new parents
+    propertyTypeAnnotation->SetParent(propClone);
+    propClone->SetParent(newClassDefinition);
+
+    return propClone;
+}
+
+ir::MethodDefinition *ETSChecker::CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                        ir::ClassDefinition *classDefinition)
+{
+    const auto interfaceCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(VarBinder(), classDefinition->Scope());
+    auto *paramScope = Allocator()->New<varbinder::FunctionParamScope>(Allocator(), classDefinition->Scope());
+    auto *functionScope = Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
+    functionScope->BindParamScope(paramScope);
+    paramScope->BindFunctionScope(functionScope);
+
+    {
+        auto paramScopeCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), paramScope);
+        VarBinder()->AddMandatoryParam(varbinder::TypedBinder::MANDATORY_PARAM_THIS);
+    }
+
+    ir::MethodDefinition *nullishAccessor = accessor->Clone(Allocator(), classDefinition);
+
+    auto *decl = Allocator()->New<varbinder::FunctionDecl>(Allocator(), nullishAccessor->Key()->AsIdentifier()->Name(),
+                                                           nullishAccessor);
+    auto *var = Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
+    var->AddFlag(varbinder::VariableFlags::METHOD);
+    nullishAccessor->Id()->SetVariable(var);
+    nullishAccessor->SetVariable(var);
+
+    functionScope->BindName(classDefinition->InternalName());
+
+    auto *function = nullishAccessor->Function();
+
+    function->SetVariable(var);
+    function->SetIdent(nullishAccessor->Id());
+    function->SetScope(functionScope);
+    paramScope->BindNode(function);
+    functionScope->BindNode(function);
+
+    if (function->IsGetter()) {
+        auto *propTypeAnn = function->ReturnTypeAnnotation();
+
+        auto *unionType = AllocNode<ir::ETSUnionType>(
+            ArenaVector<ir::TypeNode *>({propTypeAnn, AllocNode<ir::ETSUndefinedType>()}, Allocator()->Adapter()));
+        function->SetReturnTypeAnnotation(unionType);
+    } else {
+        for (auto *params : function->Params()) {
+            auto *paramExpr = params->AsETSParameterExpression();
+
+            auto *unionType = AllocNode<ir::ETSUnionType>(ArenaVector<ir::TypeNode *>(
+                {paramExpr->Ident()->TypeAnnotation(), AllocNode<ir::ETSUndefinedType>()}, Allocator()->Adapter()));
+            paramExpr->Ident()->SetTsTypeAnnotation(unionType);
+
+            auto *const paramVar = std::get<2>(paramScope->AddParamDecl(Allocator(), paramExpr));
+            paramExpr->SetVariable(paramVar);
+        }
+    }
+    ArenaVector<ir::MethodDefinition *> overloads(Allocator()->Adapter());
+    nullishAccessor->SetOverloads(std::move(overloads));
+
+    return nullishAccessor;
+}
+
+ir::TSTypeParameterDeclaration *ETSChecker::ProcessTypeParamAndGenSubstitution(
+    ir::TSTypeParameterDeclaration const *const thisTypeParams,
+    ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution,
+    ir::TSTypeParameterDeclaration *newTypeParams = nullptr)
+{
+    ArenaVector<ir::TSTypeParameter *> typeParams(Allocator()->Adapter());
+    if (newTypeParams == nullptr) {
+        newTypeParams = AllocNode<ir::TSTypeParameterDeclaration>(std::move(typeParams), typeParams.size());
+    }
+    for (auto *const classOrInterfaceDefTypeParam : thisTypeParams->Params()) {
+        auto *newTypeParam = AllocNode<ir::TSTypeParameter>(
+            CloneNodeIfNotNullptr(classOrInterfaceDefTypeParam->Name(), Allocator()),
+            CloneNodeIfNotNullptr(classOrInterfaceDefTypeParam->Constraint(), Allocator()),
+            CloneNodeIfNotNullptr(classOrInterfaceDefTypeParam->DefaultType(), Allocator()));
+        newTypeParams->AddParam(newTypeParam);
+        newTypeParam->SetParent(newTypeParams);
+        (*likeSubstitution)[classOrInterfaceDefTypeParam] = newTypeParam;
+    }
+    return newTypeParams;
+}
+
+ir::TSTypeParameterInstantiation *ETSChecker::CreateNewSuperPartialRefTypeParamsDecl(
+    ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution, const Type *const superPartialType,
+    ir::Expression *superRef)
+{
+    ir::TSTypeParameterInstantiation *superPartialRefTypeParams = nullptr;
+    if (superPartialType == nullptr || superRef == nullptr ||
+        superRef->AsETSTypeReference()->Part()->TypeParams() == nullptr) {
+        return superPartialRefTypeParams;
+    }
+    superPartialRefTypeParams = superRef->AsETSTypeReference()->Part()->TypeParams()->Clone(Allocator(), nullptr);
+    superPartialRefTypeParams->SetTsType(nullptr);
+    auto superRefParams = superPartialRefTypeParams->Params();
+    auto originRefParams = superRef->AsETSTypeReference()->Part()->TypeParams()->Params();
+    for (size_t ix = 0; ix < superRefParams.size(); ++ix) {
+        if (!originRefParams[ix]->IsETSTypeReference() ||
+            !originRefParams[ix]->AsETSTypeReference()->Part()->TsType()->IsETSTypeParameter()) {
+            continue;
+        }
+        auto it = likeSubstitution->find(
+            originRefParams[ix]->AsETSTypeReference()->Part()->TsType()->AsETSTypeParameter()->GetDeclNode());
+        if (it != likeSubstitution->end()) {
+            auto *typeParamRefPart =
+                AllocNode<ir::ETSTypeReferencePart>(it->second->Name()->Clone(Allocator(), nullptr));
+            typeParamRefPart->Name()->SetParent(typeParamRefPart);
+            auto *typeParamRef = AllocNode<ir::ETSTypeReference>(typeParamRefPart);
+            typeParamRefPart->SetParent(typeParamRef);
+
+            typeParamRef->SetParent(superPartialRefTypeParams);
+            superRefParams[ix] = typeParamRef;
+        }
+    }
+    return superPartialRefTypeParams;
+}
+
+ir::ETSTypeReference *ETSChecker::BuildSuperPartialTypeReference(
+    Type *superPartialType, ir::TSTypeParameterInstantiation *superPartialRefTypeParams)
+{
+    ir::ETSTypeReference *superPartialRef = nullptr;
+    if (superPartialType != nullptr) {
+        auto *superPartialDeclNode = superPartialType->AsETSObjectType()->GetDeclNode();
+        auto *clonedId = superPartialDeclNode->IsClassDefinition()
+                             ? superPartialDeclNode->AsClassDefinition()->Ident()->Clone(Allocator(), nullptr)
+                             : superPartialDeclNode->AsTSInterfaceDeclaration()->Id()->Clone(Allocator(), nullptr);
+        auto *superPartialRefPart = AllocNode<ir::ETSTypeReferencePart>(clonedId, superPartialRefTypeParams, nullptr);
+        superPartialRefPart->Name()->SetParent(superPartialRefPart);
+        if (superPartialRefTypeParams != nullptr) {
+            superPartialRefTypeParams->SetParent(superPartialRefPart);
+        }
+
+        superPartialRef = AllocNode<ir::ETSTypeReference>(superPartialRefPart);
+        superPartialRefPart->SetParent(superPartialRef);
+    }
+    return superPartialRef;
+}
+
+void ETSChecker::CreatePartialClassDeclaration(ir::ClassDefinition *const newClassDefinition,
+                                               ir::ClassDefinition *classDef)
+{
     if (classDef->TypeParams() != nullptr) {
         ArenaVector<ir::TSTypeParameter *> typeParams(Allocator()->Adapter());
         for (auto *const classDefTypeParam : classDef->TypeParams()->Params()) {
@@ -223,12 +481,190 @@ ir::ClassDefinition *ETSChecker::CreatePartialClassDeclaration(ir::ClassDefiniti
 
         newClassDefinition->SetTypeParams(newTypeParams);
         newTypeParams->SetParent(newClassDefinition);
-        newTypeParams->SetScope(newClassDefinition->Scope());
     }
 
-    newClassDefinition->SetTsType(nullptr);
+    newClassDefinition->SetVariable(newClassDefinition->Ident()->Variable());
+    newClassDefinition->AddModifier(static_cast<const ir::AstNode *>(classDef)->Modifiers());
 
-    return newClassDefinition;
+    for (auto *const prop : classDef->Body()) {
+        // Only handle class properties (members)
+        // Method calls on partial classes will make the class not type safe, so we don't copy any methods
+        if (prop->IsClassProperty()) {
+            if (prop->AsClassProperty()->Id()->Name().Mutf8().find(compiler::Signatures::PROPERTY, 0) == 0) {
+                continue;
+            }
+
+            auto *const newProp = CreateNullishProperty(prop->AsClassProperty(), newClassDefinition);
+
+            // Put the new property into the class declaration
+            newClassDefinition->Body().emplace_back(newProp);
+        }
+
+        if (prop->IsMethodDefinition() && (prop->AsMethodDefinition()->Function()->IsGetter() ||
+                                           prop->AsMethodDefinition()->Function()->IsSetter())) {
+            auto *propMethod = prop->AsMethodDefinition();
+            if (newClassDefinition->Scope()->FindLocal(propMethod->Id()->Name(),
+                                                       varbinder::ResolveBindingOptions::VARIABLES) != nullptr) {
+                continue;
+            }
+            auto *newProp = CreateNullishPropertyFromAccessor(propMethod, newClassDefinition);
+            newClassDefinition->Body().emplace_back(newProp);
+        }
+    }
+    if (classDef->IsDeclare()) {
+        newClassDefinition->AddModifier(ir::ModifierFlags::DECLARE);
+    }
+
+    // Run varbinder for new partial class to set scopes
+    compiler::InitScopesPhaseETS::RunExternalNode(newClassDefinition, VarBinder());
+
+    newClassDefinition->SetTsType(nullptr);
+    newClassDefinition->Variable()->SetTsType(nullptr);
+}
+
+void ETSChecker::ConvertGetterAndSetterToProperty(ir::TSInterfaceDeclaration *interfaceDecl,
+                                                  ir::TSInterfaceDeclaration *partialInterface)
+{
+    auto *propertyAdded = Allocator()->New<ArenaSet<util::StringView>>(Allocator()->Adapter());
+    for (auto *const prop : interfaceDecl->Body()->Body()) {
+        if (prop->IsMethodDefinition() && (prop->AsMethodDefinition()->Function()->IsGetter() ||
+                                           prop->AsMethodDefinition()->Function()->IsSetter())) {
+            auto *propMethod = prop->AsMethodDefinition();
+            if (propertyAdded->find(propMethod->Id()->Name()) != propertyAdded->end()) {
+                continue;
+            }
+            auto *newProp = CreateNullishPropertyFromAccessorInInterface(propMethod, partialInterface);
+            propertyAdded->insert(propMethod->Id()->Name());
+
+            partialInterface->Body()->Body().emplace_back(newProp);
+        }
+    }
+}
+ir::MethodDefinition *ETSChecker::CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                        ir::TSInterfaceDeclaration *interface)
+{
+    const auto interfaceCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(VarBinder(), interface->Scope());
+    auto *paramScope = Allocator()->New<varbinder::FunctionParamScope>(Allocator(), interface->Scope());
+    auto *functionScope = Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
+    functionScope->BindParamScope(paramScope);
+    paramScope->BindFunctionScope(functionScope);
+
+    {
+        auto paramScopeCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), paramScope);
+        VarBinder()->AddMandatoryParam(varbinder::TypedBinder::MANDATORY_PARAM_THIS);
+    }
+
+    ir::MethodDefinition *nullishAccessor = accessor->Clone(Allocator(), interface->Body());
+
+    auto *decl = Allocator()->New<varbinder::FunctionDecl>(Allocator(), nullishAccessor->Key()->AsIdentifier()->Name(),
+                                                           nullishAccessor);
+    auto *var = Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
+    var->AddFlag(varbinder::VariableFlags::METHOD);
+    nullishAccessor->Id()->SetVariable(var);
+    nullishAccessor->SetVariable(var);
+
+    functionScope->BindName(interface->InternalName());
+
+    auto *function = nullishAccessor->Function();
+
+    function->SetVariable(var);
+    function->SetIdent(nullishAccessor->Id());
+    function->SetScope(functionScope);
+    paramScope->BindNode(function);
+    functionScope->BindNode(function);
+
+    if (function->IsGetter()) {
+        auto *propTypeAnn = function->ReturnTypeAnnotation();
+
+        auto *unionType = AllocNode<ir::ETSUnionType>(
+            ArenaVector<ir::TypeNode *>({propTypeAnn, AllocNode<ir::ETSUndefinedType>()}, Allocator()->Adapter()));
+        function->SetReturnTypeAnnotation(unionType);
+    } else {
+        for (auto *params : function->Params()) {
+            auto *paramExpr = params->AsETSParameterExpression();
+
+            auto *unionType = AllocNode<ir::ETSUnionType>(ArenaVector<ir::TypeNode *>(
+                {paramExpr->Ident()->TypeAnnotation(), AllocNode<ir::ETSUndefinedType>()}, Allocator()->Adapter()));
+            paramExpr->Ident()->SetTsTypeAnnotation(unionType);
+
+            auto *const paramVar = std::get<2>(paramScope->AddParamDecl(Allocator(), paramExpr));
+            paramExpr->SetVariable(paramVar);
+        }
+    }
+    ArenaVector<ir::MethodDefinition *> overloads(Allocator()->Adapter());
+    nullishAccessor->SetOverloads(std::move(overloads));
+
+    return nullishAccessor;
+}
+
+ir::TSInterfaceDeclaration *ETSChecker::CreateInterfaceProto(util::StringView name, const bool isStatic,
+                                                             const bool isClassDeclaredInCurrentFile,
+                                                             const ir::ModifierFlags flags)
+{
+    const auto globalCtx =
+        varbinder::LexicalScope<varbinder::GlobalScope>::Enter(VarBinder(), VarBinder()->Program()->GlobalScope());
+
+    auto *const interfaceId = AllocNode<ir::Identifier>(name, Allocator());
+    const auto [decl, var] =
+        VarBinder()->NewVarDecl<varbinder::InterfaceDecl>(interfaceId->Start(), Allocator(), interfaceId->Name());
+    interfaceId->SetVariable(var);
+
+    auto *body = AllocNode<ir::TSInterfaceBody>(ArenaVector<ir::AstNode *>(Allocator()->Adapter()));
+    ArenaVector<ir::TSInterfaceHeritage *> extends(Allocator()->Adapter());
+
+    ArenaVector<ir::TSTypeParameter *> typeParams(Allocator()->Adapter());
+    auto *newTypeParams = AllocNode<ir::TSTypeParameterDeclaration>(std::move(typeParams), typeParams.size());
+    auto partialInterface = AllocNode<ir::TSInterfaceDeclaration>(
+        Allocator(), std::move(extends),
+        ir::TSInterfaceDeclaration::ConstructorData {interfaceId, newTypeParams, body, isStatic,
+                                                     !isClassDeclaredInCurrentFile, Language(Language::Id::ETS)});
+
+    const auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
+    partialInterface->TypeParams()->SetParent(partialInterface);
+    partialInterface->SetScope(classCtx.GetScope());
+    partialInterface->SetVariable(var);
+    decl->BindNode(partialInterface);
+
+    partialInterface->AddModifier(flags);
+
+    return partialInterface;
+}
+
+Type *ETSChecker::CreatePartialTypeInterfaceDecl(ir::TSInterfaceDeclaration *const interfaceDecl,
+                                                 ETSObjectType *const typeToBePartial,
+                                                 ir::TSInterfaceDeclaration *partialInterface)
+{
+    ConvertGetterAndSetterToProperty(interfaceDecl, partialInterface);
+    // Create nullish properties of the partial class
+    // Build the new Partial class based on the 'T' type parameter of 'Partial<T>'
+    auto *likeSubstitution =
+        Allocator()->New<ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *>>(Allocator()->Adapter());
+
+    if (interfaceDecl->TypeParams() != nullptr) {
+        ProcessTypeParamAndGenSubstitution(interfaceDecl->TypeParams(), likeSubstitution,
+                                           partialInterface->TypeParams());
+    }
+
+    compiler::InitScopesPhaseETS::RunExternalNode(partialInterface, VarBinder());
+
+    // Create partial type for super type
+    for (auto *extend : interfaceDecl->Extends()) {
+        auto *t = extend->Expr()->AsETSTypeReference()->Part()->GetType(this);
+        if (auto *superPartialType = CreatePartialType(t); superPartialType != nullptr) {
+            ir::TSTypeParameterInstantiation *superPartialRefTypeParams =
+                CreateNewSuperPartialRefTypeParamsDecl(likeSubstitution, superPartialType, extend->Expr());
+
+            ir::ETSTypeReference *superPartialRef =
+                BuildSuperPartialTypeReference(superPartialType, superPartialRefTypeParams);
+            partialInterface->Extends().push_back(AllocNode<ir::TSInterfaceHeritage>(superPartialRef));
+        }
+    }
+
+    auto *const partialType = partialInterface->Check(this)->AsETSObjectType();
+    partialType->SetAssemblerName(partialInterface->InternalName());
+    partialType->SetBaseType(typeToBePartial);
+
+    return partialType;
 }
 
 void ETSChecker::CreateConstructorForPartialType(ir::ClassDefinition *const partialClassDef,
@@ -242,6 +678,9 @@ void ETSChecker::CreateConstructorForPartialType(ir::ClassDefinition *const part
     // Create ctor
     auto *const ctor = CreateNonStaticClassInitializer(classCtx.GetScope(), recordTable);
     auto *const ctorFunc = ctor->Function();
+    if (partialClassDef->IsDeclare()) {
+        ctorFunc->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+    }
     auto *const ctorId = ctor->Function()->Id();
 
     // Handle bindings, create method decl for ctor
@@ -278,7 +717,9 @@ ir::ClassDefinition *ETSChecker::CreateClassPrototype(util::StringView name, par
     // Create class declaration node
     auto *const classDecl = AllocNode<ir::ClassDeclaration>(classDef, Allocator());
     classDecl->SetParent(classDeclProgram->Ast());
-    classDef->Scope()->BindNode(classDecl);
+
+    // Class definition is scope bearer, not class declaration
+    classDef->Scope()->BindNode(classDecl->Definition());
     decl->BindNode(classDef);
 
     // Put class declaration in global scope, and in program AST
@@ -331,13 +772,8 @@ Type *ETSChecker::HandleUnionForPartialType(ETSUnionType *const typeToBePartial)
     ArenaVector<checker::Type *> newTypesForUnion(Allocator()->Adapter());
 
     for (auto *const typeFromUnion : unionTypeNode->ConstituentTypes()) {
-        if (typeFromUnion->IsETSIntEnumType()) {
-            // NOTE (mmartin): Union type check fails if it contains ETSEnum type, workaround until fix
-            return typeFromUnion;
-        }
-
         if ((typeFromUnion->Variable() != nullptr) && (typeFromUnion->Variable()->Declaration() != nullptr)) {
-            newTypesForUnion.emplace_back(HandlePartialType(typeFromUnion));
+            newTypesForUnion.emplace_back(CreatePartialType(typeFromUnion));
         } else {
             newTypesForUnion.emplace_back(typeFromUnion);
         }
@@ -347,22 +783,27 @@ Type *ETSChecker::HandleUnionForPartialType(ETSUnionType *const typeToBePartial)
 }
 
 Type *ETSChecker::CreatePartialTypeClassDef(ir::ClassDefinition *const partialClassDef,
-                                            ir::ClassDefinition *const classDef, const Type *const typeToBePartial,
+                                            ir::ClassDefinition *const classDef, ETSObjectType *const typeToBePartial,
                                             varbinder::RecordTable *const recordTableToUse)
 {
-    // Create nullish properties of the partial class
     CreatePartialClassDeclaration(partialClassDef, classDef);
-    partialClassDef->Check(this);
 
-    auto *const partialType = partialClassDef->TsType()->AsETSObjectType();
+    // Run checker
+    auto *const partialType = partialClassDef->Check(this)->AsETSObjectType();
+
+    for (auto *interface : typeToBePartial->Interfaces()) {
+        partialType->AddInterface(CreatePartialType(interface)->AsETSObjectType());
+    }
+
     partialType->SetAssemblerName(partialClassDef->InternalName());
+    partialType->SetBaseType(typeToBePartial);
 
     CreateConstructorForPartialType(partialClassDef, partialType, recordTableToUse);
 
     // Create partial type for super type
     if (typeToBePartial != GlobalETSObjectType()) {
         auto *const partialSuper =
-            HandlePartialType(classDef->Super() == nullptr ? GlobalETSObjectType() : classDef->Super()->TsType());
+            CreatePartialType(classDef->Super() == nullptr ? GlobalETSObjectType() : classDef->Super()->TsType());
 
         partialType->SetSuperType(partialSuper->AsETSObjectType());
     }
@@ -438,6 +879,10 @@ ir::MethodDefinition *ETSChecker::CreateNonStaticClassInitializer(varbinder::Cla
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
 {
+    if (typeParams == nullptr) {
+        return GlobalTypeError();
+    }
+
     auto *const typeParamNode = GetUtilityTypeTypeParamNode(typeParams, compiler::Signatures::READONLY_TYPE_NAME);
     auto *typeToBeReadonly = typeParamNode->Check(this);
 
@@ -456,6 +901,17 @@ Type *ETSChecker::GetReadonlyType(Type *type)
     }
 
     NamedTypeStackElement ntse(this, type);
+
+    if (type->IsETSArrayType() && !type->IsETSTupleType()) {
+        ETSArrayType *clonedArrayType = Allocator()->New<ETSArrayType>(type->AsETSArrayType()->ElementType());
+        clonedArrayType->AddTypeFlag(TypeFlag::READONLY);
+        return clonedArrayType;
+    }
+    if (type->IsETSTupleType()) {
+        Type *clonedType = type->Clone(this);
+        clonedType->AddTypeFlag(TypeFlag::READONLY);
+        return clonedType;
+    }
 
     if (type->IsETSObjectType()) {
         type->AsETSObjectType()->InstanceFields();
@@ -606,8 +1062,8 @@ void ETSChecker::ValidateObjectLiteralForRequiredType(const ETSObjectType *const
         }
 
         if (!missingProp.empty()) {
-            ThrowTypeError({"Class property '", missingProp, "' needs to be initialized for required type."},
-                           initObjExpr->Start());
+            LogTypeError({"Class property '", missingProp, "' needs to be initialized for required type."},
+                         initObjExpr->Start());
         }
     }
 }

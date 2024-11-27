@@ -29,6 +29,8 @@ import type {
 } from 'typescript';
 import { Extension, PathAndExtension } from '../common/type';
 import { FileUtils } from './FileUtils';
+import { EventList, performancePrinter } from '../ArkObfuscator';
+import { endSingleFileEvent, startSingleFileEvent } from './PrinterUtils';
 
 export class TypeUtils {
   /**
@@ -90,7 +92,13 @@ export class TypeUtils {
       option.allowJs = true;
     }
 
+    startSingleFileEvent(EventList.CREATE_PROGRAM, performancePrinter.timeSumPrinter);
     let program: Program = createProgram([ast.fileName], option, customHost);
-    return program.getTypeChecker();
+    endSingleFileEvent(EventList.CREATE_PROGRAM, performancePrinter.timeSumPrinter);
+
+    startSingleFileEvent(EventList.GET_CHECKER, performancePrinter.timeSumPrinter);
+    let typeChecker: TypeChecker = program.getTypeChecker();
+    endSingleFileEvent(EventList.GET_CHECKER, performancePrinter.timeSumPrinter);
+    return typeChecker;
   }
 }

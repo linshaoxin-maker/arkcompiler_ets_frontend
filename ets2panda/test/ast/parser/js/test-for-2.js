@@ -15,4 +15,7 @@
 
 
 for (;) {}
-/* @@? 17:7 Error SyntaxError: Unexpected token ')'.  */
+/* @@? 17:7 Error SyntaxError: Unexpected token: ')'.  */
+/* @@? 17:7 Error SyntaxError: Unexpected token, expected: ';'.  */
+/* @@? 22:1 Error SyntaxError: Missing right parenthesis in 'for' statement.  */
+/* @@? 22:1 Error SyntaxError: Unexpected token: 'eos'.  */

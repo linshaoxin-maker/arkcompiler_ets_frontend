@@ -74,8 +74,7 @@ bool TypeRelation::IsIdenticalTo(Type *source, Type *target)
 bool TypeRelation::IsCompatibleTo(Signature *source, Signature *target)
 {
     if (source == target) {
-        Result(true);
-        return true;
+        return Result(true);
     }
 
     result_ = RelationResult::FALSE;
@@ -102,7 +101,13 @@ bool TypeRelation::IsAssignableTo(Type *source, Type *target)
 {
     result_ = CacheLookup(source, target, checker_->AssignableResults(), RelationType::ASSIGNABLE);
     if (result_ == RelationResult::CACHE_MISS) {
-        if (IsIdenticalTo(source, target)) {
+        // NOTE: we support assigning T to Readonly<T>, but do not support assigning Readonly<T> to T
+        // more details in spec
+        if (source->HasTypeFlag(TypeFlag::READONLY) && !target->HasTypeFlag(TypeFlag::READONLY)) {
+            result_ = RelationResult::FALSE;
+        }
+
+        if (result_ != RelationResult::FALSE && IsIdenticalTo(source, target)) {
             return true;
         }
 
@@ -199,12 +204,12 @@ bool TypeRelation::IsSupertypeOf(Type *super, Type *sub)
 
 void TypeRelation::RaiseError(const std::string &errMsg, const lexer::SourcePosition &loc) const
 {
-    checker_->ThrowTypeError(errMsg, loc);
+    checker_->LogTypeError(errMsg, loc);
 }
 
 void TypeRelation::RaiseError(std::initializer_list<TypeErrorMessageElement> list,
                               const lexer::SourcePosition &loc) const
 {
-    checker_->ThrowTypeError(list, loc);
+    checker_->LogTypeError(list, loc);
 }
 }  // namespace ark::es2panda::checker

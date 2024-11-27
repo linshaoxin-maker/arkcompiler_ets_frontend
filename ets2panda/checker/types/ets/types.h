@@ -32,6 +32,7 @@
 #include "etsStringType.h"
 #include "etsBigIntType.h"
 #include "etsObjectType.h"
+#include "etsTypeAliasType.h"
 #include "etsDynamicType.h"
 #include "etsArrayType.h"
 #include "wildcardType.h"
@@ -40,5 +41,6 @@
 #include "etsNullishTypes.h"
 #include "checker/types/signature.h"
 #include "etsReadonlyType.h"
+#include "etsNeverType.h"
 
 #endif /* TYPES_H */

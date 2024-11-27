@@ -54,7 +54,7 @@ private:
     bool IsNamedFunctionExpression() override;
     ir::Expression *ParsePotentialAsExpression(ir::Expression *primaryExpression) override;
     ir::Identifier *ParsePrimaryExpressionIdent(ExpressionParseFlags flags) override;
-    void ValidateArrowFunctionRestParameter(ir::SpreadElement *restElement) override;
+    bool ValidateArrowFunctionRestParameter(ir::SpreadElement *restElement) override;
     ir::Decorator *ParseDecorator() override;
     void AddDecorators(ir::AstNode *node, ArenaVector<ir::Decorator *> &decorators) override;
     ir::TSTypeAliasDeclaration *ParseTypeAliasDeclaration() override;
@@ -100,8 +100,8 @@ private:
     ParserStatus ValidateArrowExprIdentifier(ir::Expression *expr, bool *seenOptional);
     ParserStatus ValidateArrowAssignmentExpr(ir::Expression *expr);
     ParserStatus ValidateArrowParameter(ir::Expression *expr, bool *seenOptional) override;
-    void ThrowIllegalBreakError() override;
-    void ThrowIllegalContinueError() override;
+    void ReportIllegalBreakError(const lexer::SourcePosition &pos) override;
+    void ReportIllegalContinueError() override;
 };
 }  // namespace ark::es2panda::parser
 

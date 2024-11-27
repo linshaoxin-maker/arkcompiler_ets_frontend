@@ -57,7 +57,7 @@ checker::ETSObjectType *CreateSyntheticType(ETSChecker *checker, util::StringVie
 checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir::AstNode *left);
 bool CheckArgumentVoidType(checker::Type *&funcReturnType, ETSChecker *checker, const std::string &name,
                            ir::ReturnStatement *st);
-void CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker::Type *argumentType,
+bool CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker::Type *argumentType,
                      ir::Expression *stArgument, bool isAsync);
 void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, checker::Type *&funcReturnType,
                      ir::Expression *stArgument);
@@ -67,9 +67,9 @@ bool IsAsyncMethod(ir::AstNode *node);
 
 ETSObjectType *CreateOptionalSignaturesForFunctionalType(ETSChecker *checker, ir::ETSFunctionType *node,
                                                          ETSObjectType *genericInterfaceType,
-                                                         Substitution *substitution, size_t optionalParameterIndex);
+                                                         size_t optionalParameterIndex);
 ETSObjectType *CreateInterfaceTypeForETSFunctionType(ETSChecker *checker, ir::ETSFunctionType *node,
-                                                     ETSObjectType *genericInterfaceType, Substitution *substitution);
+                                                     ETSObjectType *genericInterfaceType);
 Type *CreateParamTypeWithDefaultParam(ETSChecker *checker, ir::Expression *params);
 
 Type *InstantiateBoxedPrimitiveType(ETSChecker *checker, ir::Expression *param, Type *paramType);

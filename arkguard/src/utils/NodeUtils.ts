@@ -13,7 +13,16 @@
  * limitations under the License.
  */
 
-import type {Expression, Identifier, Node, ObjectBindingPattern, SourceFile, TypeChecker} from 'typescript';
+import type {
+  Expression,
+  Identifier,
+  Node,
+  ObjectBindingPattern,
+  SourceFile,
+  TypeChecker,
+  TransformationContext,
+  TransformerFactory
+} from 'typescript';
 import {
   Symbol,
   SyntaxKind,
@@ -29,6 +38,7 @@ import {
   isEnumMember,
   isGetAccessor,
   isIdentifier,
+  isIndexedAccessTypeNode,
   isMetaProperty,
   isMethodDeclaration,
   isMethodSignature,
@@ -41,9 +51,18 @@ import {
   isQualifiedName,
   isSetAccessor,
   isVariableDeclaration,
+  visitEachChild,
+  isLiteralTypeNode,
+  isStringLiteralLike
 } from 'typescript';
-import { isParameterPropertyModifier } from './OhsUtil';
+import {
+  getViewPUClassProperties,
+  isParameterPropertyModifier,
+  isViewPUBasedClass,
+  visitEnumInitializer
+} from './OhsUtil';
 import { Extension } from '../common/type';
+import { MergedConfig } from '../initialization/ConfigResolver';
 
 export class NodeUtils {
   public static isPropertyDeclarationNode(node: Node): boolean {
@@ -129,7 +148,7 @@ export class NodeUtils {
 
     return NodeUtils.isInClassDeclaration(node.parent);
   }
-  
+
   public static isInClassDeclarationForTest(node: Node | undefined): boolean {
     return NodeUtils.isInClassDeclaration(node);
   }
@@ -157,6 +176,19 @@ export class NodeUtils {
     }
 
     return isElementAccessExpression(parent) && parent.argumentExpression === node;
+  }
+
+  public static isIndexedAccessNode(node: Node): boolean {
+    let parent: Node | undefined = node.parent;
+    if (!parent) {
+      return false;
+    }
+
+    return isIndexedAccessTypeNode(parent) && parent.indexType === node;
+  }
+
+  public static isStringLiteralTypeNode(node: Node) {
+    return isLiteralTypeNode(node) && isStringLiteralLike(node.literal);
   }
 
   public static isClassPropertyInConstructorParams(node: Node): boolean {
@@ -196,6 +228,10 @@ export class NodeUtils {
 
   public static isPropertyNode(node: Node): boolean {
     if (this.isPropertyOrElementAccessNode(node)) {
+      return true;
+    }
+
+    if (this.isIndexedAccessNode(node)) {
       return true;
     }
 
@@ -254,4 +290,44 @@ export class NodeUtils {
     }
     return sym;
   }
+}
+
+/**
+ * When enabling property obfuscation, collect the properties of struct.
+ * When enabling property obfuscation and the compilation output is a TS file,
+ * collect the Identifier names in the initialization expressions of enum members.
+ */
+export function collectReservedNameForObf(obfuscationConfig: MergedConfig | undefined, shouldTransformToJs: boolean): TransformerFactory<SourceFile> {
+  const disableObf = obfuscationConfig?.options === undefined || obfuscationConfig.options.disableObfuscation;
+  const enablePropertyObf = obfuscationConfig?.options.enablePropertyObfuscation;
+  // process.env.compiler === 'on': indicates that during the Webpack packaging process,
+  // the code is executed here for the first time.
+  // During the Webpack packaging process, this step will be executed twice,
+  // but only the first time will it perform subsequent operations to prevent repetition.
+  const shouldCollect = (process.env.compiler === 'on' || process.env.compileTool === 'rollup') &&
+                        !disableObf && enablePropertyObf;
+
+  return (context: TransformationContext) => {
+    return (node: SourceFile) => {
+      if (shouldCollect) {
+        node = visitEachChild(node, collectReservedNames, context);
+      }
+      return node;
+    };
+
+    function collectReservedNames(node: Node): Node {
+      // collect properties of struct
+      if (isClassDeclaration(node) && isViewPUBasedClass(node)) {
+        getViewPUClassProperties(node);
+      }
+
+      // collect enum properties
+      if (!shouldTransformToJs && isEnumMember(node) && node.initializer) {
+        node.initializer.forEachChild(visitEnumInitializer);
+        return node;
+      }
+
+      return visitEachChild(node, collectReservedNames, context);
+    }
+  };
 }

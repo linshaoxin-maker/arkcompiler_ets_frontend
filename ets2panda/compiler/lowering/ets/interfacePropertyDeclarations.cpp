@@ -97,12 +97,11 @@ static ir::MethodDefinition *GenerateGetterOrSetter(checker::ETSChecker *const c
     }
 
     auto signature = ir::FunctionSignature(nullptr, std::move(params), isSetter ? nullptr : field->TypeAnnotation());
-
     auto *func = checker->AllocNode<ir::ScriptFunction>(
-        checker->Allocator(), ir::ScriptFunction::ScriptFunctionData {nullptr, std::move(signature),
-                                                                      isSetter ? ir::ScriptFunctionFlags::SETTER
-                                                                               : ir::ScriptFunctionFlags::GETTER,
-                                                                      flags, true});
+        checker->Allocator(), ir::ScriptFunction::ScriptFunctionData {
+                                  nullptr, std::move(signature),  // CC-OFF(G.FMT.02) project code style
+                                  // CC-OFFNXT(G.FMT.02) project code style
+                                  isSetter ? ir::ScriptFunctionFlags::SETTER : ir::ScriptFunctionFlags::GETTER, flags});
 
     func->SetRange(field->Range());
 
@@ -201,6 +200,7 @@ bool InterfacePropertyDeclarationsPhase::Perform(public_lib::Context *ctx, parse
     checker::ETSChecker *const checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(
+        // CC-OFFNXT(G.FMT.14-CPP) project code style
         [checker](ir::AstNode *const ast) -> ir::AstNode * {
             return ast->IsTSInterfaceBody() ? UpdateInterfacePropertys(checker, ast->AsTSInterfaceBody()) : ast;
         },

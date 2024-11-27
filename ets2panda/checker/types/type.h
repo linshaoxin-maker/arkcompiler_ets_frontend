@@ -35,8 +35,9 @@ class ETSDynamicFunctionType;
 class ETSTypeParameter;
 class ETSEnumType;
 
+// CC-OFFNXT(G.PRE.02) name part
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_TYPENAMES(typeFlag, typeName) class typeName;
+#define DECLARE_TYPENAMES(typeFlag, typeName) class typeName;  // CC-OFF(G.PRE.09) code gen
 TYPE_MAPPING(DECLARE_TYPENAMES)
 #undef DECLARE_TYPENAMES
 class ETSStringType;
@@ -58,31 +59,38 @@ public:
     virtual ~Type() = default;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TYPE_IS_CHECKS(typeFlag, typeName) \
-    bool Is##typeName() const              \
-    {                                      \
-        return HasTypeFlag(typeFlag);      \
+#define TYPE_IS_CHECKS(typeFlag, typeName)                                                  \
+    bool Is##typeName() const noexcept                                                      \
+    {                                                                                       \
+        /* CC-OFFNXT(G.PRE.05) The macro is used to generate a function. Return is needed*/ \
+        return HasTypeFlag(typeFlag);                                                       \
     }
     TYPE_MAPPING(TYPE_IS_CHECKS)
 #undef DECLARE_IS_CHECKS
 
+/* CC-OFFNXT(G.PRE.06,G.PRE.02) solid logic, name part */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TYPE_AS_CASTS(typeFlag, typeName)                \
-    typeName *As##typeName()                             \
-    {                                                    \
-        ASSERT(Is##typeName());                          \
-        return reinterpret_cast<typeName *>(this);       \
-    }                                                    \
-    const typeName *As##typeName() const                 \
-    {                                                    \
-        ASSERT(Is##typeName());                          \
-        return reinterpret_cast<const typeName *>(this); \
+#define TYPE_AS_CASTS(typeFlag, typeName)                                                   \
+    /* CC-OFFNXT(G.PRE.02) name part*/                                                      \
+    typeName *As##typeName()                                                                \
+    {                                                                                       \
+        ASSERT(Is##typeName());                                                             \
+        /* CC-OFFNXT(G.PRE.05) The macro is used to generate a function. Return is needed*/ \
+        return reinterpret_cast<typeName *>(this); /* CC-OFF(G.PRE.02) name part*/          \
+    }                                                                                       \
+    const typeName *As##typeName() const                                                    \
+    {                                                                                       \
+        ASSERT(Is##typeName());                                                             \
+        /* CC-OFFNXT(G.PRE.05) The macro is used to generate a function. Return is needed*/ \
+        return reinterpret_cast<const typeName *>(this);                                    \
     }
     TYPE_MAPPING(TYPE_AS_CASTS)
 #undef TYPE_AS_CASTS
 
     bool IsETSStringType() const;
     bool IsETSBigIntType() const;
+    bool IsETSArrowType() const;
+    bool IsETSPrimitiveType() const;
     bool IsETSReferenceType() const;
     bool IsETSAsyncFuncReturnType() const;
     bool IsETSUnboxableObject() const;
@@ -268,23 +276,6 @@ public:
     [[nodiscard]] virtual Type *Clone(Checker *checker);
     virtual Type *Substitute(TypeRelation *relation, const Substitution *substitution);
 
-    const ETSEnumType *AsETSEnumType() const
-    {
-        ASSERT(IsETSEnumType());
-        return reinterpret_cast<const ETSEnumType *>(this);
-    }
-
-    ETSEnumType *AsETSEnumType()
-    {
-        ASSERT(IsETSEnumType());
-        return reinterpret_cast<ETSEnumType *>(this);
-    }
-
-    bool IsETSEnumType() const
-    {
-        return IsETSIntEnumType() || IsETSStringEnumType();
-    }
-
 protected:
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     TypeFlag typeFlags_;
@@ -296,8 +287,6 @@ protected:
 // NOLINTBEGIN(readability-redundant-declaration)
 // To avoid including type.h from variable.h, astNode.h
 bool IsTypeError(Type const *tp);
-// Use this in order to avoid crashes where TypeError is not expected
-[[noreturn]] void ThrowEmptyError();
 // NOLINTEND(readability-redundant-declaration)
 
 }  // namespace ark::es2panda::checker

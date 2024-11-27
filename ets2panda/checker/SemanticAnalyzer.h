@@ -46,6 +46,7 @@
 #include "ir/ets/etsParameterExpression.h"
 #include "ir/ets/etsPrimitiveType.h"
 #include "ir/ets/etsScript.h"
+#include "ir/ets/etsStringLiteralType.h"
 #include "ir/ets/etsStructDeclaration.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
@@ -178,12 +179,12 @@ public:
     virtual ~SemanticAnalyzer() = default;
     NO_COPY_SEMANTIC(SemanticAnalyzer);
     NO_MOVE_SEMANTIC(SemanticAnalyzer);
-
+/* CC-OFFNXT(G.PRE.02,G.PRE.09) name part*/
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_AST_NODE_CHECK_METHOD(_, nodeType) virtual checker::Type *Check(ir::nodeType *node) const = 0;
     AST_NODE_MAPPING(DECLARE_AST_NODE_CHECK_METHOD)
 #undef DECLARE_AST_NODE_CHECK_METHOD
-
+/* CC-OFFNXT(G.PRE.02,G.PRE.09) name part*/
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_AST_NODE_CHECK_METHOD(_, __, nodeType, ___) virtual checker::Type *Check(ir::nodeType *node) const = 0;
     AST_NODE_REINTERPRET_MAPPING(DECLARE_AST_NODE_CHECK_METHOD)

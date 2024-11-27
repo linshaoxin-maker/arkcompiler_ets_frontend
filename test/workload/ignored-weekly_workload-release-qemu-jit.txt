@@ -1,9 +1,6 @@
 #19318
 code-load
 
-#18745
-json-stringify-inspector
-
 #18841
 json-stringify-inspector
 
@@ -22,5 +19,12 @@ wsl
 #18483
 raytrace
 
-#19243
-hash-map
+#18863
+json-parse-inspector
+
+#19006
+typescript-compiler
+
+#20145
+numericalComputation
+

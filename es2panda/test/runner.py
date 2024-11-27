@@ -1797,7 +1797,7 @@ class TestVersionControl(Test):
         Test.__init__(self, test_path, flags)
         self.beta_version_default = 3
         self.version_with_sub_version_list = [12]
-        self.target_api_version_list = ["9", "10", "11", "12"]
+        self.target_api_version_list = ["9", "10", "11", "12", "15"]
         self.target_api_sub_version_list = ["beta1", "beta2", "beta3"]
         self.specific_api_version_list = ["API11", "API12beta3"]
         self.output = None
@@ -1926,8 +1926,6 @@ class TestVersionControl(Test):
     def get_path_to_compile_asm_output_expected(self, is_support, target_api_version):
         path_expected = None
         for specific_api_version in self.specific_api_version_list:
-            if self.compare_two_versions(target_api_version, specific_api_version) > 0:
-                continue
             path_expected = self.get_path_to_expected(
                 is_support, "compile", target_api_version, specific_api_version, "asm"
             )
@@ -2184,6 +2182,13 @@ def add_directory_for_version_control(runners, args):
         "bytecode_feature",
         "version_control/API12beta3/bytecode_feature/import_target",
     )
+    runner.add_directory(
+        "version_control/API15/bytecode_feature",
+        "js",
+        [],
+        "API15",
+        "bytecode_feature",
+    )
     runners.append(runner)
 
     abc_tests_prepare = AbcTestCasesPrepare(args)
@@ -2285,7 +2290,7 @@ def add_directory_for_regression(runners, args):
 
     runners.append(transformer_api_version_10_runner)
 
-def add_directory_for_asm(runners, args, mode = ""):
+def add_directory_for_asm(runners, args, mode=""):
     runner = AbcToAsmRunner(args, True if mode == "debug" else False)
     runner.add_directory("abc2asm/js", "js", [])
     runner.add_directory("abc2asm/ts", "ts", [])
@@ -2322,7 +2327,7 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/cases", "ts", []))
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/projects", "ts", ["--module"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/projects", "ts", ["--module", "--merge-abc"]))
-    compiler_test_infos.append(CompilerTestInfo("compiler/annotations-projects", "ts", ["--module", "--enable-annotations"]))
+    compiler_test_infos.append(CompilerTestInfo("compiler/annotations-projects", "ts", ["--module", "--enable-annotations", "--merge-abc"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/dts", "d.ts", ["--module", "--opt-level=0"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/commonjs", "js", ["--commonjs"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/interpreter/lexicalEnv", "js", []))
@@ -2489,7 +2494,8 @@ def main():
         runner.run()
         failed_tests += runner.summarize()
 
-    # TODO: exit 1 when we have failed tests after all tests are fixed
+    if failed_tests > 0:
+        exit(1)
     exit(0)
 
 

@@ -16,19 +16,25 @@
 #include "referenceTypeAnnotationIsNull.h"
 
 #include "ir/expressions/identifier.h"
+#include "ir/expressions/assignmentExpression.h"
 
 namespace ark::es2panda::compiler::ast_verifier {
 
-CheckResult ReferenceTypeAnnotationIsNull::operator()(CheckContext &ctx, const ir::AstNode *ast)
+CheckResult ReferenceTypeAnnotationIsNull::operator()([[maybe_unused]] CheckContext &ctx,
+                                                      [[maybe_unused]] const ir::AstNode *ast)
 {
-    auto result = std::make_tuple(CheckDecision::CORRECT, CheckAction::CONTINUE);
-    if (ast->IsIdentifier()) {
-        if (ast->AsIdentifier()->IsReference() && ast->AsIdentifier()->TypeAnnotation() != nullptr) {
-            ctx.AddCheckMessage("TYPE_ANNOTATION_NOT_NULLPTR", *ast, ast->Start());
-            result = {CheckDecision::INCORRECT, CheckAction::CONTINUE};
-        }
+    if (!ast->IsIdentifier()) {
+        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
     }
-    return result;
+
+    // We are running AST verifier only for ETS files so it is correct to pass ETS extension here
+    auto const *const id = ast->AsIdentifier();
+    if (id->IsReference(ScriptExtension::ETS) && id->TypeAnnotation() != nullptr) {
+        ctx.AddCheckMessage("TYPE_ANNOTATION_NOT_NULLPTR", *ast, ast->Start());
+        return {CheckDecision::INCORRECT, CheckAction::CONTINUE};
+    }
+
+    return {CheckDecision::CORRECT, CheckAction::CONTINUE};
 }
 
 }  // namespace ark::es2panda::compiler::ast_verifier

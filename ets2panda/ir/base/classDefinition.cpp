@@ -92,6 +92,13 @@ void ClassDefinition::TransformChildren(const NodeTransformer &cb, std::string_v
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     if (ctor_ != nullptr) {
         if (auto *transformedNode = cb(ctor_); ctor_ != transformedNode) {
             ctor_->SetTransformedNode(transformationName, transformedNode);
@@ -131,6 +138,10 @@ void ClassDefinition::Iterate(const NodeTraverser &cb) const
         cb(implements_[ix]);
     }
 
+    for (auto *it : annotations_) {
+        cb(it);
+    }
+
     if (ctor_ != nullptr) {
         cb(ctor_);
     }
@@ -159,12 +170,34 @@ void ClassDefinition::Dump(ir::AstDumper *dumper) const
                  {"superClass", AstDumper::Nullish(superClass_)},
                  {"superTypeParameters", AstDumper::Optional(superTypeParams_)},
                  {"implements", implements_},
+                 {"annotations", AstDumper::Optional(annotations_)},
                  {"constructor", AstDumper::Optional(ctor_)},
                  {"body", body_, propFilter}});
 }
 
+// This method is needed by OHOS CI code checker
+void ClassDefinition::DumpBody(ir::SrcDumper *dumper) const
+{
+    dumper->Add(" {");
+    if (!body_.empty()) {
+        dumper->IncrIndent();
+        dumper->Endl();
+        for (auto elem : body_) {
+            elem->Dump(dumper);
+            if (elem == body_.back()) {
+                dumper->DecrIndent();
+            }
+            dumper->Endl();
+        }
+    }
+    dumper->Add("}");
+}
+
 void ClassDefinition::Dump(ir::SrcDumper *dumper) const
 {
+    for (auto *anno : annotations_) {
+        anno->Dump(dumper);
+    }
     ASSERT(ident_ != nullptr);
 
     if (IsExtern()) {
@@ -173,6 +206,10 @@ void ClassDefinition::Dump(ir::SrcDumper *dumper) const
 
     if (IsExported()) {
         dumper->Add("export ");
+    }
+
+    if (IsDeclare()) {
+        dumper->Add("declare ");
     }
 
     if (IsFinal()) {
@@ -197,29 +234,14 @@ void ClassDefinition::Dump(ir::SrcDumper *dumper) const
         superClass_->Dump(dumper);
     }
 
-    if (!implements_.empty()) {
-        dumper->Add(" implements ");
-        for (auto interface : implements_) {
-            interface->Dump(dumper);
-            if (interface != implements_.back()) {
-                dumper->Add(", ");
-            }
-        }
-    }
+    DumpItems(dumper, " implements ", implements_);
 
-    dumper->Add(" {");
-    if (!body_.empty()) {
-        dumper->IncrIndent();
-        dumper->Endl();
-        for (auto elem : body_) {
-            elem->Dump(dumper);
-            if (elem == body_.back()) {
-                dumper->DecrIndent();
-            }
-            dumper->Endl();
-        }
+    if (!IsDeclare() || !body_.empty()) {
+        DumpBody(dumper);
     }
-    dumper->Add("}");
+    if (IsLocal()) {
+        dumper->Add(";");
+    }
     dumper->Endl();
 }
 

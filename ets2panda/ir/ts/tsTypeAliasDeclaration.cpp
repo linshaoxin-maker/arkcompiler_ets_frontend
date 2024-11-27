@@ -78,9 +78,8 @@ void TSTypeAliasDeclaration::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "TSTypeAliasDeclaration"},
                  {"decorators", AstDumper::Optional(decorators_)},
                  {"id", id_},
-                 {"typeAnnotation", TypeAnnotation()},
-                 {"typeParameters", AstDumper::Optional(typeParams_)},
-                 {"declare", AstDumper::Optional(declare_)}});
+                 {"typeAnnotation", AstDumper::Optional(TypeAnnotation())},
+                 {"typeParameters", AstDumper::Optional(typeParams_)}});
 }
 
 void TSTypeAliasDeclaration::Dump(ir::SrcDumper *dumper) const

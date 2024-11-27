@@ -95,7 +95,7 @@ void AdjustBoxingUnboxingFlags(ir::Expression *loweringResult, const ir::Express
     const ir::BoxingUnboxingFlags oldUnboxingFlag {oldExpr->GetBoxingUnboxingFlags() &
                                                    ir::BoxingUnboxingFlags::UNBOXING_FLAG};
 
-    if (exprToProcess->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+    if (exprToProcess->TsType()->IsETSPrimitiveType()) {
         loweringResult->SetBoxingUnboxingFlags(oldBoxingFlag);
     } else if (exprToProcess->TsType()->IsETSObjectType()) {
         loweringResult->SetBoxingUnboxingFlags(oldUnboxingFlag);
@@ -105,7 +105,7 @@ void AdjustBoxingUnboxingFlags(ir::Expression *loweringResult, const ir::Express
 static ir::OpaqueTypeNode *CreateProxyTypeNode(checker::ETSChecker *checker, ir::Expression *expr)
 {
     auto *lcType = expr->TsType();
-    if (auto *lcTypeAsPrimitive = checker->ETSBuiltinTypeAsPrimitiveType(lcType); lcTypeAsPrimitive != nullptr) {
+    if (auto *lcTypeAsPrimitive = checker->MaybeUnboxInRelation(lcType); lcTypeAsPrimitive != nullptr) {
         lcType = lcTypeAsPrimitive;
     }
     return checker->AllocNode<ir::OpaqueTypeNode>(lcType);
@@ -204,7 +204,14 @@ ir::AstNode *HandleOpAssignment(public_lib::Context *ctx, ir::AssignmentExpressi
 
     loweringResult->SetParent(assignment->Parent());
     // NOTE(dslynko, #19200): required for correct debug-info
-    loweringResult->SetRange(assignment->Range());
+    auto rng = assignment->Range();
+    loweringResult->SetRange(rng);
+    loweringResult->TransformChildrenRecursively(
+        [rng](auto *node) {
+            node->SetRange(rng);
+            return node;
+        },
+        "");
 
     auto *const scope = NearestScope(assignment);
 
@@ -267,7 +274,7 @@ static ir::Expression *ConstructUpdateResult(public_lib::Context *ctx, ir::Updat
 
     std::string opSign = lexer::TokenToString(CombinedOpToOp(upd->OperatorType()));
 
-    std::string suffix = (argument->TsType() == checker->GlobalETSBigIntType()) ? "n" : "";
+    std::string suffix = argument->TsType()->IsETSBigIntType() ? "n" : "";
 
     // NOLINTBEGIN(readability-magic-numbers)
     if (upd->IsPrefix()) {
@@ -304,7 +311,14 @@ static ir::AstNode *HandleUpdate(public_lib::Context *ctx, ir::UpdateExpression 
 
     loweringResult->SetParent(upd->Parent());
     // NOTE(dslynko, #19200): required for correct debug-info
-    loweringResult->SetRange(upd->Range());
+    auto rng = upd->Range();
+    loweringResult->SetRange(rng);
+    loweringResult->TransformChildrenRecursively(
+        [rng](auto *node) {
+            node->SetRange(rng);
+            return node;
+        },
+        "");
     InitScopesPhaseETS::RunExternalNode(loweringResult, ctx->checker->VarBinder());
 
     checker->VarBinder()->AsETSBinder()->ResolveReferencesForScopeWithContext(loweringResult,

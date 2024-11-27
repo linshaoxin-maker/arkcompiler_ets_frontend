@@ -20,3 +20,4 @@ export {foo}
 export type {TestClass as foo}
 
 /* @@? 20:27 Error SyntaxError: The given name 'foo' is already used in another export  */
+/* @@? 1:1 Error SyntaxError: The given name 'foo' is already used in another export  */

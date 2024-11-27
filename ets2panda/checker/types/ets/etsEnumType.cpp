@@ -17,6 +17,7 @@
 
 #include "checker/ETSchecker.h"
 #include "checker/ets/conversion.h"
+#include "checker/ets/unboxingConverter.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/expressions/memberExpression.h"
@@ -72,40 +73,57 @@ bool ETSEnumType::AssignmentSource(TypeRelation *const relation, Type *const tar
 
 void ETSEnumType::AssignmentTarget(TypeRelation *const relation, Type *const source)
 {
-    auto const result = source->IsETSIntEnumType()
-                            ? IsSameEnumType(source->AsETSIntEnumType())
-                            : (source->IsETSStringEnumType() ? IsSameEnumType(source->AsETSStringEnumType()) : false);
-    relation->Result(result);
+    auto checker = relation->GetChecker()->AsETSChecker();
+
+    Type *const unboxedSource = checker->MaybeUnboxType(source);
+    if (unboxedSource != source && !relation->OnlyCheckBoxingUnboxing()) {
+        relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOX_TO_ENUM);
+    }
+
+    relation->Result(false);
+    if (unboxedSource->IsETSEnumType()) {
+        relation->Result(IsSameEnumType(unboxedSource->AsETSEnumType()));
+    } else if (unboxedSource->IsETSStringType()) {
+        relation->Result(IsSameEnumType(unboxedSource->AsETSStringEnumType()));
+    }
 }
 
 void ETSEnumType::Cast(TypeRelation *relation, Type *target)
 {
-    if (target->HasTypeFlag(TypeFlag::ENUM | TypeFlag::ETS_INT_ENUM | TypeFlag::ETS_STRING_ENUM)) {
+    if (target->IsETSEnumType()) {
         conversion::Identity(relation, this, target);
         return;
     }
 
-    if (target->IsIntType()) {
+    if (target->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
         relation->Result(true);
         return;
     }
+
+    // NOTE(vpukhov): #20510 conversion rules
     if (target->IsETSObjectType()) {
-        if (target->AsETSObjectType()->IsGlobalETSObjectType()) {
-            relation->Result(true);
-            relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_ENUM);
+        if (target->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BOXED_ENUM)) {
+            conversion::Boxing(relation, this);
             return;
         }
-    }
-    if (target->IsETSUnionType()) {
-        auto &unionConstituentTypes = target->AsETSUnionType()->ConstituentTypes();
-        for (auto *constituentType : unionConstituentTypes) {
-            if (constituentType == GetDecl()->BoxedClass()->TsType() ||
-                (constituentType->IsETSObjectType() && constituentType->AsETSObjectType()->IsGlobalETSObjectType())) {
-                relation->Result(true);
-                relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_ENUM);
+
+        if (target->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_TYPE)) {
+            auto unboxedTarget = relation->GetChecker()->AsETSChecker()->MaybeUnboxInRelation(target);
+            if (unboxedTarget == nullptr) {
+                conversion::Forbidden(relation);
                 return;
             }
+            Cast(relation, unboxedTarget);
+            if (relation->IsTrue()) {
+                conversion::Boxing(relation, unboxedTarget);
+                return;
+            }
+            conversion::Forbidden(relation);
+            return;
         }
+
+        conversion::BoxingWideningReference(relation, this, target->AsETSObjectType());
+        return;
     }
     conversion::Forbidden(relation);
 }
@@ -118,17 +136,7 @@ Type *ETSEnumType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[may
 
 void ETSEnumType::Identical(TypeRelation *const relation, Type *const other)
 {
-    ETSEnumType const *const otherEnumType = [other]() -> ETSEnumType const * {
-        if (other->IsETSIntEnumType()) {
-            return other->AsETSIntEnumType();
-        }
-        if (other->IsETSStringEnumType()) {
-            return other->AsETSStringEnumType();
-        }
-        return nullptr;
-    }();
-
-    relation->Result(otherEnumType != nullptr && IsSameEnumType(otherEnumType) && member_ == otherEnumType->member_);
+    relation->Result(other->IsETSEnumType() && IsSameEnumType(other->AsETSEnumType()));
 }
 
 void ETSEnumType::ToAssemblerType(std::stringstream &ss) const
@@ -149,6 +157,11 @@ void ETSEnumType::ToString(std::stringstream &ss, [[maybe_unused]] bool precise)
 const ir::TSEnumDeclaration *ETSEnumType::GetDecl() const noexcept
 {
     return decl_;
+}
+
+Type *ETSEnumType::BoxedType() const noexcept
+{
+    return GetDecl()->BoxedClass()->TsType();
 }
 
 const ArenaVector<ir::AstNode *> &ETSEnumType::GetMembers() const noexcept
@@ -179,27 +192,22 @@ ETSEnumType *ETSEnumType::LookupConstant(ETSChecker *const checker, const ir::Ex
     if (!IsEnumTypeExpression(expression)) {
         if (expression->IsIdentifier() &&
             expression->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::TYPE_ALIAS)) {
-            checker->ThrowTypeError({"Cannot refer to enum members through type alias."}, prop->Start());
+            checker->LogTypeError({"Cannot refer to enum members through type alias."}, prop->Start());
         } else if (IsLiteralType()) {
-            checker->ThrowTypeError({"Cannot refer to enum members through variable."}, prop->Start());
+            checker->LogTypeError({"Cannot refer to enum members through variable."}, prop->Start());
         } else {
-            checker->ThrowTypeError({"Enum constant does not have property '", prop->Name(), "'."}, prop->Start());
+            checker->LogTypeError({"Enum constant does not have property '", prop->Name(), "'."}, prop->Start());
         }
+        return nullptr;
     }
 
     auto *const member = FindMember(prop->Name());
     if (member == nullptr) {
-        checker->ThrowTypeError({"No enum constant named '", prop->Name(), "' in enum '", this, "'"}, prop->Start());
+        checker->LogTypeError({"No enum constant named '", prop->Name(), "' in enum '", this, "'"}, prop->Start());
+        return nullptr;
     }
-    // clang-format off
-    auto *const enumInterface = [enumType =
-                                     member->Key()->AsIdentifier()->Variable()->TsType()]() -> checker::ETSEnumType* {
-        if (enumType->IsETSIntEnumType()) {
-            return enumType->AsETSIntEnumType();
-        }
-        return enumType->AsETSStringEnumType();
-    }();
-    // clang-format on
+
+    auto *const enumInterface = member->Key()->AsIdentifier()->Variable()->TsType()->AsETSEnumType();
     ASSERT(enumInterface->IsLiteralType());
     return enumInterface;
 }
@@ -226,27 +234,16 @@ bool ETSEnumType::IsSameEnumLiteralType(const ETSEnumType *const other) const no
     return member_ == other->member_;
 }
 
-[[maybe_unused]] static const ETSEnumType *SpecifyEnumInterface(const checker::Type *enumType)
-{
-    if (enumType->IsETSIntEnumType()) {
-        return enumType->AsETSIntEnumType();
-    }
-    if (enumType->IsETSStringEnumType()) {
-        return enumType->AsETSStringEnumType();
-    }
-    return nullptr;
-}
-
 bool ETSEnumType::IsEnumInstanceExpression(const ir::Expression *const expression) const noexcept
 {
-    ASSERT(IsSameEnumType(SpecifyEnumInterface(expression->TsType())));
+    ASSERT(IsSameEnumType(expression->TsType()->AsETSEnumType()));
 
     return IsEnumLiteralExpression(expression) || !IsEnumTypeExpression(expression);
 }
 
 bool ETSEnumType::IsEnumLiteralExpression(const ir::Expression *const expression) const noexcept
 {
-    ASSERT(IsSameEnumType(SpecifyEnumInterface(expression->TsType())));
+    ASSERT(IsSameEnumType(expression->TsType()->AsETSEnumType()));
 
     if (expression->IsMemberExpression()) {
         const auto *const memberExpr = expression->AsMemberExpression();
@@ -259,9 +256,8 @@ bool ETSEnumType::IsEnumLiteralExpression(const ir::Expression *const expression
 
 bool ETSEnumType::IsEnumTypeExpression(const ir::Expression *const expression) const noexcept
 {
-    auto specifiedEnumInterface = SpecifyEnumInterface(expression->TsType());
-    if (specifiedEnumInterface != nullptr) {
-        ASSERT(IsSameEnumType(specifiedEnumInterface));
+    if (expression->TsType()->IsETSEnumType()) {
+        ASSERT(IsSameEnumType(expression->TsType()->AsETSEnumType()));
     } else {
         return false;
     }
@@ -300,7 +296,7 @@ ETSEnumType::Method ETSEnumType::BoxedFromIntMethod() const noexcept
 
 ETSEnumType::Method ETSEnumType::UnboxMethod() const noexcept
 {
-    ASSERT(unboxMethod_.globalSignature != nullptr && unboxMethod_.memberProxyType == nullptr);
+    ASSERT(unboxMethod_.globalSignature != nullptr && unboxMethod_.memberProxyType != nullptr);
     return unboxMethod_;
 }
 
@@ -370,7 +366,8 @@ ETSFunctionType *ETSEnumType::LookupConstantMethod(ETSChecker *const checker, co
         return getNameMethod_.memberProxyType;
     }
 
-    checker->ThrowTypeError({"No enum item method called '", prop->Name(), "'"}, prop->Start());
+    checker->LogTypeError({"No enum item method called '", prop->Name(), "'"}, prop->Start());
+    return nullptr;
 }
 
 ETSFunctionType *ETSEnumType::LookupTypeMethod(ETSChecker *const checker, const ir::Identifier *const prop) const
@@ -385,7 +382,8 @@ ETSFunctionType *ETSEnumType::LookupTypeMethod(ETSChecker *const checker, const 
         return getValueOfMethod_.memberProxyType;
     }
 
-    checker->ThrowTypeError({"No enum type method called '", prop->Name(), "'"}, prop->Start());
+    checker->LogTypeError({"No enum type method called '", prop->Name(), "'"}, prop->Start());
+    return nullptr;
 }
 
 }  // namespace ark::es2panda::checker

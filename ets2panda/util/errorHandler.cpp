@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2023 - 2024 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +17,19 @@
 
 namespace ark::es2panda::util {
 
-void ErrorHandler::ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const
+void ErrorHandler::LogSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const
 {
     lexer::LineIndex index(program_->SourceCode());
     lexer::SourceLocation loc = index.GetLocation(pos);
 
-    throw Error {ErrorType::SYNTAX, program_->SourceFilePath().Utf8(), errorMessage, loc.line, loc.col};
+    errorLogger_->WriteLog(
+        Error {ErrorType::SYNTAX, program_->SourceFilePath().Utf8(), errorMessage, loc.line, loc.col});
 }
 
-void ErrorHandler::ThrowSyntaxError(const parser::Program *program, std::string_view errorMessage,
-                                    const lexer::SourcePosition &pos)
+void ErrorHandler::LogSyntaxError(util::ErrorLogger *errorLogger, const parser::Program *program,
+                                  std::string_view errorMessage, const lexer::SourcePosition &pos)
 {
-    ErrorHandler(program).ThrowSyntaxError(errorMessage, pos);
+    ErrorHandler(program, errorLogger).LogSyntaxError(errorMessage, pos);
 }
 
 }  // namespace ark::es2panda::util

@@ -124,9 +124,10 @@ const ir::Identifier *TSDeclGen::GetKeyIdent(const ir::Expression *key)
 static char const *GetDebugTypeName(const checker::Type *checkerType)
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TYPE_CHECKS(type_flag, typeName) \
-    if (checkerType->Is##typeName()) {   \
-        return #typeName;                \
+#define TYPE_CHECKS(type_flag, typeName)                                                    \
+    if (checkerType->Is##typeName()) {                                                      \
+        /* CC-OFFNXT(G.PRE.05) The macro is used to generate a function. Return is needed*/ \
+        return #typeName;                                                                   \
     }
     TYPE_MAPPING(TYPE_CHECKS)
 #undef TYPE_CHECKS
@@ -157,6 +158,8 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
+        case checker::TypeFlag::ETS_PARTIAL_TYPE_PARAMETER:
+        case checker::TypeFlag::ETS_NEVER:
         case checker::TypeFlag::ETS_READONLY:
         case checker::TypeFlag::ETS_INT_ENUM:
             Out(checkerType->ToString());
@@ -230,12 +233,12 @@ void TSDeclGen::GenFunctionType(const checker::ETSFunctionType *etsFunctionType,
 {
     const bool isConstructor = methodDef != nullptr ? methodDef->IsConstructor() : false;
     const bool isSetter = methodDef != nullptr ? methodDef->Kind() == ir::MethodDefinitionKind::SET : false;
-
+    // CC-OFFNXT(G.FMT.14-CPP) project code style
     const auto *sig = [this, methodDef, etsFunctionType]() -> const checker::Signature * {
         if (methodDef != nullptr) {
             return methodDef->Function()->Signature();
         }
-        if (etsFunctionType->CallSignatures().size() != 1) {
+        if (!etsFunctionType->IsETSArrowType()) {
             const auto loc = methodDef != nullptr ? methodDef->Start() : lexer::SourcePosition();
             ThrowError("Method overloads are not supported", loc);
         }
@@ -309,7 +312,7 @@ void TSDeclGen::GenObjectType(const checker::ETSObjectType *objectType)
         Out("string");
         return;
     }
-    if (objectType->HasObjectFlag(checker::ETSObjectFlags::UNBOXABLE_TYPE)) {
+    if (objectType->IsETSUnboxableObject()) {
         Out("number");  // NOTE(ivagin): create precise builtin type
         return;
     }
@@ -443,11 +446,9 @@ void TSDeclGen::GenImportDeclaration(const ir::ETSImportDeclaration *importDecla
 
         const auto local = specifier->AsImportSpecifier()->Local()->Name();
         const auto imported = specifier->AsImportSpecifier()->Imported()->Name();
-        if (local.Mutf8().find("_$trigger_cctor") == std::string::npos) {
-            Out(local);
-            if (local != imported) {
-                ThrowError("Imports with local bindings are not supported", importDeclaration->Start());
-            }
+        Out(local);
+        if (local != imported) {
+            ThrowError("Imports with local bindings are not supported", importDeclaration->Start());
         }
     });
 
@@ -493,6 +494,9 @@ void TSDeclGen::GenInterfaceDeclaration(const ir::TSInterfaceDeclaration *interf
     state_.inInterface = true;
     const auto interfaceName = interfaceDecl->Id()->Name().Mutf8();
     DebugPrint("GenInterfaceDeclaration: " + interfaceName);
+    if (interfaceName.find("$partial") != std::string::npos) {
+        return;
+    }
     Out("interface ", interfaceName);
 
     GenTypeParameters(interfaceDecl->TypeParams());

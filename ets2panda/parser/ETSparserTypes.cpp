@@ -48,6 +48,7 @@
 #include "ir/ets/etsTuple.h"
 #include "ir/ets/etsFunctionType.h"
 #include "ir/ets/etsScript.h"
+#include "ir/ets/etsStringLiteralType.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsNullishTypes.h"
@@ -83,7 +84,7 @@ ir::TypeNode *ETSParser::ParseFunctionReturnType([[maybe_unused]] ParserStatus s
             ThrowSyntaxError("Type annotation isn't allowed for constructor.");
         }
         Lexer()->NextToken();  // eat ':'
-        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                                TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE |
                                                TypeAnnotationParsingOptions::RETURN_TYPE;
         return ParseTypeAnnotation(&options);
@@ -112,8 +113,10 @@ ir::TypeNode *ETSParser::ParseUnionType(ir::TypeNode *const firstType)
     while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
         Lexer()->NextToken();  // eat '|'
 
-        auto options = TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::DISALLOW_UNION;
-        types.push_back(ParseTypeAnnotation(&options));
+        auto options = TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::DISALLOW_UNION;
+        if (auto typeAnnotation = ParseTypeAnnotation(&options); typeAnnotation != nullptr) {  // Error processing.
+            types.push_back(typeAnnotation);
+        }
     }
 
     auto const endLoc = types.back()->End();
@@ -167,15 +170,18 @@ ir::TypeNode *ETSParser::ParseWildcardType(TypeAnnotationParsingOptions *options
     const auto varianceEndLoc = Lexer()->GetToken().End();
     const auto varianceModifier = ParseTypeVarianceModifier(options);
 
-    auto *typeReference = [this, &varianceModifier, options]() -> ir::ETSTypeReference * {
-        if (varianceModifier == ir::ModifierFlags::OUT &&
-            (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_GREATER_THAN ||
-             Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA)) {
-            // unbounded 'out'
+    bool isUnboundOut = varianceModifier == ir::ModifierFlags::OUT &&
+                        (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_GREATER_THAN ||
+                         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA);
+    ir::ETSTypeReference *typeReference = nullptr;
+    if (!isUnboundOut) {
+        auto reference = ParseTypeReference(options);
+        if (reference == nullptr) {  // Error processing.
             return nullptr;
         }
-        return ParseTypeReference(options)->AsETSTypeReference();
-    }();
+
+        typeReference = reference->AsETSTypeReference();
+    }
 
     auto *wildcardType = AllocNode<ir::ETSWildcardType>(typeReference, varianceModifier);
     wildcardType->SetRange({varianceStartLoc, typeReference == nullptr ? varianceEndLoc : typeReference->End()});
@@ -187,12 +193,15 @@ ir::TypeNode *ETSParser::ParseFunctionType()
 {
     auto startLoc = Lexer()->GetToken().Start();
     auto fullParams = ParseFunctionParams();
-
+    // CC-OFFNXT(G.FMT.14-CPP) project code style
     auto *const returnTypeAnnotation = [this]() -> ir::TypeNode * {
         ExpectToken(lexer::TokenType::PUNCTUATOR_ARROW);
-        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
         return ParseTypeAnnotation(&options);
     }();
+    if (returnTypeAnnotation == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     ir::ScriptFunctionFlags throwMarker = ParseFunctionThrowMarker(false);
 
@@ -238,6 +247,25 @@ ir::TypeNode *ETSParser::ParseFunctionType()
     return unionType;
 }
 
+bool ETSParser::ParseTriplePeriod(bool spreadTypePresent)
+{
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD_PERIOD_PERIOD) {
+        if (spreadTypePresent) {
+            ThrowSyntaxError("Only one spread type declaration allowed, at the last index");
+        }
+
+        spreadTypePresent = true;
+        Lexer()->NextToken();  // eat '...'
+    } else if (spreadTypePresent) {
+        // This can't be implemented to any index, with type consistency. If a spread type is in the middle of
+        // the tuple, then bounds check can't be made for element access, so the type of elements after the
+        // spread can't be determined in compile time.
+        ThrowSyntaxError("Spread type must be at the last index in the tuple type");
+    }
+
+    return spreadTypePresent;
+}
+
 ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const options)
 {
     ASSERT(Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET);
@@ -258,21 +286,14 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
             Lexer()->NextToken();  // eat ':'
         }
 
-        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD_PERIOD_PERIOD) {
-            if (spreadTypePresent) {
-                ThrowSyntaxError("Only one spread type declaration allowed, at the last index");
-            }
-
-            spreadTypePresent = true;
-            Lexer()->NextToken();  // eat '...'
-        } else if (spreadTypePresent) {
-            // This can't be implemented to any index, with type consistency. If a spread type is in the middle of
-            // the tuple, then bounds check can't be made for element access, so the type of elements after the
-            // spread can't be determined in compile time.
-            ThrowSyntaxError("Spread type must be at the last index in the tuple type");
-        }
+        spreadTypePresent = ParseTriplePeriod(spreadTypePresent);
 
         auto *const currentTypeAnnotation = ParseTypeAnnotation(options);
+        if (currentTypeAnnotation == nullptr) {  // Error processing.
+            Lexer()->NextToken();
+            continue;
+        }
+
         currentTypeAnnotation->SetParent(tupleType);
 
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
@@ -296,13 +317,15 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         }
 
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("Comma is mandatory between elements in a tuple type declaration");
+            // tuple_type_3_neg.sts
+            LogSyntaxError("Comma is mandatory between elements in a tuple type declaration");
+            Lexer()->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
         }
     }
 
     Lexer()->NextToken();  // eat ']'
 
-    tupleType->SetTypeAnnotationsList(tupleTypeList);
+    tupleType->SetTypeAnnotationsList(std::move(tupleTypeList));
     const auto endLoc = Lexer()->GetToken().End();
     tupleType->SetRange({startLoc, endLoc});
 
@@ -318,8 +341,12 @@ ir::TypeNode *ETSParser::ParsePotentialFunctionalType(TypeAnnotationParsingOptio
          Lexer()->Lookahead() == lexer::LEX_CHAR_COLON || Lexer()->Lookahead() == lexer::LEX_CHAR_QUESTION)) {
         GetContext().Status() |= ParserStatus::ALLOW_DEFAULT_VALUE;
         auto typeAnnotation = ParseFunctionType();
-        typeAnnotation->SetStart(startLoc);
         GetContext().Status() ^= ParserStatus::ALLOW_DEFAULT_VALUE;
+        if (typeAnnotation == nullptr) {  // Error processing.
+            return nullptr;
+        }
+
+        typeAnnotation->SetStart(startLoc);
         return typeAnnotation;
     }
 
@@ -352,6 +379,12 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
         }
         case lexer::TokenType::KEYW_UNDEFINED: {
             typeAnnotation = AllocNode<ir::ETSUndefinedType>();
+            typeAnnotation->SetRange(Lexer()->GetToken().Loc());
+            Lexer()->NextToken();
+            return std::make_pair(typeAnnotation, true);
+        }
+        case lexer::TokenType::LITERAL_STRING: {
+            typeAnnotation = AllocNode<ir::ETSStringLiteralType>(Lexer()->GetToken().String());
             typeAnnotation->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
             return std::make_pair(typeAnnotation, true);
@@ -405,7 +438,7 @@ ir::TypeNode *ETSParser::ParseThisType(TypeAnnotationParsingOptions *options)
     // - the usage of 'this' as a type is not allowed in the current context, or
     // - 'this' is not used as a return type, or
     // - the current context is an arrow function (might be inside a method of a class where 'this' is allowed).
-    if (((*options & TypeAnnotationParsingOptions::THROW_ERROR) != 0) &&
+    if (((*options & TypeAnnotationParsingOptions::REPORT_ERROR) != 0) &&
         (((GetContext().Status() & ParserStatus::ALLOW_THIS_TYPE) == 0) ||
          ((*options & TypeAnnotationParsingOptions::RETURN_TYPE) == 0) ||
          ((GetContext().Status() & ParserStatus::ARROW_FUNCTION) != 0))) {
@@ -420,15 +453,42 @@ ir::TypeNode *ETSParser::ParseThisType(TypeAnnotationParsingOptions *options)
     return thisType;
 }
 
-ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+ir::TypeNode *ETSParser::ParseTsArrayType(ir::TypeNode *typeNode, TypeAnnotationParsingOptions *options)
 {
-    bool const throwError = ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0;
+    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
+        if (((*options) & TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY) != 0) {
+            return typeNode;
+        }
+
+        lexer::SourcePosition startPos = Lexer()->GetToken().Start();
+
+        Lexer()->NextToken();  // eat '['
+
+        if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
+            if ((*options & TypeAnnotationParsingOptions::REPORT_ERROR) != 0) {
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
+            }
+            return nullptr;
+        }
+
+        typeNode = AllocNode<ir::TSArrayType>(typeNode);
+        typeNode->SetRange({startPos, Lexer()->GetToken().End()});
+
+        Lexer()->NextToken();  // eat ']'
+    }
+
+    return typeNode;
+}
+
+ir::TypeNode *ETSParser::ParseTypeAnnotationNoPreferParam(TypeAnnotationParsingOptions *options)
+{
+    bool const reportError = ((*options) & TypeAnnotationParsingOptions::REPORT_ERROR) != 0;
 
     auto [typeAnnotation, needFurtherProcessing] = GetTypeAnnotationFromToken(options);
 
     if (typeAnnotation == nullptr) {
-        if (throwError) {
-            ThrowSyntaxError("Invalid Type");
+        if (reportError) {
+            LogSyntaxError("Invalid Type");
         }
         return nullptr;
     }
@@ -437,26 +497,7 @@ ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *optio
         return typeAnnotation;
     }
 
-    const lexer::SourcePosition &startPos = Lexer()->GetToken().Start();
-
-    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
-        if (((*options) & TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY) != 0) {
-            return typeAnnotation;
-        }
-
-        Lexer()->NextToken();  // eat '['
-
-        if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            if (throwError) {
-                ThrowExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
-            }
-            return nullptr;
-        }
-
-        Lexer()->NextToken();  // eat ']'
-        typeAnnotation = AllocNode<ir::TSArrayType>(typeAnnotation);
-        typeAnnotation->SetRange({startPos, Lexer()->GetToken().End()});
-    }
+    typeAnnotation = ParseTsArrayType(typeAnnotation, options);
 
     if (((*options) & TypeAnnotationParsingOptions::DISALLOW_UNION) == 0 &&
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
@@ -464,6 +505,24 @@ ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *optio
     }
 
     return typeAnnotation;
+}
+
+ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+{
+    // if there is prefix readonly parameter type, change the return result to ETSTypeReference, like Readonly<>
+    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_READONLY) {
+        auto startPos = Lexer()->GetToken().Start();
+        Lexer()->NextToken();  // eat 'readonly'
+        ir::TypeNode *typeAnnotation = ParseTypeAnnotationNoPreferParam(options);
+        if (!typeAnnotation->IsTSArrayType() && !typeAnnotation->IsETSTuple()) {
+            ThrowSyntaxError("'readonly' type modifier is only permitted on array and tuple types.");
+        }
+        typeAnnotation->SetStart(startPos);
+        typeAnnotation->AddModifier(ir::ModifierFlags::READONLY_PARAMETER);
+        return typeAnnotation;
+    }
+
+    return ParseTypeAnnotationNoPreferParam(options);
 }
 
 }  // namespace ark::es2panda::parser

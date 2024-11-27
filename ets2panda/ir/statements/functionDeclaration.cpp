@@ -32,6 +32,13 @@ void FunctionDeclaration::TransformChildren(const NodeTransformer &cb, std::stri
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     if (auto *transformedNode = cb(func_); func_ != transformedNode) {
         func_->SetTransformedNode(transformationName, transformedNode);
         func_ = transformedNode->AsScriptFunction();
@@ -44,6 +51,10 @@ void FunctionDeclaration::Iterate(const NodeTraverser &cb) const
         cb(it);
     }
 
+    for (auto *it : annotations_) {
+        cb(it);
+    }
+
     cb(func_);
 }
 
@@ -51,12 +62,55 @@ void FunctionDeclaration::Dump(ir::AstDumper *dumper) const
 {
     dumper->Add({{"type", func_->IsOverload() ? "TSDeclareFunction" : "FunctionDeclaration"},
                  {"decorators", AstDumper::Optional(decorators_)},
+                 {"annotations", AstDumper::Optional(annotations_)},
                  {"function", func_}});
 }
 
 void FunctionDeclaration::Dump(ir::SrcDumper *dumper) const
 {
+    for (auto *anno : annotations_) {
+        anno->Dump(dumper);
+    }
+    if (func_->IsNative()) {
+        dumper->Add("native ");
+    }
+    if (func_->IsDeclare()) {
+        dumper->Add("declare ");
+    }
+    if (func_->IsAsyncFunc()) {
+        dumper->Add("async ");
+    }
     dumper->Add("function ");
+
+    if (func_->IsExtensionMethod()) {
+        for (const auto *param : func_->Params()) {
+            if (param->IsETSParameterExpression() && param->AsETSParameterExpression()->Ident() != nullptr &&
+                param->AsETSParameterExpression()->Ident()->Name() == varbinder::VarBinder::MANDATORY_PARAM_THIS &&
+                param->AsETSParameterExpression()->Ident()->TypeAnnotation() != nullptr &&
+                param->AsETSParameterExpression()->Ident()->TypeAnnotation()->IsETSTypeReference() &&
+                param->AsETSParameterExpression()->Ident()->TypeAnnotation()->AsETSTypeReference()->Part() != nullptr &&
+                param->AsETSParameterExpression()->Ident()->TypeAnnotation()->AsETSTypeReference()->Part()->Name() !=
+                    // CC-OFFNXT(G.FMT.02-CPP) project code style
+                    nullptr &&
+                param->AsETSParameterExpression()
+                    ->Ident()
+                    ->TypeAnnotation()
+                    ->AsETSTypeReference()
+                    ->Part()
+                    ->Name()
+                    ->IsIdentifier()) {
+                dumper->Add(std::string(param->AsETSParameterExpression()
+                                            ->Ident()
+                                            ->TypeAnnotation()
+                                            ->AsETSTypeReference()
+                                            ->Part()
+                                            ->Name()
+                                            ->AsIdentifier()
+                                            ->Name()));
+                dumper->Add(".");
+            }
+        }
+    }
     func_->Id()->Dump(dumper);
     func_->Dump(dumper);
 }

@@ -162,7 +162,6 @@
                     }
                   }
                 },
-                "declare": true,
                 "loc": {
                   "start": {
                     "line": 17,
@@ -799,23 +798,8 @@
                             }
                           },
                           "alternate": {
-                            "type": "UnaryExpression",
-                            "operator": "-",
-                            "prefix": true,
-                            "argument": {
-                              "type": "NumberLiteral",
-                              "value": 1,
-                              "loc": {
-                                "start": {
-                                  "line": 21,
-                                  "column": 42
-                                },
-                                "end": {
-                                  "line": 21,
-                                  "column": 43
-                                }
-                              }
-                            },
+                            "type": "NumberLiteral",
+                            "value": -1,
                             "loc": {
                               "start": {
                                 "line": 21,
@@ -1078,100 +1062,6 @@
               "end": {
                 "line": 24,
                 "column": 2
-              }
-            }
-          },
-          {
-            "type": "MethodDefinition",
-            "key": {
-              "type": "Identifier",
-              "name": "_$trigger_cctor$_",
-              "decorators": [],
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "kind": "method",
-            "accessibility": "public",
-            "static": true,
-            "optional": false,
-            "computed": false,
-            "value": {
-              "type": "FunctionExpression",
-              "function": {
-                "type": "ScriptFunction",
-                "id": {
-                  "type": "Identifier",
-                  "name": "_$trigger_cctor$_",
-                  "decorators": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "generator": false,
-                "async": false,
-                "expression": false,
-                "params": [],
-                "body": {
-                  "type": "BlockStatement",
-                  "statements": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "loc": {
-                  "start": {
-                    "line": 1,
-                    "column": 1
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
-              },
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "overloads": [],
-            "decorators": [],
-            "loc": {
-              "start": {
-                "line": 1,
-                "column": 1
-              },
-              "end": {
-                "line": 1,
-                "column": 1
               }
             }
           }

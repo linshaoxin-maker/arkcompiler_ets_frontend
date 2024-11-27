@@ -39,7 +39,7 @@ using namespace std::literals::string_literals;
 ir::NamespaceDeclaration *ETSParser::ParseNamespaceDeclaration(ir::ModifierFlags flags)
 {
     if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) == 0) {
-        ThrowSyntaxError("Namespace not enabled in here.");
+        LogSyntaxError("Namespace not enabled in here.");
     }
 
     const lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
@@ -91,7 +91,8 @@ ETSParser::NamespaceBody ETSParser::ParseNamespaceBody(ir::ClassDefinitionModifi
         Lexer()->Lookahead() == static_cast<char32_t>(ARRAY_FORMAT_NODE)) {
         properties = std::move(ParseAstNodesArrayFormatPlaceholder());
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-            ThrowSyntaxError("Expected a '}'");
+            LogSyntaxError("Expected a '}'");
+            UNREACHABLE();
         }
     } else {
         while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {

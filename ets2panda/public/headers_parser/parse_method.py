@@ -16,7 +16,6 @@
 
 
 from typing import Tuple, Dict, List, Any
-from log_tools import dump_to_file
 from text_tools import (
     find_first_of_characters,
     rfind_first_of_characters,
@@ -67,6 +66,7 @@ def parse_method_or_constructor(data: str, start: int = 0) -> Tuple[int, Dict]:
         start_of_body, initializers = parse_initializers(data, colon_pos + 1)
         start_of_body, end_of_body = find_scope_borders(data, start_of_body, "{")
         end_of_function = end_of_body
+        # CC-OFFNXT(G.TYP.07) dict key exist
         updated_args, other_initializers = extract_init_args(res["args"], initializers)
 
         if updated_args != []:
@@ -96,13 +96,12 @@ def parse_declaration_without_postfix(data: str, start: int, res: Dict[str, Any]
     end_of_args, res["args"] = parse_arguments(data, start_of_args)
 
     # Name
-    start_of_function_name = rfind_first_of_characters(" *&", data, start_of_args - 1) + 1
+    start_of_function_name = rfind_first_of_characters(" *&\n", data, start_of_args - 1) + 1
     if start_of_function_name > len(data):
         start_of_function_name = 0
     res["name"] = data[start_of_function_name:start_of_args]
 
     if res["name"].isupper():
-        dump_to_file("/gen/new_defines.txt", res["name"])
         raise RuntimeError("New macros found: '" + res["name"] + "'. Please add it to list.")
 
     # Prefix
@@ -114,8 +113,9 @@ def parse_declaration_without_postfix(data: str, start: int, res: Dict[str, Any]
 
 
 def parse_initializer(init: str) -> dict:
+
     """
-    ' left_(left_init) ' ---> {'class_field': 'left_', 'init_value': 'left_init'}
+    Note ' left (left init) ' ---> 'class field': 'left', 'init value': 'left init'
     """
     init = init.strip(" \n")
     res = {}

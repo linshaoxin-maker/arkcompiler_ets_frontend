@@ -96,6 +96,7 @@ set (HEADERS_TO_BE_PARSED
     ${ES2PANDA_ROOT}/ir/base/tsIndexSignature.h
     ${ES2PANDA_ROOT}/checker/types/ts/arrayType.h
     ${ES2PANDA_ROOT}/ir/astNode.h
+    ${ES2PANDA_ROOT}/ir/typed.h
     ${ES2PANDA_ROOT}/ir/statements/ifStatement.h
     ${ES2PANDA_ROOT}/ir/ets/etsTuple.h
     ${ES2PANDA_ROOT}/ir/module/exportSpecifier.h
@@ -264,9 +265,26 @@ set (HEADERS_TO_BE_PARSED
     ${ES2PANDA_ROOT}/ir/ets/etsParameterExpression.h
     ${ES2PANDA_ROOT}/ir/ts/tsTypeQuery.h
     ${ES2PANDA_ROOT}/ir/expressions/importExpression.h
+    ${ES2PANDA_ROOT}/varbinder/variable.h
+    ${ES2PANDA_ROOT}/varbinder/scope.h
+    ${ES2PANDA_ROOT}/varbinder/varbinder.h
+    ${ES2PANDA_ROOT}/varbinder/ETSBinder.h
+    ${ES2PANDA_ROOT}/varbinder/declaration.h
+    ${ES2PANDA_ROOT}/varbinder/recordTable.h
+    ${ES2PANDA_ROOT}/checker/checker.h
+    ${ES2PANDA_ROOT}/checker/ETSchecker.h
+    ${ES2PANDA_ROOT}/checker/checkerContext.h
+    ${ES2PANDA_ROOT}/checker/resolveResult.h
+    ${ES2PANDA_ROOT}/parser/ETSparser.h
+    ${ES2PANDA_ROOT}/parser/parserFlags.h
+    ${ES2PANDA_ROOT}/es2panda.h
 )
 
 set (ES2PANDA_API_GENERATED
+    ${LIBGEN_DIR}/gen/headers/checker/types/typeMapping.yaml
+    ${LIBGEN_DIR}/gen/headers/ir/astNodeMapping.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/variableFlags.yaml
+    ${LIBGEN_DIR}/gen/headers/es2panda.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/labelledStatement.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ts/unknownType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/throwStatement.yaml
@@ -350,6 +368,7 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/checker/types/globalTypesHolder.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ets/longType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/astNode.yaml
+    ${LIBGEN_DIR}/gen/headers/ir/typed.yaml
     ${LIBGEN_DIR}/gen/headers/ir/expressions/unaryExpression.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/forInStatement.yaml
     ${LIBGEN_DIR}/gen/headers/ir/expressions/thisExpression.yaml
@@ -361,7 +380,6 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/ir/ts/tsStringKeyword.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ets/etsAsyncFuncReturnType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/expressions/assignmentExpression.yaml
-    ${LIBGEN_DIR}/gen/headers/ir/astNodeMapping.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ts/voidType.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ets/doubleType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/expressionStatement.yaml
@@ -401,7 +419,6 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/ir/statements/whileStatement.yaml
     ${LIBGEN_DIR}/gen/headers/ir/base/scriptFunctionSignature.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ts/numberLiteralType.yaml
-    ${LIBGEN_DIR}/gen/headers/checker/types/typeMapping.yaml
     ${LIBGEN_DIR}/gen/headers/ir/expressions/chainExpression.yaml
     ${LIBGEN_DIR}/gen/headers/ir/ts/tsIntersectionType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/expressions/updateExpression.yaml
@@ -485,7 +502,6 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/lexer/regexp/regexp.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/switchStatement.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ets/etsBooleanType.yaml
-    ${LIBGEN_DIR}/gen/headers/varbinder/variableFlags.yaml
     ${LIBGEN_DIR}/gen/headers/ir/statements/doWhileStatement.yaml
     ${LIBGEN_DIR}/gen/headers/ir/base/catchClause.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ts/constructorType.yaml
@@ -509,7 +525,19 @@ set (ES2PANDA_API_GENERATED
     ${LIBGEN_DIR}/gen/headers/ir/ets/etsWildcardType.yaml
     ${LIBGEN_DIR}/gen/headers/checker/types/ets/shortType.yaml
     ${LIBGEN_DIR}/gen/headers/ir/ts/tsThisType.yaml
-)
+    ${LIBGEN_DIR}/gen/headers/varbinder/variable.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/scope.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/varbinder.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/ETSBinder.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/declaration.yaml
+    ${LIBGEN_DIR}/gen/headers/varbinder/recordTable.yaml
+    ${LIBGEN_DIR}/gen/headers/checker/checker.yaml
+    ${LIBGEN_DIR}/gen/headers/checker/ETSchecker.yaml
+    ${LIBGEN_DIR}/gen/headers/checker/checkerContext.yaml
+    ${LIBGEN_DIR}/gen/headers/checker/resolveResult.yaml
+    ${LIBGEN_DIR}/gen/headers/parser/parserFlags.yaml
+    ${LIBGEN_DIR}/gen/headers/parser/ETSparser.yaml
+    )
 
 
 list(APPEND ES2PANDA_API ${ES2PANDA_API_GENERATED})
@@ -532,17 +560,38 @@ panda_gen(
     API ${RB_LIST}
     DESTINATION ${LIBGEN_DIR}
     SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
-    EXTRA_DEPENDENCIES gen_yamls ${ES2PANDA_API_GENERATED}
+    EXTRA_DEPENDENCIES gen_yamls
+)
+
+set(HEADERS_PARSER_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/cpp_keywords.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/cpp_parser.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/file_tools.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/line_iterator.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/log_tools.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/main.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_arguments.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_class.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_define.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_enum.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_method.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_namespace.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_struct.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/parse_using.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/prepare_header.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/runtime_collections.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/supported_types.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/text_tools.py
 )
 
 add_custom_command(
     OUTPUT ${ES2PANDA_API_GENERATED}
     COMMAND python3 -B ${CMAKE_CURRENT_SOURCE_DIR}/headers_parser/main.py
-        "${ES2PANDA_ROOT}" "${LIBGEN_DIR}" ${HEADERS_TO_BE_PARSED}
-    DEPENDS ${HEADERS_TO_BE_PARSED}
+        --es2panda-root "${ES2PANDA_ROOT}" --lib-gen-dir "${LIBGEN_DIR}" --headers ${HEADERS_TO_BE_PARSED}
+    DEPENDS ${HEADERS_TO_BE_PARSED} ${HEADERS_PARSER_SOURCES}
 )
 
-add_custom_target(gen_yamls DEPENDS ${ES2PANDA_API_GENERATED})
+add_custom_target(gen_yamls DEPENDS ${ES2PANDA_API_GENERATED} ${HEADERS_PARSER_SOURCES})
 
 
 set(ES2PANDA_PUBLIC_SOURCES

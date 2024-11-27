@@ -28,9 +28,9 @@ ScriptFunction::ScriptFunction(ArenaAllocator *allocator, ScriptFunctionData &&d
       irSignature_(std::move(data.signature)),
       body_(data.body),
       funcFlags_(data.funcFlags),
-      declare_(data.declare),
       lang_(data.lang),
-      returnStatements_(allocator->Adapter())
+      returnStatements_(allocator->Adapter()),
+      annotations_(allocator->Adapter())
 {
     for (auto *param : irSignature_.Params()) {
         param->SetParent(this);
@@ -69,8 +69,12 @@ void ScriptFunction::SetIdent(Identifier *id) noexcept
 ScriptFunction *ScriptFunction::Clone(ArenaAllocator *allocator, AstNode *parent)
 {
     ArenaVector<Expression *> params {allocator->Adapter()};
+    ArenaVector<AnnotationUsage *> annotationUsages {allocator->Adapter()};
     for (auto *param : Params()) {
         params.push_back(param->Clone(allocator, nullptr)->AsExpression());
+    }
+    for (auto *annotationUsage : Annotations()) {
+        annotationUsages.push_back(annotationUsage->Clone(allocator, nullptr)->AsAnnotationUsage());
     }
     auto *res = util::NodeAllocator::ForceSetParent<ScriptFunction>(
         allocator, allocator,
@@ -82,8 +86,9 @@ ScriptFunction *ScriptFunction::Clone(ArenaAllocator *allocator, AstNode *parent
                 std::move(params),
                 ReturnTypeAnnotation() != nullptr ? ReturnTypeAnnotation()->Clone(allocator, nullptr)->AsTypeNode()
                                                   : nullptr},
-            funcFlags_, flags_, declare_, lang_});
+            funcFlags_, flags_, lang_});
     res->SetParent(parent);
+    res->SetAnnotations(std::move(annotationUsages));
     return res;
 }
 
@@ -104,6 +109,13 @@ void ScriptFunction::TransformChildren(const NodeTransformer &cb, std::string_vi
             body_ = transformedNode;
         }
     }
+
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
 }
 
 void ScriptFunction::Iterate(const NodeTraverser &cb) const
@@ -114,6 +126,9 @@ void ScriptFunction::Iterate(const NodeTraverser &cb) const
     irSignature_.Iterate(cb);
     if (body_ != nullptr) {
         cb(body_);
+    }
+    for (auto *it : annotations_) {
+        cb(it);
     }
 }
 
@@ -127,6 +142,12 @@ void ScriptFunction::SetReturnTypeAnnotation(TypeNode *node) noexcept
 
 void ScriptFunction::Dump(ir::AstDumper *dumper) const
 {
+    const char *throwMarker = nullptr;
+    if (IsThrowing()) {
+        throwMarker = "throws";
+    } else if (IsRethrowing()) {
+        throwMarker = "rethrows";
+    }
     dumper->Add({{"type", "ScriptFunction"},
                  {"id", AstDumper::Nullish(id_)},
                  {"generator", IsGenerator()},
@@ -135,14 +156,10 @@ void ScriptFunction::Dump(ir::AstDumper *dumper) const
                  {"params", irSignature_.Params()},
                  {"returnType", AstDumper::Optional(irSignature_.ReturnType())},
                  {"typeParameters", AstDumper::Optional(irSignature_.TypeParams())},
-                 {"declare", AstDumper::Optional(declare_)},
-                 {"body", AstDumper::Optional(body_)}});
-
-    if (IsThrowing()) {
-        dumper->Add({"throwMarker", "throws"});
-    } else if (IsRethrowing()) {
-        dumper->Add({"throwMarker", "rethrows"});
-    }
+                 {"declare", AstDumper::Optional(IsDeclare())},
+                 {"body", AstDumper::Optional(body_)},
+                 {"annotations", AstDumper::Optional(annotations_)},
+                 {"throwMarker", AstDumper::Optional(throwMarker)}});
 }
 
 void ScriptFunction::Dump(ir::SrcDumper *dumper) const
@@ -154,6 +171,10 @@ void ScriptFunction::Dump(ir::SrcDumper *dumper) const
     }
     dumper->Add("(");
     for (auto param : Params()) {
+        if (param->IsETSParameterExpression() && param->AsETSParameterExpression()->Ident() != nullptr &&
+            param->AsETSParameterExpression()->Ident()->Name() == varbinder::VarBinder::MANDATORY_PARAM_THIS) {
+            continue;
+        }
         param->Dump(dumper);
         if (param != Params().back()) {
             dumper->Add(", ");
@@ -167,9 +188,14 @@ void ScriptFunction::Dump(ir::SrcDumper *dumper) const
 
     if (IsThrowing()) {
         dumper->Add(" throws");
+    } else if (IsRethrowing()) {
+        dumper->Add(" rethrows");
     }
 
     if (HasBody()) {
+        if (IsArrow()) {
+            dumper->Add(" =>");
+        }
         if (body_->IsBlockStatement()) {
             dumper->Add(" {");
             if (!body_->AsBlockStatement()->Statements().empty()) {

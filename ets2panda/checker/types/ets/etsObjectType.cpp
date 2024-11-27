@@ -321,6 +321,17 @@ void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
         return;
     }
 
+    if (IsPartial()) {
+        ss << "Partial" << compiler::Signatures::GENERIC_BEGIN;
+        baseType_->ToString(ss, precise);
+        ss << compiler::Signatures::GENERIC_END;
+        return;
+    }
+
+    const bool isReadonlyType = HasTypeFlag(TypeFlag::READONLY);
+    if (isReadonlyType) {
+        ss << "Readonly" << compiler::Signatures::GENERIC_BEGIN;
+    }
     const bool isRequiredType = HasObjectFlag(ETSObjectFlags::REQUIRED);
     if (isRequiredType) {
         ss << "Required" << compiler::Signatures::GENERIC_BEGIN;
@@ -347,12 +358,49 @@ void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
     if (isRequiredType) {
         ss << compiler::Signatures::GENERIC_END;
     }
+    if (isReadonlyType) {
+        ss << compiler::Signatures::GENERIC_END;
+    }
+}
+
+void ETSObjectType::SubstitutePartialTypes(TypeRelation *relation, Type *other)
+{
+    ASSERT(IsPartial());
+
+    if ((baseType_->IsGeneric() || baseType_->IsETSTypeParameter()) && effectiveSubstitution_ != nullptr) {
+        if (auto *newBaseType = baseType_->Substitute(relation, effectiveSubstitution_);
+            newBaseType->IsETSObjectType() && !relation->IsIdenticalTo(newBaseType, baseType_)) {
+            baseType_ = newBaseType->AsETSObjectType();
+        }
+    }
+
+    if (other->IsETSObjectType() && other->AsETSObjectType()->IsPartial()) {
+        auto *otherPartial = other->AsETSObjectType();
+        if ((otherPartial->baseType_->IsGeneric() || otherPartial->baseType_->IsETSTypeParameter()) &&
+            otherPartial->effectiveSubstitution_ != nullptr) {
+            if (auto *newBaseType = otherPartial->baseType_->Substitute(relation, otherPartial->effectiveSubstitution_);
+                newBaseType->IsETSObjectType() && !relation->IsIdenticalTo(newBaseType, otherPartial->baseType_)) {
+                otherPartial->baseType_ = newBaseType->AsETSObjectType();
+            }
+        }
+    }
 }
 
 void ETSObjectType::IdenticalUptoTypeArguments(TypeRelation *relation, Type *other)
 {
     relation->Result(false);
+
+    if (IsPartial()) {
+        SubstitutePartialTypes(relation, other);
+    }
+
     if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType())) {
+        return;
+    }
+
+    // NOTE: (DZ) only both Partial types can be compatible.
+    if (static_cast<bool>(static_cast<std::byte>(IsPartial()) ^
+                          static_cast<std::byte>(other->AsETSObjectType()->IsPartial()))) {
         return;
     }
 
@@ -379,7 +427,7 @@ void ETSObjectType::Identical(TypeRelation *relation, Type *other)
 {
     IdenticalUptoTypeArguments(relation, other);
 
-    if (!relation->IsTrue() || !HasTypeFlag(TypeFlag::GENERIC)) {
+    if (!relation->IsTrue() || !HasTypeFlag(TypeFlag::GENERIC) || !other->IsETSObjectType()) {
         return;
     }
 
@@ -407,12 +455,8 @@ bool ETSObjectType::CheckIdenticalFlags(ETSObjectType *other) const
 {
     constexpr auto FLAGS_TO_REMOVE = ETSObjectFlags::INCOMPLETE_INSTANTIATION |
                                      ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
-                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY | ETSObjectFlags::READONLY;
-    // note(lujiahui): we support assigning T to Readonly<T>, but do not support assigning Readonly<T> to T
-    // more details in spec
-    if (!HasObjectFlag(ETSObjectFlags::READONLY) && other->HasObjectFlag(ETSObjectFlags::READONLY)) {
-        return false;
-    }
+                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY;
+
     auto cleanedTargetFlags = other->ObjectFlags();
     cleanedTargetFlags &= ~FLAGS_TO_REMOVE;
 
@@ -429,7 +473,7 @@ bool ETSObjectType::AssignmentSource(TypeRelation *const relation, [[maybe_unuse
 
 void ETSObjectType::AssignmentTarget(TypeRelation *const relation, Type *source)
 {
-    if (source->IsETSObjectType() && source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::READONLY)) {
+    if (source->HasTypeFlag(TypeFlag::READONLY)) {
         relation->Result(false);
         return;
     }
@@ -531,11 +575,11 @@ bool ETSObjectType::TryCastFloating(TypeRelation *const relation, Type *const ta
 bool ETSObjectType::TryCastUnboxable(TypeRelation *const relation, Type *const target)
 {
     if (target->HasTypeFlag(TypeFlag::ETS_OBJECT)) {
-        if (!target->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+        if (!target->IsETSUnboxableObject()) {
             conversion::WideningReference(relation, this, target->AsETSObjectType());
             return true;
         }
-        auto unboxedTarget = relation->GetChecker()->AsETSChecker()->ETSBuiltinTypeAsPrimitiveType(target);
+        auto unboxedTarget = relation->GetChecker()->AsETSChecker()->MaybeUnboxInRelation(target);
         CastNumericObject(relation, unboxedTarget);
         if (relation->IsTrue()) {
             conversion::Boxing(relation, unboxedTarget);
@@ -550,8 +594,7 @@ bool ETSObjectType::TryCastUnboxable(TypeRelation *const relation, Type *const t
 
 bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const target)
 {
-    if (!target->HasTypeFlag(TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG |
-                             TypeFlag::FLOAT | TypeFlag::DOUBLE | TypeFlag::ETS_BOOLEAN)) {
+    if (!target->IsETSPrimitiveType()) {
         return false;
     }
     if (relation->IsIdenticalTo(this, target)) {
@@ -563,15 +606,18 @@ bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const 
     if (TryCastFloating(relation, target)) {
         return true;
     }
+    if (this->HasObjectFlag(ETSObjectFlags::BOXED_ENUM) && target->HasTypeFlag(TypeFlag::ETS_ENUM)) {
+        conversion::Unboxing(relation, this);
+        return true;
+    }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN) && target->HasTypeFlag(TypeFlag::ETS_BOOLEAN)) {
         conversion::Unboxing(relation, this);
         return true;
     }
-    if (this->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+    if (this->IsETSUnboxableObject()) {
         return TryCastUnboxable(relation, target);
     }
-    if (target->HasTypeFlag(TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG |
-                            TypeFlag::FLOAT | TypeFlag::DOUBLE | TypeFlag::ETS_BOOLEAN)) {
+    if (target->IsETSPrimitiveType()) {
         conversion::NarrowingReferenceUnboxing(relation, this, target);
         return true;
     }
@@ -606,11 +652,15 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
         }
     }
 
-    if (target->IsETSEnumType()) {
-        relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOX_TO_ENUM);
-        relation->Result(true);
+    //  #16485: Probably temporary solution for generic bridges realization. Allows casting of generic classes
+    //          in the form C<T> as C<U> (where U extends T) or C<T> as D (where D extends C<U>)
+    if ((relation->GetChecker()->Context().Status() & CheckerStatus::IN_BRIDGE_TEST) != 0U) {
+        SavedTypeRelationFlagsContext const savedFlags(relation, relation->GetTypeRelationFlags() |
+                                                                     TypeRelationFlag::IGNORE_TYPE_PARAMETERS);
+        relation->IsSupertypeOf(this, target);
         return;
     }
+
     conversion::Forbidden(relation);
 }
 
@@ -638,7 +688,7 @@ bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, 
     }
 
     IdenticalUptoTypeArguments(relation, source);
-    if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC)) {
+    if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC) && !relation->IgnoreTypeParameters()) {
         IsGenericSupertypeOf(relation, source);
     }
     return relation->IsTrue();
@@ -649,8 +699,25 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
     relation->Result(false);
     auto *const etsChecker = relation->GetChecker()->AsETSChecker();
 
+    if (IsPartial()) {
+        if (!source->IsETSObjectType() || !source->AsETSObjectType()->IsPartial()) {
+            return;
+        }
+        relation->IsSupertypeOf(GetBaseType(), source->AsETSObjectType()->GetBaseType());
+        return;
+    }
+
     if (DefaultObjectTypeChecks(etsChecker, relation, source)) {
         return;
+    }
+
+    //  #16485: special case for generic bridges processing.
+    //          We need only to check if the type is immediate supertype of processing class.
+    auto const &checkerContext = relation->GetChecker()->Context();
+    if ((checkerContext.Status() & CheckerStatus::IN_BRIDGE_TEST) != 0U && relation->IsBridgeCheck()) {
+        if (source->Variable() == checkerContext.ContainingClass()->SuperType()->Variable()) {
+            return;
+        }
     }
 
     ETSObjectType *sourceObj = source->AsETSObjectType();
@@ -790,7 +857,7 @@ Type *ETSObjectType::Instantiate(ArenaAllocator *const allocator, TypeRelation *
     std::lock_guard guard {*checker->Mutex()};
     auto *const base = GetOriginalBaseType();
 
-    if (!relation->TypeInstantiationPossible(base)) {
+    if (!relation->IsAtTypeDepthLimit(base)) {
         return this;
     }
     relation->IncreaseTypeRecursionCount(base);
@@ -807,9 +874,11 @@ Type *ETSObjectType::Instantiate(ArenaAllocator *const allocator, TypeRelation *
         copiedType->AddInterface(it);
     }
 
+    ArenaVector<Type *> typeArgs(allocator->Adapter());
     for (auto *const typeArgument : TypeArguments()) {
-        copiedType->TypeArguments().emplace_back(typeArgument->Instantiate(allocator, relation, globalTypes));
+        typeArgs.emplace_back(typeArgument->Instantiate(allocator, relation, globalTypes));
     }
+    copiedType->SetTypeArguments(std::move(typeArgs));
     copiedType->SetBaseType(this);
     copiedType->propertiesInstantiated_ = false;
     copiedType->relation_ = relation;
@@ -920,7 +989,7 @@ void ETSObjectType::UpdateTypeProperty(checker::ETSChecker *checker, varbinder::
 
 void ETSObjectType::UpdateTypeProperties(checker::ETSChecker *checker, PropertyProcesser const &func)
 {
-    AddObjectFlag(ETSObjectFlags::READONLY);
+    AddTypeFlag(TypeFlag::READONLY);
     for (auto const &prop : InstanceFields()) {
         UpdateTypeProperty(checker, prop.second, PropertyType::INSTANCE_FIELD, func);
     }
@@ -961,7 +1030,7 @@ ETSObjectType *ETSObjectType::Substitute(TypeRelation *relation, const Substitut
         }
     }
 
-    if (!relation->TypeInstantiationPossible(base)) {
+    if (!relation->IsAtTypeDepthLimit(base)) {
         return this;
     }
     relation->IncreaseTypeRecursionCount(base);
@@ -1004,8 +1073,7 @@ ETSObjectType *ETSObjectType::SubstituteArguments(TypeRelation *relation, ArenaV
     ASSERT(typeArguments_.size() == arguments.size());
 
     for (size_t ix = 0; ix < typeArguments_.size(); ix++) {
-        substitution->emplace(typeArguments_[ix]->AsETSTypeParameter(),
-                              checker->MaybePromotedBuiltinType(arguments[ix]));
+        substitution->emplace(typeArguments_[ix]->AsETSTypeParameter(), checker->MaybeBoxType(arguments[ix]));
     }
 
     return Substitute(relation, substitution);
@@ -1160,6 +1228,21 @@ void ETSObjectType::ToDebugInfoSignatureType(std::stringstream &ss) const
     ss << compiler::Signatures::GENERIC_BEGIN;
     ss << assemblerName_;
     ss << compiler::Signatures::GENERIC_END;
+}
+
+ir::TSTypeParameterDeclaration *ETSObjectType::GetTypeParams() const
+{
+    if (HasObjectFlag(ETSObjectFlags::ENUM) || !HasTypeFlag(TypeFlag::GENERIC)) {
+        return nullptr;
+    }
+
+    if (HasObjectFlag(ETSObjectFlags::CLASS)) {
+        ASSERT(declNode_->IsClassDefinition() && declNode_->AsClassDefinition()->TypeParams());
+        return declNode_->AsClassDefinition()->TypeParams();
+    }
+
+    ASSERT(declNode_->IsTSInterfaceDeclaration() && declNode_->AsTSInterfaceDeclaration()->TypeParams());
+    return declNode_->AsTSInterfaceDeclaration()->TypeParams();
 }
 
 }  // namespace ark::es2panda::checker

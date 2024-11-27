@@ -17,6 +17,7 @@
 
 #include "ir/expressions/blockExpression.h"
 #include "ir/expressions/identifier.h"
+#include "ir/expressions/objectExpression.h"
 #include "ir/expressions/thisExpression.h"
 #include "ir/expressions/typeofExpression.h"
 #include "ir/expressions/memberExpression.h"
@@ -28,6 +29,8 @@
 #include "ir/base/classDefinition.h"
 #include "ir/base/classProperty.h"
 #include "ir/base/classStaticBlock.h"
+#include "ir/base/decorator.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/statements/variableDeclarator.h"
@@ -38,6 +41,7 @@
 #include "ir/ets/etsNewClassInstanceExpression.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsFunctionType.h"
+#include "ir/ets/etsNeverType.h"
 #include "ir/ets/etsScript.h"
 #include "ir/ets/etsImportDeclaration.h"
 #include "ir/ts/tsInterfaceDeclaration.h"
@@ -56,6 +60,8 @@
 #include "ir/module/importSpecifier.h"
 #include "ir/expressions/literals/stringLiteral.h"
 #include "mem/arena_allocator.h"
+#include "os/filesystem.h"
+#include "recordTable.h"
 #include "util/helpers.h"
 #include "util/ustring.h"
 #include "checker/ETSchecker.h"
@@ -74,8 +80,6 @@ void ETSBinder::IdentifierAnalysis()
 
     recordTable_->SetProgram(Program());
     globalRecordTable_.SetClassDefinition(Program()->GlobalClass());
-    externalRecordTable_.insert({Program(), &globalRecordTable_});
-
     BuildProgram();
 
     ASSERT(globalRecordTable_.ClassDefinition() == Program()->GlobalClass());
@@ -130,6 +134,7 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
             case ir::AstNodeType::TS_INTERFACE_DECLARATION:
             case ir::AstNodeType::TS_TYPE_PARAMETER:
             case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION:
+            case ir::AstNodeType::ANNOTATION_DECLARATION:
             case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER: {
                 ident->SetVariable(res.variable);
                 return;
@@ -221,7 +226,7 @@ void ETSBinder::LookupIdentReference(ir::Identifier *ident)
         return;
     }
 
-    if (ident->IsReference() && res.variable->Declaration()->IsLetOrConstDecl() &&
+    if (ident->IsReference(Extension()) && res.variable->Declaration()->IsLetOrConstDecl() &&
         !res.variable->HasFlag(VariableFlags::INITIALIZED)) {
         ThrowTDZ(ident->Start(), name);
     }
@@ -230,6 +235,46 @@ void ETSBinder::LookupIdentReference(ir::Identifier *ident)
 void ETSBinder::BuildClassProperty(const ir::ClassProperty *prop)
 {
     ResolveReferences(prop);
+}
+
+void ETSBinder::BuildETSTypeReference(ir::ETSTypeReference *typeRef)
+{
+    auto *baseName = typeRef->BaseName();
+    ASSERT(baseName->IsReference(Extension()));
+
+    // We allow to resolve following types in pure dynamic mode:
+    // import * as I from "@dynamic"
+    // let x : I.X.Y
+    bool allowDynamicNamespaces = typeRef->Part()->Name() != baseName;
+    LookupTypeReference(baseName, allowDynamicNamespaces);
+    LookupTypeArgumentReferences(typeRef);
+}
+
+void ETSBinder::BuildObjectExpression(ir::ObjectExpression *obj)
+{
+    for (auto *it : obj->Decorators()) {
+        ResolveReference(it);
+    }
+
+    // NOTE: when we try to resolve references for Object Expression
+    // we visit properties, example:
+    // class C { x : boolean }
+    // let x: C = { x: true }
+    //
+    // However we visit Object Expression with _outer_ scope, not class scope.
+    // That means that varbinder will try to resolve `x` as `x` from outer scope, _not from the class scope_.
+    // The following code will skip resolving LHS of the property.
+    // We can do it because currently LHS is still checked in the `ETSAnalyzer::CheckObjectExprProps` function.
+    for (auto expr : obj->Properties()) {
+        if (expr->IsProperty()) {
+            auto *prop = expr->AsProperty();
+            ResolveReference(prop->Value());
+        }
+    }
+
+    if (obj->TypeAnnotation() != nullptr) {
+        ResolveReference(obj->TypeAnnotation());
+    }
 }
 
 void ETSBinder::InitializeInterfaceIdent(ir::TSInterfaceDeclaration *decl)
@@ -302,11 +347,37 @@ void ETSBinder::BuildMethodDefinition(ir::MethodDefinition *methodDef)
     ResolveMethodDefinition(methodDef);
 }
 
+void ETSBinder::BuildAnnotationDeclaration(ir::AnnotationDeclaration *annoDecl)
+{
+    auto boundCtx = BoundContext(recordTable_, annoDecl);
+    LookupTypeReference(annoDecl->AsAnnotationDeclaration()->Ident(), false);
+    auto scopeCtx = LexicalScope<LocalScope>::Enter(this, annoDecl->Scope());
+    for (auto *property : annoDecl->Properties()) {
+        ResolveReference(property);
+    }
+}
+
+void ETSBinder::BuildAnnotationUsage(ir::AnnotationUsage *annoUsage)
+{
+    if (annoUsage->Expr()->IsIdentifier()) {
+        LookupTypeReference(annoUsage->AsAnnotationUsage()->Expr()->AsIdentifier(), false);
+    } else {
+        ResolveReference(annoUsage->Expr());
+    }
+
+    for (auto *property : annoUsage->Properties()) {
+        ResolveReference(property);
+    }
+}
+
 void ETSBinder::ResolveMethodDefinition(ir::MethodDefinition *methodDef)
 {
     methodDef->ResolveReferences([this](auto *childNode) { ResolveReference(childNode); });
 
     auto *func = methodDef->Function();
+    for (auto *anno : func->Annotations()) {
+        ResolveReference(anno);
+    }
     if (methodDef->IsStatic() || func->IsStaticBlock()) {
         return;
     }
@@ -367,6 +438,9 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
     for (auto *impl : classDef->Implements()) {
         ResolveReference(impl);
     }
+    for (auto *anno : classDef->Annotations()) {
+        ResolveReference(anno);
+    }
 
     for (auto *stmt : classDef->Body()) {
         if (!stmt->IsClassProperty()) {
@@ -398,17 +472,10 @@ void ETSBinder::AddFunctionThisParam(ir::ScriptFunction *func)
     thisParam->Declaration()->BindNode(thisParam_);
 }
 
-void ETSBinder::BuildProxyMethod(ir::ScriptFunction *func, const util::StringView &containingClassName, bool isStatic,
-                                 bool isExternal)
+void ETSBinder::BuildProxyMethod(ir::ScriptFunction *func, const util::StringView &containingClassName, bool isExternal)
 {
     ASSERT(!containingClassName.Empty());
     func->Scope()->BindName(containingClassName);
-
-    if (!isStatic) {
-        auto paramScopeCtx = LexicalScope<FunctionParamScope>::Enter(this, func->Scope()->ParamScope());
-        auto *thisParam = AddMandatoryParam(MANDATORY_PARAM_THIS);
-        thisParam->Declaration()->BindNode(thisParam_);
-    }
 
     if (!func->IsAsyncFunc() && !isExternal) {
         Functions().push_back(func->Scope());
@@ -547,6 +614,14 @@ void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
     }
 }
 
+bool ETSBinder::ReexportPathMatchesImportPath(const ir::ETSReExportDeclaration *const reexport,
+                                              const ir::ETSImportDeclaration *const import) const
+{
+    auto importSource = import->ResolvedSource()->Str();
+    auto reexportSource = reexport->GetProgramPath();
+    return importSource == reexportSource;
+}
+
 bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const specifier,
                                                           const varbinder::Scope::VariableMap &globalBindings,
                                                           const parser::Program *const importProgram,
@@ -562,11 +637,9 @@ bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const spe
         ImportAllForeignBindings(specifier, globalBindings, importProgram, importGlobalScope, import);
     }
 
-    std::unordered_set<std::string> exportedNames;
     for (auto item : ReExportImports()) {
         // NOTE(rsipka): this should be refactored or eliminated
-        if (auto source = import->ResolvedSource()->Str(), program = item->GetProgramPath();
-            !source.Is(program.Mutf8())) {
+        if (!ReexportPathMatchesImportPath(item, import)) {
             continue;
         }
 
@@ -577,12 +650,6 @@ bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const spe
 
             AddSpecifiersToTopBindings(it, item->GetETSImportDeclarations(),
                                        item->GetETSImportDeclarations()->Source());
-
-            if (it->IsImportSpecifier() &&
-                !exportedNames.insert(it->AsImportSpecifier()->Local()->Name().Mutf8()).second) {
-                ThrowError(import->Start(), "Ambiguous import \"" + it->AsImportSpecifier()->Local()->Name().Mutf8() +
-                                                "\" has multiple matching exports");
-            }
         }
     }
 
@@ -625,8 +692,7 @@ ir::ETSImportDeclaration *ETSBinder::FindImportDeclInReExports(const ir::ETSImpo
 {
     ir::ETSImportDeclaration *implDecl = nullptr;
     for (auto item : ReExportImports()) {
-        if (auto source = import->ResolvedSource()->Str(), program = item->GetProgramPath();
-            !source.Is(program.Mutf8())) {
+        if (!ReexportPathMatchesImportPath(item, import)) {
             continue;
         }
 
@@ -639,16 +705,23 @@ ir::ETSImportDeclaration *ETSBinder::FindImportDeclInReExports(const ir::ETSImpo
                 })) {
                 continue;
             }
+            implDecl = item->GetETSImportDeclarations();
         } else {
             ArenaVector<parser::Program *> record =
                 GetExternalProgram(item->GetETSImportDeclarations()->ResolvedSource()->Str(), importPath);
-            if (FindImportSpecifiersVariable(imported, record.front()->GlobalScope()->Bindings(), record) == nullptr) {
+            auto *const var = FindImportSpecifiersVariable(imported, record.front()->GlobalScope()->Bindings(), record);
+            if (var != nullptr) {
+                implDecl = item->GetETSImportDeclarations();
                 continue;
             }
+            auto reExportImport = item->GetETSImportDeclarations();
+            auto reExportImportPath = reExportImport->Source();
+            auto implDeclOrNullptr =
+                FindImportDeclInReExports(reExportImport, viewedReExport, imported, reExportImportPath);
+            if (implDeclOrNullptr != nullptr) {
+                implDecl = implDeclOrNullptr;
+            }
         }
-
-        // NOTE: ttamas - Duplication check created error
-        implDecl = item->GetETSImportDeclarations();
     }
     return implDecl;
 }
@@ -761,6 +834,12 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
         return true;
     }
 
+    if (var->Declaration()->Node()->IsAnnotationDeclaration() &&
+        var->Declaration()->Node()->AsAnnotationDeclaration()->Ident()->Name() != localName) {
+        ThrowError(importPath->Start(), "Can not rename annotation '" + var->Declaration()->Name().Mutf8() +
+                                            "' in export or import statements.");
+    }
+
     // The first part of the condition will be true, if something was given an alias when exported, but we try
     // to import it using its original name.
     if (nameToSearchFor == imported && var->Declaration()->Node()->HasExportAlias()) {
@@ -854,51 +933,44 @@ void ETSBinder::HandleCustomNodes(ir::AstNode *childNode)
 {
     switch (childNode->Type()) {
         case ir::AstNodeType::ETS_TYPE_REFERENCE: {
-            auto *typeRef = childNode->AsETSTypeReference();
-            auto *baseName = typeRef->BaseName();
-            ASSERT(baseName->IsReference());
-            // We allow to resolve following types in pure dynamic mode:
-            // import * as I from "@dynamic"
-            // let x : I.X.Y
-            bool allowDynamicNamespaces = typeRef->Part()->Name() != baseName;
-            LookupTypeReference(baseName, allowDynamicNamespaces);
-            LookupTypeArgumentReferences(typeRef);
-            break;
+            return BuildETSTypeReference(childNode->AsETSTypeReference());
         }
         case ir::AstNodeType::TS_INTERFACE_DECLARATION: {
-            BuildInterfaceDeclaration(childNode->AsTSInterfaceDeclaration());
-            break;
+            return BuildInterfaceDeclaration(childNode->AsTSInterfaceDeclaration());
         }
         case ir::AstNodeType::TS_ENUM_DECLARATION: {
-            ResolveEnumDeclaration(childNode->AsTSEnumDeclaration());
-            break;
+            return ResolveEnumDeclaration(childNode->AsTSEnumDeclaration());
         }
         case ir::AstNodeType::EXPORT_NAMED_DECLARATION: {
             break;
         }
         case ir::AstNodeType::ETS_IMPORT_DECLARATION: {
-            BuildImportDeclaration(childNode->AsETSImportDeclaration());
-            break;
+            return BuildImportDeclaration(childNode->AsETSImportDeclaration());
         }
         case ir::AstNodeType::MEMBER_EXPRESSION: {
-            BuildMemberExpression(childNode->AsMemberExpression());
-            break;
+            return BuildMemberExpression(childNode->AsMemberExpression());
         }
         case ir::AstNodeType::METHOD_DEFINITION: {
-            BuildMethodDefinition(childNode->AsMethodDefinition());
-            break;
+            return BuildMethodDefinition(childNode->AsMethodDefinition());
         }
         case ir::AstNodeType::ETS_NEW_CLASS_INSTANCE_EXPRESSION: {
-            BuildETSNewClassInstanceExpression(childNode->AsETSNewClassInstanceExpression());
-            break;
+            return BuildETSNewClassInstanceExpression(childNode->AsETSNewClassInstanceExpression());
         }
         case ir::AstNodeType::ETS_FUNCTION_TYPE: {
-            BuildSignatureDeclarationBaseParams(childNode);
+            return BuildSignatureDeclarationBaseParams(childNode);
+        }
+        case ir::AstNodeType::OBJECT_EXPRESSION: {
+            return BuildObjectExpression(childNode->AsObjectExpression());
+        }
+        case ir::AstNodeType::ANNOTATION_USAGE: {
+            return BuildAnnotationUsage(childNode->AsAnnotationUsage());
+        }
+        case ir::AstNodeType::ANNOTATION_DECLARATION: {
+            BuildAnnotationDeclaration(childNode->AsAnnotationDeclaration());
             break;
         }
         default: {
-            ResolveReferences(childNode);
-            break;
+            return ResolveReferences(childNode);
         }
     }
 }
@@ -1005,6 +1077,8 @@ void ETSBinder::BuildProgram()
         BuildImportDeclaration(defaultImport);
     }
 
+    ValidateReexports();
+
     auto &stmts = Program()->Ast()->Statements();
     const auto etsGlobal = std::find_if(stmts.begin(), stmts.end(), [](const ir::Statement *stmt) {
         return stmt->IsClassDeclaration() &&
@@ -1074,6 +1148,94 @@ void ETSBinder::BuildImportDeclaration(ir::ETSImportDeclaration *decl)
     }
 }
 
+Variable *ETSBinder::ValidateImportSpecifier(const ir::ImportSpecifier *const specifier,
+                                             const ir::ETSImportDeclaration *const import,
+                                             std::vector<ir::ETSImportDeclaration *> viewedReExport)
+{
+    const auto sourceName = import->ResolvedSource()->Str();
+    const auto &record = GetExternalProgram(sourceName, import->Source());
+    const auto *const importProgram = record.front();
+    const auto *const importGlobalScope = importProgram->GlobalScope();
+    const auto &globalBindings = importGlobalScope->Bindings();
+
+    auto imported = specifier->Imported()->Name();
+    for (const auto *const item : import->Specifiers()) {
+        // Handle alias
+        // export {foo as FOO}
+        if (item->IsImportSpecifier() && item->AsImportSpecifier()->Local()->Name().Is(imported.Mutf8()) &&
+            !item->AsImportSpecifier()->Local()->Name().Is(item->AsImportSpecifier()->Imported()->Name().Mutf8())) {
+            imported = item->AsImportSpecifier()->Imported()->Name();
+        }
+    }
+
+    auto *const var = FindImportSpecifiersVariable(imported, globalBindings, record);
+    if (var != nullptr) {
+        return var;
+    }
+
+    // Failed to find variable, go through reexports
+    const ir::ETSImportDeclaration *const implDecl =
+        FindImportDeclInReExports(import, viewedReExport, imported, import->Source());
+    if (implDecl != nullptr) {
+        return ValidateImportSpecifier(specifier, implDecl, std::move(viewedReExport));
+    }
+
+    return nullptr;
+}
+
+void ETSBinder::ValidateReexports()
+{
+    // This will throw syntax error if the reexport is incorrect
+    // This will also set variables and check for ambiguous reexports
+    for (auto *reexport : reExportImports_) {
+        ValidateReexportDeclaration(reexport);
+    }
+
+    reexportedNames_.clear();
+}
+
+void ETSBinder::ValidateReexportDeclaration(ir::ETSReExportDeclaration *decl)
+{
+    // Reexport declarations are available in all files, see ReExportImports()
+    // Check that reexport declaration is in this file
+    const auto program = Program()->SourceFile().GetAbsolutePath();
+    const auto reexportSource = os::GetAbsolutePath(decl->GetProgramPath().Utf8());
+    if (program.Utf8() != reexportSource) {
+        return;
+    }
+
+    const auto *const import = decl->GetETSImportDeclarations();
+    const auto &specifiers = import->Specifiers();
+    for (auto specifier : specifiers) {
+        // Example: export {foo} from "./A"
+        if (specifier->IsImportSpecifier()) {
+            auto importSpecifier = specifier->AsImportSpecifier();
+            const auto reexported = importSpecifier->Imported()->Name();
+            auto *const var =
+                ValidateImportSpecifier(importSpecifier, import, std::vector<ir::ETSImportDeclaration *>());
+            if (var == nullptr) {
+                ThrowError(import->Start(), "Incorrect export \"" + reexported.Mutf8() + "\"");
+            }
+
+            importSpecifier->Imported()->SetVariable(var);
+            importSpecifier->Local()->SetVariable(var);
+
+            // Remember reexported name to check for ambiguous reexports
+            if (!reexportedNames_.insert(reexported).second) {
+                ThrowError(import->Start(), "Ambiguous export \"" + reexported.Mutf8() + "\"");
+            }
+        }
+
+        if (specifier->IsImportNamespaceSpecifier()) {
+            // NOTE(kkonkuznetsov): See #20658
+            // How to validate ambiguous exports with namespace specifiers?
+            // Example:
+            // export * from "./A"
+            // export * from "./B"
+        }
+    }
+}
+
 bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable *var, const util::StringView &name,
                                                              const ir::ClassElement *classElement)
 {
@@ -1135,6 +1297,29 @@ const DynamicImportData *ETSBinder::DynamicImportDataForVar(const Variable *var)
     }
 
     return &it->second;
+}
+
+ArenaVector<parser::Program *> ETSBinder::GetProgramList(const util::StringView &path) const
+{
+    for (const auto &extRecords : globalRecordTable_.Program()->ExternalSources()) {
+        for (const auto &program : extRecords.second) {
+            if (program->AbsoluteName() == path) {
+                return extRecords.second;
+            }
+
+            // in case of importing a package folder, the path could not be resolved to a specific file
+            if (program->IsPackageModule() && program->SourceFileFolder() == path) {
+                return extRecords.second;
+            }
+        }
+    }
+
+    bool globalIsPackage = globalRecordTable_.Program()->IsPackageModule();
+    if (globalIsPackage && path.Compare(globalRecordTable_.Program()->SourceFileFolder()) == 0) {
+        return ArenaVector<parser::Program *>({GetContext()->parserProgram}, Allocator()->Adapter());
+    }
+
+    return ArenaVector<parser::Program *>(Allocator()->Adapter());
 }
 
 bool ETSBinder::IsDynamicModuleVariable(const Variable *var) const

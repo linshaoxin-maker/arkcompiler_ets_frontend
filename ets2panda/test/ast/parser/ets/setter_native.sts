@@ -15,9 +15,9 @@
 
 class Door {
     private _width: int;
-    native set width(w:int): void {
+    native /* @@ label */set width(w:int): void {
         this._width = w;
     }
 }
 
-/* @@? 18:21 Error TypeError: 'Native' modifier is invalid for Accessors  */
+/* @@@ label Error SyntaxError: Modifiers of getter and setter are limited to ('abstract', 'static', 'final', 'override'). */

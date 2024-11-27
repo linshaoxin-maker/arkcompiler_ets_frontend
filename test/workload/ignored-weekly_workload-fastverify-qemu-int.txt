@@ -7,6 +7,12 @@ float-mm
 #19072
 OfflineAssembler
 
+##19216
+wsl
+
+##18863
+json-parse-inspector
+
 ##18486
 pdfjs
 
@@ -15,9 +21,3 @@ raytrace
 
 ##18483
 typescript-compiler
-
-##19216
-wsl
-
-##18863
-json-parse-inspector

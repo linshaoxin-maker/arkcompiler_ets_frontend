@@ -63,7 +63,7 @@ public:
     MemberExpression() = delete;
     ~MemberExpression() override = default;
 
-    NO_COPY_OPERATOR(MemberExpression);
+    MemberExpression &operator=(const MemberExpression &) = delete;
     NO_MOVE_SEMANTIC(MemberExpression);
 
     explicit MemberExpression(Expression *object, Expression *property, MemberExpressionKind kind, bool computed,
@@ -214,10 +214,11 @@ protected:
 
 private:
     std::pair<checker::Type *, varbinder::LocalVariable *> ResolveEnumMember(checker::ETSChecker *checker,
-                                                                             checker::Type *type) const;
+                                                                             checker::ETSEnumType *type) const;
     std::pair<checker::Type *, varbinder::LocalVariable *> ResolveObjectMember(checker::ETSChecker *checker) const;
 
     checker::Type *AdjustType(checker::ETSChecker *checker, checker::Type *type);
+    checker::Type *SetAndAdjustType(checker::ETSChecker *checker, checker::ETSObjectType *objectType);
     checker::Type *CheckComputed(checker::ETSChecker *checker, checker::Type *baseType);
     checker::Type *CheckUnionMember(checker::ETSChecker *checker, checker::Type *baseType);
     checker::Type *TraverseUnionMember(checker::ETSChecker *checker, checker::ETSUnionType *unionType,

@@ -135,23 +135,8 @@
                           },
                           "arguments": [
                             {
-                              "type": "UnaryExpression",
-                              "operator": "-",
-                              "prefix": true,
-                              "argument": {
-                                "type": "NumberLiteral",
-                                "value": 1.1e-20,
-                                "loc": {
-                                  "start": {
-                                    "line": 16,
-                                    "column": 30
-                                  },
-                                  "end": {
-                                    "line": 16,
-                                    "column": 37
-                                  }
-                                }
-                              },
+                              "type": "NumberLiteral",
+                              "value": -1.1e-20,
                               "loc": {
                                 "start": {
                                   "line": 16,
@@ -641,23 +626,8 @@
                           }
                         },
                         "right": {
-                          "type": "UnaryExpression",
-                          "operator": "-",
-                          "prefix": true,
-                          "argument": {
-                            "type": "NumberLiteral",
-                            "value": 1.1e-20,
-                            "loc": {
-                              "start": {
-                                "line": 20,
-                                "column": 28
-                              },
-                              "end": {
-                                "line": 20,
-                                "column": 35
-                              }
-                            }
-                          },
+                          "type": "NumberLiteral",
+                          "value": -1.1e-20,
                           "loc": {
                             "start": {
                               "line": 20,
@@ -736,100 +706,6 @@
               "end": {
                 "line": 21,
                 "column": 2
-              }
-            }
-          },
-          {
-            "type": "MethodDefinition",
-            "key": {
-              "type": "Identifier",
-              "name": "_$trigger_cctor$_",
-              "decorators": [],
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "kind": "method",
-            "accessibility": "public",
-            "static": true,
-            "optional": false,
-            "computed": false,
-            "value": {
-              "type": "FunctionExpression",
-              "function": {
-                "type": "ScriptFunction",
-                "id": {
-                  "type": "Identifier",
-                  "name": "_$trigger_cctor$_",
-                  "decorators": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "generator": false,
-                "async": false,
-                "expression": false,
-                "params": [],
-                "body": {
-                  "type": "BlockStatement",
-                  "statements": [],
-                  "loc": {
-                    "start": {
-                      "line": 1,
-                      "column": 1
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
-                },
-                "loc": {
-                  "start": {
-                    "line": 1,
-                    "column": 1
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
-              },
-              "loc": {
-                "start": {
-                  "line": 1,
-                  "column": 1
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
-            },
-            "overloads": [],
-            "decorators": [],
-            "loc": {
-              "start": {
-                "line": 1,
-                "column": 1
-              },
-              "end": {
-                "line": 1,
-                "column": 1
               }
             }
           }

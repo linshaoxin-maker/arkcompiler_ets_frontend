@@ -30,8 +30,10 @@ class StringView {
 public:
     explicit StringView() noexcept = default;
     explicit StringView(const ArenaString *str) noexcept : sv_(*str) {}
+    // CC-OFFNXT(G.FMT.06-CPP,G.CLS.03-CPP) same as clang, project code style
     // NOLINTNEXTLINE(google-explicit-constructor)
     StringView(std::string_view sv) noexcept : sv_(sv) {}
+    // CC-OFFNXT(G.FMT.06-CPP, G.CLS.03-CPP) same as clang, project code style
     // NOLINTNEXTLINE(google-explicit-constructor)
     StringView(const char *str) noexcept : sv_(str == nullptr ? "" : str) {}
     DEFAULT_COPY_SEMANTIC(StringView);
@@ -73,9 +75,22 @@ public:
         return sv_ == str;
     }
 
-    bool Is(const std::string_view &str) const noexcept
+    bool Is(const std::string_view str) const noexcept
     {
         return sv_ == str;
+    }
+
+    bool StartsWith(const std::string_view str) const noexcept
+    {
+        auto const length = str.size();
+        return sv_.size() >= length && sv_.substr(0U, length) == str;
+    }
+
+    bool EndsWith(const std::string_view str) const noexcept
+    {
+        auto const myLength = sv_.size();
+        auto const strLength = str.size();
+        return myLength >= strLength && sv_.substr(myLength - strLength, strLength) == str;
     }
 
     size_t Length() const noexcept
@@ -284,38 +299,44 @@ public:
         return util::StringView(str_);
     }
 
-    void Append(char32_t ch) noexcept
+    util::UString &Append(char32_t ch) noexcept
     {
         if (str_ == nullptr) {
             Alloc();
         }
 
         StringView::Utf8Encode<ArenaString>(str_, ch);
+        return *this;
     }
 
-    void Append(const StringView &other) noexcept
+    util::UString &Append(const StringView &other) noexcept
     {
         if (str_ == nullptr) {
             Alloc();
         }
 
         *str_ += other.Utf8();
+        return *this;
     }
 
-    void Append(const char *other) noexcept
+    util::UString &Append(const char *other) noexcept
     {
         if (str_ == nullptr) {
             Alloc();
         }
+
         *str_ += other;
+        return *this;
     }
 
-    void Append(const std::string &other) noexcept
+    util::UString &Append(const std::string &other) noexcept
     {
         if (str_ == nullptr) {
             Alloc();
         }
+
         *str_ += other;
+        return *this;
     }
 
 private:

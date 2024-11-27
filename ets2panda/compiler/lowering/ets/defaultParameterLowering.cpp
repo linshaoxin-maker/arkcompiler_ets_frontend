@@ -22,11 +22,13 @@
 #include "utils/arena_containers.h"
 #include "ir/statement.h"
 #include "varbinder/ETSBinder.h"
+#include "util/errorHandler.h"
 
 namespace ark::es2panda::compiler {
 
 std::pair<bool, std::size_t> DefaultParameterLowering::HasDefaultParam(const ir::ScriptFunction *function,
-                                                                       parser::Program *program)
+                                                                       parser::Program *program,
+                                                                       util::ErrorLogger *logger)
 {
     bool hasDefaultParameter = false;
     bool hasRestParameter = false;
@@ -41,7 +43,8 @@ std::pair<bool, std::size_t> DefaultParameterLowering::HasDefaultParam(const ir:
         }
 
         if (hasRestParameter) {
-            ThrowSyntaxError("Rest parameter should be the last one.", param->Start(), program);
+            util::ErrorHandler::LogSyntaxError(logger, program, "Rest parameter should be the last one.",
+                                               param->Start());
         }
 
         if (param->IsDefault()) {
@@ -50,15 +53,17 @@ std::pair<bool, std::size_t> DefaultParameterLowering::HasDefaultParam(const ir:
         }
 
         if (hasDefaultParameter) {
-            ThrowSyntaxError("Required parameter follows default parameter(s).", param->Start(), program);
+            util::ErrorHandler::LogSyntaxError(logger, program, "Required parameter follows default parameter(s).",
+                                               param->Start());
         }
 
         ++requiredParametersNumber;
     }
 
     if (hasDefaultParameter && hasRestParameter) {
-        ThrowSyntaxError("Both optional and rest parameters are not allowed in function's parameter list.",
-                         function->Start(), program);
+        util::ErrorHandler::LogSyntaxError(
+            logger, program, "Both optional and rest parameters are not allowed in function's parameter list.",
+            function->Start());
     }
 
     return std::make_pair(hasDefaultParameter, requiredParametersNumber);
@@ -119,7 +124,6 @@ ir::TSTypeParameterInstantiation *DefaultParameterLowering::CreateTypeParameterI
     for (const auto &param : method->Function()->TypeParams()->Params()) {
         auto *identRef =
             checker->AllocNode<ir::Identifier>(param->AsTSTypeParameter()->Name()->Name(), checker->Allocator());
-        identRef->AsIdentifier()->SetReference();
 
         referencePart = checker->AllocNode<ir::ETSTypeReferencePart>(identRef, nullptr, nullptr);
 
@@ -141,7 +145,6 @@ ir::BlockStatement *DefaultParameterLowering::CreateFunctionBody(ir::MethodDefin
     ir::Expression *id = nullptr;
     ir::Expression *accessor = nullptr;
     auto *const callee = checker->AllocNode<ir::Identifier>(method->Id()->Name(), checker->Allocator());
-    callee->SetReference();
 
     if (method->IsConstructor()) {
         accessor = checker->AllocNode<ir::ThisExpression>();
@@ -150,7 +153,6 @@ ir::BlockStatement *DefaultParameterLowering::CreateFunctionBody(ir::MethodDefin
             if (method->IsStatic()) {
                 id = checker->AllocNode<ir::Identifier>(method->Parent()->AsClassDefinition()->Ident()->Name(),
                                                         checker->Allocator());
-                id->AsIdentifier()->SetReference();
             } else {
                 id = checker->AllocNode<ir::ThisExpression>();
             }
@@ -161,7 +163,7 @@ ir::BlockStatement *DefaultParameterLowering::CreateFunctionBody(ir::MethodDefin
     auto *paramInst = CreateTypeParameterInstantiation(method, ctx);
     callExpression = checker->AllocNode<ir::CallExpression>(accessor != nullptr ? accessor : callee,
                                                             std::move(funcCallArgs), paramInst, false, false);
-    callExpression->SetStart(method->Start());  // NOTE: Used to locate the original node when an error occurs
+    callExpression->SetRange(method->Range());  // NOTE: Used to locate the original node when an error occurs
     ir::Statement *stmt = nullptr;
     if ((method->Function()->ReturnTypeAnnotation() != nullptr) ||
         ((method->Function()->AsScriptFunction()->Flags() & ir::ScriptFunctionFlags::HAS_RETURN) != 0)) {
@@ -205,7 +207,7 @@ ir::FunctionExpression *DefaultParameterLowering::CreateFunctionExpression(
     auto *funcNode = checker->AllocNode<ir::ScriptFunction>(
         checker->Allocator(),
         ir::ScriptFunction::ScriptFunctionData {
-            body, std::move(signature), method->Function()->Flags(), {}, false, method->Function()->Language()});
+            body, std::move(signature), method->Function()->Flags(), {}, method->Function()->Language()});
     funcNode->AddModifier(method->Function()->Modifiers());
     funcNode->SetRange({startLoc, endLoc});
 
@@ -225,12 +227,11 @@ void DefaultParameterLowering::CreateOverloadFunction(ir::MethodDefinition *meth
     auto *ident = funcExpression->Function()->Id()->Clone(checker->Allocator(), nullptr);
     auto *const overloadMethod = checker->AllocNode<ir::MethodDefinition>(
         method->Kind(), ident, funcExpression, method->Modifiers(), checker->Allocator(), false);
-    ident->SetReference();
 
     overloadMethod->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
     overloadMethod->SetRange(funcExpression->Range());
 
-    if (method->Parent()->IsTSInterfaceBody()) {
+    if (!method->IsDeclare() && method->Parent()->IsTSInterfaceBody()) {
         overloadMethod->Function()->Body()->AsBlockStatement()->Statements().clear();
     }
 
@@ -313,11 +314,10 @@ void DefaultParameterLowering::ProcessGlobalFunctionDefinition(ir::MethodDefinit
             params.begin(), params.end() - i, [&funcCallArgs, &funcDefinitionArgs, checker](ir::Expression *expr) {
                 // NOTE: we don't need Initializer here, as overload-method will have strict list of parameters
                 //       will reset all of them once parsing loop completes
-                auto *funcArg =
-                    expr->AsETSParameterExpression()->Ident()->Clone(checker->Allocator(), nullptr)->AsIdentifier();
-
+                auto *funcArg = expr->AsETSParameterExpression()->Ident();
+                auto clone = funcArg->CloneReference(checker->Allocator(), nullptr)->AsIdentifier();
                 // update list of functional call arguments
-                funcCallArgs.push_back(funcArg);
+                funcCallArgs.push_back(clone);
 
                 auto *ident =
                     expr->AsETSParameterExpression()->Ident()->Clone(checker->Allocator(), nullptr)->AsIdentifier();
@@ -349,11 +349,12 @@ bool DefaultParameterLowering::Perform(public_lib::Context *ctx, parser::Program
     }
 
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
+    util::ErrorLogger *logger = ctx->parser->ErrorLogger();
     ArenaVector<ir::MethodDefinition *> foundNodes(checker->Allocator()->Adapter());
-    program->Ast()->IterateRecursively([&foundNodes, this, program](ir::AstNode *ast) {
+    program->Ast()->IterateRecursively([&foundNodes, this, program, logger](ir::AstNode *ast) {
         if (ast->IsMethodDefinition()) {
             auto [hasDefaultParam, requiredParamsCount] =
-                HasDefaultParam(ast->AsMethodDefinition()->Function(), program);
+                HasDefaultParam(ast->AsMethodDefinition()->Function(), program, logger);
             if (hasDefaultParam) {
                 // store all nodes (which is function definition with default/optional parameters)
                 // to specific list, to process them later, as for now we can't modify AST in the

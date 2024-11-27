@@ -46,6 +46,7 @@ import type {
   ForStatement,
   FunctionLikeDeclaration,
   Identifier,
+  ImportEqualsDeclaration,
   ImportSpecifier,
   InterfaceDeclaration,
   LabeledStatement,
@@ -65,7 +66,6 @@ import type {
 
 import {NodeUtils} from './NodeUtils';
 import {isParameterPropertyModifier, isViewPUBasedClass} from './OhsUtil';
-
 /**
  * kind of a scope
  */
@@ -152,7 +152,7 @@ namespace secharmony {
     constructor(name: string, node: Node, type: ScopeKind, lexicalScope: boolean = false, upper?: Scope) {
       this.name = name;
       this.kind = type;
-      this.block = node; 
+      this.block = node;
       this.parent = upper;
       this.children = [];
       this.defs = new Set<Symbol>();
@@ -160,7 +160,7 @@ namespace secharmony {
       this.importNames = new Set<string>();
       this.exportNames = new Set<string>();
       this.mangledNames = new Set<string>();
-      this.loc = this.parent?.loc ? this.parent.loc + '#' + this.name : this.name;
+      this.loc = this.parent?.loc ? getNameWithScopeLoc(this.parent, this.name) : this.name;
 
       this.parent?.addChild(this);
     }
@@ -205,7 +205,7 @@ namespace secharmony {
         return '';
       }
 
-      return this.loc ? sym.name : this.loc + '#' + sym.name;
+      return this.loc ? sym.name : getNameWithScopeLoc(this, sym.name);
     }
 
     /**
@@ -219,7 +219,7 @@ namespace secharmony {
       }
 
       let index: number = this.labels.findIndex((lb: Label) => lb === label);
-      return this.loc ? label.name : this.loc + '#' + index + label.name;
+      return this.loc ? label.name : getNameWithScopeLoc(this, index + label.name);
     }
   }
 
@@ -446,6 +446,11 @@ namespace secharmony {
         case SyntaxKind.CatchClause:
           analyzeCatchClause(node as CatchClause);
           break;
+
+        case SyntaxKind.ImportEqualsDeclaration:
+          analyzeImportEqualsDeclaration(node as ImportEqualsDeclaration);
+          break;
+
         default:
           forEachChild(node, analyzeScope);
           break;
@@ -702,7 +707,7 @@ namespace secharmony {
         return;
       }
       let scopeName: string = (node?.name as Identifier)?.text ?? '$' + current.children.length;
-      let loc: string = current?.loc ? current.loc + '#' + scopeName : scopeName;
+      let loc: string = current?.loc ? getNameWithScopeLoc(current, scopeName) : scopeName;
       let overloading: boolean = false;
       for (const sub of current.children) {
         if (sub.loc === loc) {
@@ -792,12 +797,9 @@ namespace secharmony {
         current = new Scope(scopeName, node, ScopeKind.CLASS, true, current);
         scopes.push(current);
         addSymbolInScope(node);
-        // Class members are seen as attribute names, and  the reference of external symbols can be renamed as the same
-        node.members?.forEach((elm: ClassElement) => {
-          // @ts-ignore
-          if (elm?.symbol && !getOriginalNode(elm).virtual) {
-            current.addDefinition(elm.symbol);
-          }
+        // Class members are seen as attribute names, and the reference of external symbols can be renamed as the same
+        node.symbol.members?.forEach((symbol: Symbol) => {
+          current.addDefinition(symbol);
         });
 
         forEachChild(node, analyzeScope);
@@ -947,6 +949,27 @@ namespace secharmony {
       return undefined;
     }
 
+    function analyzeImportEqualsDeclaration(node: ImportEqualsDeclaration): void {
+      let hasExport: boolean = false;
+      if (node.modifiers) {
+        for (const modifier of node.modifiers) {
+          if (modifier.kind === SyntaxKind.ExportKeyword) {
+            hasExport = true;
+            break;
+          }
+        }
+      }
+      if (hasExport) {
+        current.exportNames.add(node.name.text);
+        root.fileExportNames.add(node.name.text);
+        let sym: Symbol | undefined = checker.getSymbolAtLocation(node.name);
+        if (sym) {
+          current.addDefinition(sym, true);
+        }
+      }
+      forEachChild(node, analyzeScope);
+    }
+
     function tryAddNoSymbolIdentifiers(node: Identifier): void {
       if (!isIdentifier(node)) {
         return;
@@ -974,6 +997,10 @@ namespace secharmony {
 
       noSymbolVisit(node);
     }
+  }
+  
+  export function getNameWithScopeLoc(scope: Scope, name: string): string {
+    return scope.loc + '#' + name;
   }
 }
 

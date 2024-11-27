@@ -75,12 +75,12 @@ void ETSTypeParameter::CastTarget(TypeRelation *relation, Type *source)
     relation->Result(relation->InCastingContext());
 }
 
-void ETSTypeParameter::IsSupertypeOf([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
+void ETSTypeParameter::IsSupertypeOf(TypeRelation *relation, [[maybe_unused]] Type *source)
 {
     relation->Result(false);
 }
 
-void ETSTypeParameter::IsSubtypeOf([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
+void ETSTypeParameter::IsSubtypeOf(TypeRelation *relation, Type *target)
 {
     if (relation->IsSupertypeOf(target, GetConstraintType())) {
         return;
@@ -124,9 +124,13 @@ void ETSTypeParameter::ToDebugInfoType(std::stringstream &ss) const
     GetConstraintType()->ToDebugInfoType(ss);
 }
 
-ETSTypeParameter *ETSTypeParameter::GetOriginal() const
+ETSTypeParameter *ETSTypeParameter::GetOriginal() const noexcept
 {
     return GetDeclNode()->Name()->Variable()->TsType()->AsETSTypeParameter();
 }
 
+util::StringView const &ETSTypeParameter::Name() const noexcept
+{
+    return GetDeclNode()->Name()->Name();
+}
 }  // namespace ark::es2panda::checker

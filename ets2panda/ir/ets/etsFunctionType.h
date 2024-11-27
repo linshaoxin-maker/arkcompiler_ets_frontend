@@ -45,13 +45,17 @@ public:
 
     void SetScope(varbinder::Scope *scope)
     {
-        ASSERT(scope_ == nullptr);
         scope_ = scope;
     }
 
     void ClearScope() noexcept override
     {
         scope_ = nullptr;
+    }
+
+    [[nodiscard]] FunctionSignature IrSignature() noexcept
+    {
+        return signature_;
     }
 
     const TSTypeParameterDeclaration *TypeParams() const

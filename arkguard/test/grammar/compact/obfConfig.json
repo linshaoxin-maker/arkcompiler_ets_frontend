@@ -2,7 +2,6 @@
     "mCompact": true,
     "mRemoveComments": false,
     "mOutputDir": "../../local",
-    "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,
     "mNameObfuscation": {
@@ -13,6 +12,6 @@
         "mKeepStringProperty": false,
         "mTopLevel": false
     },
-    "mEnableSourceMap": false,
+    "mEnableSourceMap": true,
     "mEnableNameCache": false
 }

@@ -324,32 +324,13 @@ ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(Language lan
         auto *classId = AllocNode<ir::Identifier>(builtin_class_name, Allocator());
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *methodId = AllocNode<ir::Identifier>(builtin_method_name, Allocator());
-        methodId->SetReference();
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *callee =
             AllocNode<ir::MemberExpression>(classId, methodId, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
 
-        ArenaVector<ir::Expression *> callParams(Allocator()->Adapter());
-
-        std::stringstream ss;
-        auto name = isConstruct ? compiler::Signatures::Dynamic::NewClass(lang)
-                                : compiler::Signatures::Dynamic::CallClass(lang);
-
-        ss << compiler::Signatures::CLASS_REF_BEGIN;
-        if (!VarBinder()->Program()->OmitModuleName()) {
-            std::string moduleString(VarBinder()->Program()->ModuleName());
-            std::replace(moduleString.begin(), moduleString.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
-                         *compiler::Signatures::NAMESPACE_SEPARATOR.begin());
-            ss << moduleString << compiler::Signatures::NAMESPACE_SEPARATOR;
-        }
-        ss << name << compiler::Signatures::MANGLE_SEPARATOR;
-
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        auto *className = AllocNode<ir::StringLiteral>(util::UString(ss.str(), Allocator()).View());
-        callParams.push_back(className);
-
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        auto *initCall = AllocNode<ir::CallExpression>(callee, std::move(callParams), nullptr, false);
+        auto *initCall = AllocNode<ir::CallExpression>(callee, ArenaVector<ir::Expression *>(Allocator()->Adapter()),
+                                                       nullptr, false);
 
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         statements->push_back(AllocNode<ir::ExpressionStatement>(initCall));
@@ -387,9 +368,7 @@ ir::ClassDeclaration *ETSChecker::BuildClass(util::StringView name, const ClassB
 ir::ClassProperty *ETSChecker::CreateStaticReadonlyField(const char *name)
 {
     auto *fieldIdent = AllocNode<ir::Identifier>(name, Allocator());
-    // NOTE: remove const when readonly is properly supported
-    auto flags =
-        ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE | ir::ModifierFlags::READONLY | ir::ModifierFlags::CONST;
+    auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE | ir::ModifierFlags::READONLY;
     auto *field = AllocNode<ir::ClassProperty>(
         fieldIdent, nullptr, AllocNode<ir::ETSPrimitiveType>(ir::PrimitiveType::INT), flags, Allocator(), false);
 
@@ -422,7 +401,6 @@ void ETSChecker::ClassInitializerFromImport(ir::ETSImportDeclaration *import, Ar
     auto *classId = AllocNode<ir::Identifier>(builtin_class_name, Allocator());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *methodId = AllocNode<ir::Identifier>(builtin_method_name, Allocator());
-    methodId->SetReference();
     auto *callee =
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         AllocNode<ir::MemberExpression>(classId, methodId, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
@@ -441,7 +419,6 @@ void ETSChecker::ClassInitializerFromImport(ir::ETSImportDeclaration *import, Ar
     auto *moduleClassId = AllocNode<ir::Identifier>(compiler::Signatures::DYNAMIC_MODULE_CLASS, Allocator());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *fieldId = AllocNode<ir::Identifier>(import->AssemblerName(), Allocator());
-    fieldId->SetReference();
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *property = AllocNode<ir::MemberExpression>(moduleClassId, fieldId, ir::MemberExpressionKind::PROPERTY_ACCESS,
                                                      false, false);
@@ -561,7 +538,6 @@ void ETSChecker::EmitDynamicModuleClassInitCall()
     auto *classId = AllocNode<ir::Identifier>(compiler::Signatures::DYNAMIC_MODULE_CLASS, Allocator());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *methodId = AllocNode<ir::Identifier>(compiler::Signatures::DYNAMIC_MODULE_CLASS_INIT, Allocator());
-    methodId->SetReference();
     auto *callee =
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         AllocNode<ir::MemberExpression>(classId, methodId, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
@@ -608,9 +584,7 @@ void ETSChecker::BuildDynamicImportClass()
                 imports.push_back(import);
 
                 auto *fieldIdent = AllocNode<ir::Identifier>(import->AssemblerName(), Allocator());
-                // NOTE: remove const when readonly is properly supported
-                auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::CONST;
+                auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY;
                 auto *field = AllocNode<ir::ClassProperty>(
                     fieldIdent, nullptr, AllocNode<ir::OpaqueTypeNode>(GlobalBuiltinDynamicType(import->Language())),
                     flags, Allocator(), false);

@@ -86,7 +86,7 @@ protected:
     void IterateNoTParams(ir::ClassDefinition *classDef);
 
 protected:
-    void ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const;
+    void LogSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const;
 
     void VisitFunctionExpression(ir::FunctionExpression *funcExpr) override;
     void VisitScriptFunction(ir::ScriptFunction *scriptFunction) override;
@@ -115,6 +115,8 @@ protected:
     void VisitArrowFunctionExpression(ir::ArrowFunctionExpression *arrowExpr) override;
     void VisitDirectEvalExpression(ir::DirectEvalExpression *directCallExpr) override;
     void VisitTSFunctionType(ir::TSFunctionType *funcType) override;
+    void VisitAnnotationDeclaration(ir::AnnotationDeclaration *annoDecl) override;
+    void VisitAnnotationUsage(ir::AnnotationUsage *annoUsage) override;
 
 protected:
     varbinder::Scope *GetScope()
@@ -271,7 +273,7 @@ public:
      * @param varbinder ref to VarBinder. All varbinder scopes should be set to current context.
      * Note: It's programmer responsibility to prepare VarBinder (remove previous names, set current scope, etc...)
      *
-     * Example:
+     * Example: // CC-OFF(G.CMT.04) false positive
      * f<T>(x: Int) :  {
      *     let y = 0;
      * }
@@ -291,7 +293,7 @@ public:
      *
      * Then you should pass your new created node = ir::BlockStatement() to RunExternalNode,
      * set varbinder to previous `function_scope` and call RunExternalNode(node, varbinder).
-     * It will update scopes to:
+     * It will update scopes to: // CC-OFF(G.CMT.04) false positive
      * global_scope:
      *     [f],
      *     local_scope:

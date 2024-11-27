@@ -64,6 +64,7 @@ enum class TypeRelationFlag : uint32_t {
     STRING_TO_CHAR = 1U << 27U,
 
     ASSIGNMENT_CONTEXT = WIDENING | BOXING | UNBOXING,
+    BRIDGE_CHECK = OVERRIDING_CONTEXT | IGNORE_TYPE_PARAMETERS | NO_RETURN_TYPE_CHECK,
     CASTING_CONTEXT = NARROWING | WIDENING | BOXING | UNBOXING | UNCHECKED_CAST,
 };
 
@@ -228,6 +229,11 @@ public:
         return (flags_ & TypeRelationFlag::OVERRIDING_CONTEXT) != 0;
     }
 
+    [[nodiscard]] bool IsBridgeCheck() const noexcept
+    {
+        return (flags_ & TypeRelationFlag::BRIDGE_CHECK) == helpers::ToUnderlying(TypeRelationFlag::BRIDGE_CHECK);
+    }
+
     [[nodiscard]] TypeRelationFlag GetTypeRelationFlags() const noexcept
     {
         return flags_;
@@ -259,7 +265,7 @@ public:
         instantiationRecursionMap_.insert({type, 1});
     }
 
-    bool TypeInstantiationPossible(Type *const type)
+    bool IsAtTypeDepthLimit(Type *const type)
     {
         // This limitation makes sure that no type can be instantiated in infinite recursion. When declaring generic
         // classes with recursive types, so the generic class itself, we need to allow 2 depth of recursion, to make it

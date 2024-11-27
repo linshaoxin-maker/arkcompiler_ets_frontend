@@ -14,107 +14,10 @@
  */
 
 #include "ETSparser.h"
-#include "ETSNolintParser.h"
-#include <utility>
 
-#include "macros.h"
-#include "parser/parserFlags.h"
-#include "parser/parserStatusContext.h"
-#include "util/helpers.h"
-#include "util/language.h"
-#include "utils/arena_containers.h"
-#include "varbinder/varbinder.h"
-#include "varbinder/ETSBinder.h"
 #include "lexer/lexer.h"
-#include "lexer/ETSLexer.h"
-#include "checker/types/ets/etsEnumType.h"
-#include "ir/astNode.h"
-#include "ir/base/classDefinition.h"
-#include "ir/base/decorator.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/base/spreadElement.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/functionExpression.h"
-#include "ir/statements/functionDeclaration.h"
-#include "ir/statements/expressionStatement.h"
-#include "ir/statements/classDeclaration.h"
-#include "ir/statements/variableDeclarator.h"
-#include "ir/statements/variableDeclaration.h"
-#include "ir/expressions/dummyNode.h"
-#include "ir/expressions/callExpression.h"
-#include "ir/expressions/thisExpression.h"
-#include "ir/expressions/typeofExpression.h"
-#include "ir/expressions/memberExpression.h"
-#include "ir/expressions/updateExpression.h"
-#include "ir/expressions/arrowFunctionExpression.h"
-#include "ir/expressions/unaryExpression.h"
-#include "ir/expressions/yieldExpression.h"
-#include "ir/expressions/awaitExpression.h"
-#include "ir/expressions/literals/nullLiteral.h"
-#include "ir/expressions/literals/numberLiteral.h"
-#include "ir/expressions/literals/stringLiteral.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
-#include "ir/module/importDeclaration.h"
-#include "ir/module/importDefaultSpecifier.h"
-#include "ir/module/importSpecifier.h"
-#include "ir/module/exportSpecifier.h"
-#include "ir/module/exportNamedDeclaration.h"
-#include "ir/statements/assertStatement.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/ifStatement.h"
-#include "ir/statements/labelledStatement.h"
-#include "ir/statements/switchStatement.h"
-#include "ir/statements/throwStatement.h"
-#include "ir/statements/tryStatement.h"
-#include "ir/statements/whileStatement.h"
-#include "ir/statements/forOfStatement.h"
-#include "ir/statements/doWhileStatement.h"
-#include "ir/statements/breakStatement.h"
-#include "ir/statements/debuggerStatement.h"
-#include "ir/ets/etsLaunchExpression.h"
-#include "ir/ets/etsClassLiteral.h"
-#include "ir/ets/etsPrimitiveType.h"
-#include "ir/ets/etsPackageDeclaration.h"
-#include "ir/ets/etsReExportDeclaration.h"
-#include "ir/ets/etsWildcardType.h"
-#include "ir/ets/etsNewArrayInstanceExpression.h"
 #include "ir/ets/etsTuple.h"
-#include "ir/ets/etsFunctionType.h"
-#include "ir/ets/etsNewClassInstanceExpression.h"
-#include "ir/ets/etsNewMultiDimArrayInstanceExpression.h"
-#include "ir/ets/etsScript.h"
-#include "ir/ets/etsTypeReference.h"
-#include "ir/ets/etsTypeReferencePart.h"
-#include "ir/ets/etsNullishTypes.h"
-#include "ir/ets/etsUnionType.h"
-#include "ir/ets/etsImportSource.h"
-#include "ir/ets/etsImportDeclaration.h"
-#include "ir/ets/etsStructDeclaration.h"
-#include "ir/ets/etsParameterExpression.h"
-#include "ir/module/importNamespaceSpecifier.h"
-#include "ir/ts/tsAsExpression.h"
-#include "ir/ts/tsInterfaceDeclaration.h"
-#include "ir/ts/tsEnumDeclaration.h"
-#include "ir/ts/tsTypeParameterInstantiation.h"
-#include "ir/ts/tsInterfaceBody.h"
-#include "ir/ts/tsImportEqualsDeclaration.h"
-#include "ir/ts/tsArrayType.h"
-#include "ir/ts/tsQualifiedName.h"
-#include "ir/ts/tsTypeReference.h"
-#include "ir/ts/tsTypeParameter.h"
-#include "ir/ts/tsInterfaceHeritage.h"
-#include "ir/ts/tsFunctionType.h"
-#include "ir/ts/tsClassImplements.h"
-#include "ir/ts/tsEnumMember.h"
-#include "ir/ts/tsTypeAliasDeclaration.h"
-#include "ir/ts/tsTypeParameterDeclaration.h"
-#include "ir/ts/tsNonNullExpression.h"
-#include "ir/ts/tsThisType.h"
-#include "generated/signatures.h"
 
 namespace ark::es2panda::parser {
 class FunctionContext;
@@ -126,9 +29,11 @@ ir::Expression *ETSParser::ParseLaunchExpression(ExpressionParseFlags flags)
     lexer::SourcePosition start = Lexer()->GetToken().Start();
     Lexer()->NextToken();  // eat launch
 
+    lexer::SourcePosition exprStart = Lexer()->GetToken().Start();
     ir::Expression *expr = ParseLeftHandSideExpression(flags);
-    if (!expr->IsCallExpression()) {
-        ThrowSyntaxError("Only call expressions are allowed after 'launch'", expr->Start());
+    if (expr == nullptr || !expr->IsCallExpression()) {
+        LogSyntaxError("Only call expressions are allowed after 'launch'", exprStart);
+        return nullptr;
     }
     auto call = expr->AsCallExpression();
     auto *launchExpression = AllocNode<ir::ETSLaunchExpression>(call);
@@ -141,42 +46,56 @@ ir::Expression *ETSParser::ParseLaunchExpression(ExpressionParseFlags flags)
 static constexpr char const NO_DEFAULT_FOR_REST[] = "Rest parameter cannot have the default value.";
 // NOLINTEND(modernize-avoid-c-arrays)
 
+static std::string GetArgumentsSourceView(lexer::Lexer *lexer, const util::StringView::Iterator &lexerPos)
+{
+    std::string value = lexer->SourceView(lexerPos.Index(), lexer->Save().Iterator().Index()).Mutf8();
+    while (value.back() == ' ') {
+        value.pop_back();
+    }
+
+    if (value.back() == ')' || value.back() == ',') {
+        value.pop_back();
+    }
+
+    return value;
+}
+
 ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpression *const paramIdent,
                                                             ir::ETSUndefinedType *defaultUndef)
 {
     ir::ETSParameterExpression *paramExpression;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
-        if (paramIdent->IsRestElement()) {
-            ThrowSyntaxError(NO_DEFAULT_FOR_REST);
-        }
-
         auto const lexerPos = Lexer()->Save().Iterator();
         Lexer()->NextToken();  // eat '='
 
+        if (paramIdent->IsRestElement()) {
+            LogSyntaxError(NO_DEFAULT_FOR_REST);
+        }
+
         if ((GetContext().Status() & ParserStatus::ALLOW_DEFAULT_VALUE) != 0) {
-            ThrowSyntaxError("Default value is allowed only for optional parameters");
+            LogSyntaxError("Default value is allowed only for optional parameters");
         }
 
         if (defaultUndef != nullptr) {
-            ThrowSyntaxError("Not enable default value with default undefined");
+            LogSyntaxError("Not enable default value with default undefined");
         }
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS ||
             Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
-            ThrowSyntaxError("You didn't set the value.");
+            LogSyntaxError("You didn't set the value.");
         }
 
-        paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), ParseExpression());
+        auto defaultValue = ParseExpression();
+        if (!paramIdent->IsIdentifier() || defaultValue == nullptr) {  // Error processing.
+            return nullptr;
+        }
 
-        std::string value = Lexer()->SourceView(lexerPos.Index(), Lexer()->Save().Iterator().Index()).Mutf8();
-        while (value.back() == ' ') {
-            value.pop_back();
-        }
-        if (value.back() == ')' || value.back() == ',') {
-            value.pop_back();
-        }
+        paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), defaultValue);
+
+        std::string value = GetArgumentsSourceView(Lexer(), lexerPos);
         paramExpression->SetLexerSaved(util::UString(value, Allocator()).View());
-
         paramExpression->SetRange({paramIdent->Start(), paramExpression->Initializer()->End()});
+    } else if (paramIdent == nullptr) {  // Error processing.
+        return nullptr;
     } else if (paramIdent->IsIdentifier()) {
         auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
 
@@ -223,11 +142,16 @@ ir::Expression *ETSParser::ResolveArgumentUnaryExpr(ExpressionParseFlags flags)
 // NOLINTNEXTLINE(google-default-arguments)
 ir::Expression *ETSParser::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFlags flags)
 {
-    switch (Lexer()->GetToken().Type()) {
+    auto tokenFlags = lexer::NextTokenFlags::NONE;
+    lexer::TokenType operatorType = Lexer()->GetToken().Type();
+
+    switch (operatorType) {
+        case lexer::TokenType::PUNCTUATOR_MINUS:
+            tokenFlags = lexer::NextTokenFlags::UNARY_MINUS;
+            [[fallthrough]];
         case lexer::TokenType::PUNCTUATOR_PLUS_PLUS:
         case lexer::TokenType::PUNCTUATOR_MINUS_MINUS:
         case lexer::TokenType::PUNCTUATOR_PLUS:
-        case lexer::TokenType::PUNCTUATOR_MINUS:
         case lexer::TokenType::PUNCTUATOR_TILDE:
         case lexer::TokenType::PUNCTUATOR_DOLLAR_DOLLAR:
         case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK:
@@ -242,15 +166,14 @@ ir::Expression *ETSParser::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFla
         }
     }
 
-    lexer::TokenType operatorType = Lexer()->GetToken().Type();
     auto start = Lexer()->GetToken().Start();
-    Lexer()->NextToken();
+    Lexer()->NextToken(tokenFlags);
 
     ir::Expression *argument = ResolveArgumentUnaryExpr(flags);
 
     if (lexer::Token::IsUpdateToken(operatorType)) {
         if (!argument->IsIdentifier() && !argument->IsMemberExpression()) {
-            ThrowSyntaxError("Invalid left-hand side in prefix operation");
+            LogSyntaxError("Invalid left-hand side in prefix operation");
         }
     }
 
@@ -261,6 +184,8 @@ ir::Expression *ETSParser::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFla
         returnExpr = AllocNode<ir::UpdateExpression>(argument, operatorType, true);
     } else if (operatorType == lexer::TokenType::KEYW_TYPEOF) {
         returnExpr = AllocNode<ir::TypeofExpression>(argument);
+    } else if (operatorType == lexer::TokenType::PUNCTUATOR_MINUS) {
+        returnExpr = !argument->IsNumberLiteral() ? AllocNode<ir::UnaryExpression>(argument, operatorType) : argument;
     } else {
         returnExpr = AllocNode<ir::UnaryExpression>(argument, operatorType);
     }
@@ -268,6 +193,45 @@ ir::Expression *ETSParser::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFla
     returnExpr->SetRange({start, end});
 
     return returnExpr;
+}
+
+// NOLINTNEXTLINE(google-default-arguments)
+ir::Expression *ETSParser::ParsePropertyDefinition(ExpressionParseFlags flags)
+{
+    ir::PropertyKind propertyKind = ir::PropertyKind::INIT;
+    ParserStatus methodStatus = ParserStatus::NO_OPTS;
+
+    const auto startPos = Lexer()->Save();
+    Lexer()->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);
+    lexer::SourcePosition start = Lexer()->GetToken().Start();
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD_PERIOD_PERIOD) {
+        return ParseSpreadElement(flags);
+    }
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+        if (ParsePropertyModifiers(flags, &propertyKind, &methodStatus)) {
+            return ParseShorthandProperty(&startPos);
+        }
+    } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MULTIPLY) {
+        ParseGeneratorPropertyModifier(flags, &methodStatus);
+    }
+
+    bool isComputed = Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET;
+    ir::Expression *key = ParsePropertyKey(flags);
+
+    ir::Expression *value = ParsePropertyValue(&propertyKind, &methodStatus, flags);
+    if (key == nullptr || value == nullptr) {  // Error processing.
+        return nullptr;
+    }
+
+    lexer::SourcePosition end = value->End();
+
+    auto *returnProperty =
+        AllocNode<ir::Property>(propertyKind, key, value, methodStatus != ParserStatus::NO_OPTS, isComputed);
+    returnProperty->SetRange({start, end});
+
+    return returnProperty;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -307,7 +271,7 @@ ir::Expression *ETSParser::ParseDefaultPrimaryExpression(ExpressionParseFlags fl
         return ParsePrimaryExpressionIdent(flags);
     }
 
-    ThrowSyntaxError({"Unexpected token '", lexer::TokenToString(Lexer()->GetToken().Type()), "'."});
+    LogSyntaxError({"Unexpected token '", lexer::TokenToString(Lexer()->GetToken().Type()), "'."});
     return nullptr;
 }
 
@@ -325,7 +289,7 @@ ir::Expression *ETSParser::ParsePrimaryExpressionWithLiterals(ExpressionParseFla
             return ParseUndefinedLiteral();
         }
         case lexer::TokenType::LITERAL_NUMBER: {
-            return ParseCoercedNumberLiteral();
+            return ParseNumberLiteral();
         }
         case lexer::TokenType::LITERAL_STRING: {
             return ParseStringLiteral();
@@ -371,13 +335,18 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
             return ParseTemplateLiteral();
         }
         case lexer::TokenType::KEYW_TYPE: {
-            ThrowSyntaxError("Type alias is allowed only as top-level declaration");
+            LogSyntaxError("Type alias is allowed only as top-level declaration");
+            ParseTypeAliasDeclaration();  // Try to parse type alias and drop the result.
+            return nullptr;
         }
         case lexer::TokenType::PUNCTUATOR_FORMAT: {
             return ParseExpressionFormatPlaceholder();
         }
         case lexer::TokenType::KEYW_TYPEOF: {
             return ParseUnaryOrPrefixUpdateExpression();
+        }
+        case lexer::TokenType::KEYW_IMPORT: {
+            return ParseETSImportExpression();
         }
         default: {
             return ParsePrimaryExpressionWithLiterals(flags);
@@ -413,6 +382,7 @@ bool ETSParser::IsArrowFunctionExpressionStart()
     size_t openBrackets = 1;
     bool expectIdentifier = true;
     while (tokenType != lexer::TokenType::EOS && openBrackets > 0) {
+        lexer::NextTokenFlags flag = lexer::NextTokenFlags::NONE;
         switch (tokenType) {
             case lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS:
                 --openBrackets;
@@ -422,6 +392,10 @@ bool ETSParser::IsArrowFunctionExpressionStart()
                 break;
             case lexer::TokenType::PUNCTUATOR_COMMA:
                 expectIdentifier = true;
+                break;
+            // (DZ) need for correct processing of possible number literals
+            case lexer::TokenType::PUNCTUATOR_MINUS:
+                flag = lexer::NextTokenFlags::UNARY_MINUS;
                 break;
             case lexer::TokenType::PUNCTUATOR_SEMI_COLON:
                 Lexer()->Rewind(savedPos);
@@ -437,7 +411,7 @@ bool ETSParser::IsArrowFunctionExpressionStart()
                 }
                 expectIdentifier = false;
         }
-        Lexer()->NextToken();
+        Lexer()->NextToken(flag);
         tokenType = Lexer()->GetToken().Type();
     }
 
@@ -480,7 +454,11 @@ ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterLis
     ir::Expression *expr = ParseExpression(newFlags);
 
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
+    }
+
+    if (expr == nullptr) {  // Error processing.
+        return nullptr;
     }
 
     expr->SetGrouped();
@@ -540,9 +518,9 @@ std::optional<ir::Expression *> ETSParser::GetPostPrimaryExpression(ir::Expressi
             return returnExpression;
         }
         case lexer::TokenType::PUNCTUATOR_FORMAT:
-            ThrowUnexpectedToken(lexer::TokenType::PUNCTUATOR_FORMAT);
         case lexer::TokenType::PUNCTUATOR_ARROW:
-            ThrowUnexpectedToken(lexer::TokenType::PUNCTUATOR_ARROW);
+            LogUnexpectedToken(Lexer()->GetToken().Type());
+            [[fallthrough]];
         default:
             return std::nullopt;
     }
@@ -572,8 +550,14 @@ ir::Expression *ETSParser::ParsePotentialAsExpression(ir::Expression *primaryExp
     ASSERT(Lexer()->GetToken().Type() == lexer::TokenType::KEYW_AS);
     Lexer()->NextToken();
 
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     ir::TypeNode *type = ParseTypeAnnotation(&options);
+
+    if (type == nullptr) {
+        // Error processing
+        // Failed to parse type annotation for AsExpression
+        return nullptr;
+    }
 
     auto *asExpression = AllocNode<ir::TSAsExpression>(primaryExpr, type, false);
     asExpression->SetRange(primaryExpr->Range());
@@ -589,7 +573,7 @@ ir::ClassDefinition *ETSParser::CreateClassDefinitionForNewExpression(ArenaVecto
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
         if (baseTypeReference != nullptr) {
-            ThrowSyntaxError("Can not use 'new' on primitive types.", baseTypeReference->Start());
+            LogSyntaxError("Can not use 'new' on primitive types.", baseTypeReference->Start());
         }
 
         Lexer()->NextToken();
@@ -633,7 +617,7 @@ ir::Expression *ETSParser::ParseNewExpression()
 
     Lexer()->NextToken();  // eat new
 
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     ir::TypeNode *baseTypeReference = ParseBaseTypeReference(&options);
     ir::TypeNode *typeReference = baseTypeReference;
     if (typeReference == nullptr) {
@@ -644,7 +628,12 @@ ir::Expression *ETSParser::ParseNewExpression()
             typeReference = ParseTypeAnnotation(&options);
         }
     } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ThrowSyntaxError("Invalid { after base types.");
+        LogSyntaxError("Invalid { after base types.");
+        Lexer()->NextToken();  // eat '{'
+    }
+
+    if (typeReference == nullptr) {  // Error processing.
+        return nullptr;
     }
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
@@ -692,7 +681,7 @@ ir::Expression *ETSParser::ParseAsyncExpression()
     Lexer()->NextToken();  // eat 'async'
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         !IsArrowFunctionExpressionStart()) {
-        ThrowSyntaxError("Unexpected token. expected '('");
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
     }
 
     auto newStatus = ParserStatus::NEED_RETURN_TYPE | ParserStatus::ARROW_FUNCTION | ParserStatus::ASYNC_FUNCTION;
@@ -712,6 +701,20 @@ ir::Expression *ETSParser::ParseAwaitExpression()
     return awaitExpression;
 }
 
+ir::Expression *ETSParser::ParseETSImportExpression()
+{
+    lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
+    ExpectToken(lexer::TokenType::KEYW_IMPORT);
+    ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
+    ir::Expression *source = ParseExpression();
+    lexer::SourcePosition endLoc = Lexer()->GetToken().Start();
+    ExpectToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
+
+    auto *importExpression = AllocNode<ir::ImportExpression>(source);
+    importExpression->SetRange({startLoc, endLoc});
+    return importExpression;
+}
+
 ir::ThisExpression *ETSParser::ParseThisExpression()
 {
     auto *thisExpression = TypedParser::ParseThisExpression();
@@ -724,6 +727,7 @@ ir::ThisExpression *ETSParser::ParseThisExpression()
         case lexer::TokenType::PUNCTUATOR_PERIOD:
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS:
         case lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS:
+        case lexer::TokenType::PUNCTUATOR_RIGHT_BRACE:
         case lexer::TokenType::PUNCTUATOR_SEMI_COLON:
         case lexer::TokenType::PUNCTUATOR_COLON:
         case lexer::TokenType::PUNCTUATOR_EQUAL:
@@ -738,7 +742,7 @@ ir::ThisExpression *ETSParser::ParseThisExpression()
             break;
         }
         default: {
-            ThrowUnexpectedToken(Lexer()->GetToken().Type());
+            LogUnexpectedToken(Lexer()->GetToken().Type());
             break;
         }
     }
@@ -786,7 +790,7 @@ void ETSParser::ValidateInstanceOfExpression(ir::Expression *expr)
 
         // Display error message even when type declaration is correct
         // `instanceof A<String>;`
-        ThrowSyntaxError("Invalid right-hand side in 'instanceof' expression");
+        LogSyntaxError("Invalid right-hand side in 'instanceof' expression");
     }
 }
 
@@ -801,6 +805,10 @@ ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
     }
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
+    if (unaryExpressionNode == nullptr) {
+        return nullptr;
+    }
+
     if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {
         ValidateInstanceOfExpression(unaryExpressionNode);
     }

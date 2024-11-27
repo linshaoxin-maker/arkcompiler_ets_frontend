@@ -43,7 +43,7 @@ ir::AstNode *TryConvertToCharLiteral(checker::ETSChecker *checker, ir::AstNode *
     auto newValue = checker->Allocator()->New<ir::CharLiteral>(value);
     newValue->SetParent(parent);
     newValue->SetRange(ast->Range());
-    if (parent->IsCallExpression() && parent->AsCallExpression()->Callee()->IsArrowFunctionExpression()) {
+    if (ast->HasBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_CHAR)) {
         newValue->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_CHAR);
     }
 
@@ -63,6 +63,7 @@ bool ConstStringToCharLowering::Perform(public_lib::Context *const ctx, parser::
     auto *const checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(
+        // CC-OFFNXT(G.FMT.14-CPP) project code style
         [checker](ir::AstNode *ast) -> ir::AstNode * {
             if (auto newValue = TryConvertToCharLiteral(checker, ast); newValue != nullptr) {
                 return newValue;

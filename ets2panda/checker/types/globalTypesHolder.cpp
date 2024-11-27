@@ -48,6 +48,7 @@
 #include "checker/types/ets/etsNullishTypes.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/wildcardType.h"
+#include "checker/types/ets/etsNeverType.h"
 #include "util/helpers.h"
 
 namespace ark::es2panda::checker {
@@ -146,6 +147,7 @@ void GlobalTypesHolder::AddEtsSpecificTypes(ArenaAllocator *allocator)
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED)] = allocator->New<ETSUndefinedType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_WILDCARD)] = allocator->New<WildcardType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::TYPE_ERROR)] = allocator->New<TypeError>();
+    globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_NEVER)] = allocator->New<ETSNeverType>();
 }
 
 void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
@@ -164,6 +166,7 @@ void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
     builtinNameMappings_.emplace("Long", GlobalTypeId::ETS_LONG_BUILTIN);
     builtinNameMappings_.emplace("Object", GlobalTypeId::ETS_OBJECT_BUILTIN);
     builtinNameMappings_.emplace("Runtime", GlobalTypeId::ETS_RUNTIME_BUILTIN);
+    builtinNameMappings_.emplace("RuntimeLinker", GlobalTypeId::ETS_RUNTIME_LINKER_BUILTIN);
     builtinNameMappings_.emplace("Short", GlobalTypeId::ETS_SHORT_BUILTIN);
     builtinNameMappings_.emplace("StackTraceElement", GlobalTypeId::ETS_STACK_TRACE_ELEMENT_BUILTIN);
     builtinNameMappings_.emplace("StackTrace", GlobalTypeId::ETS_STACK_TRACE_BUILTIN);
@@ -188,7 +191,6 @@ void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
     builtinNameMappings_.emplace("LongBox", GlobalTypeId::ETS_LONG_BOX_BUILTIN);
     builtinNameMappings_.emplace("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
     builtinNameMappings_.emplace("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
-    builtinNameMappings_.emplace("never", GlobalTypeId::ETS_NEVER_BUILTIN);
 }
 
 GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
@@ -401,6 +403,11 @@ Type *GlobalTypesHolder::GlobalETSNullType()
 Type *GlobalTypesHolder::GlobalETSUndefinedType()
 {
     return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED));
+}
+
+Type *GlobalTypesHolder::GlobalETSNeverType()
+{
+    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_NEVER));
 }
 
 Type *GlobalTypesHolder::GlobalETSNullishObjectType()
@@ -666,11 +673,6 @@ Type *GlobalTypesHolder::GlobalFloatBoxBuiltinType()
 Type *GlobalTypesHolder::GlobalDoubleBoxBuiltinType()
 {
     return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN));
-}
-
-Type *GlobalTypesHolder::GlobalBuiltinNeverType()
-{
-    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_NEVER_BUILTIN));
 }
 
 size_t GlobalTypesHolder::VariadicFunctionTypeThreshold()
