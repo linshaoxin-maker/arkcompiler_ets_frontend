@@ -484,6 +484,7 @@ void ETSChecker::CreatePartialClassDeclaration(ir::ClassDefinition *const newCla
     }
 
     newClassDefinition->SetVariable(newClassDefinition->Ident()->Variable());
+    newClassDefinition->Scope()->AddFlag(static_cast<const ir::AstNode *>(classDef)->Scope()->Flags());
     newClassDefinition->AddModifier(static_cast<const ir::AstNode *>(classDef)->Modifiers());
 
     for (auto *const prop : classDef->Body()) {

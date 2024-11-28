@@ -60,10 +60,11 @@ checker::Type *ETSNamespace::Check(checker::ETSChecker *checker)
 
 Identifier *ETSNamespace::GetBaseName() const
 {
-    auto *part = expr_->AsETSTypeReference()->Part();
-    if (part->Name()->IsIdentifier()){
-        return part->Name()->AsIdentifier();
-    }
-    return part->Name()->AsTSQualifiedName()->Right();
+    return expr_->AsIdentifier();
+    // auto *part = expr_->AsETSTypeReference()->Part();
+    // if (part->Name()->IsIdentifier()){
+    //     return part->Name()->AsIdentifier();
+    // }
+    // return part->Name()->AsTSQualifiedName()->Right();
 }
 }  // namespace ark::es2panda::ir

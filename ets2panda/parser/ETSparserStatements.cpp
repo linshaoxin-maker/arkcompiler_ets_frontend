@@ -214,9 +214,9 @@ ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags
             break;
         case lexer::TokenType::KEYW_NAMESPACE: {
             GetContext().Status() |= ParserStatus::IN_NAMESPACE;
-            auto *ns = ParseNamespace(ir::ModifierFlags::DECLARE | ir::ModifierFlags::EXPORT);
+            result = ParseNamespace(ir::ModifierFlags::NONE);
             GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
-            return ns;
+            break;
         }
         case lexer::TokenType::KEYW_STATIC:
         case lexer::TokenType::KEYW_ABSTRACT:

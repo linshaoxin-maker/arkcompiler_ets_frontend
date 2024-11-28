@@ -52,9 +52,10 @@ private:
                             bool mainExists = false, bool topLevelStatementsExist = false);
     void SetupGlobalMethods(ir::ClassDefinition *globalClass, ArenaVector<ir::Statement *> &&initStatements, bool isDeclare);
     void AddStaticBlockToClass(ir::AstNode *node);
-    ir::ClassDeclaration *TransformNamespace(ir::ETSNamespace * ns, parser::Program *program, std::string &baseName);
-    ArenaVector<ir::ClassDeclaration *> TransformNamespaces(ArenaVector<ir::ETSNamespace *> namespaces, parser::Program *program, std::string &baseName);
-    ir::ClassDeclaration *CreateGlobalClass(std::string &fullName, bool isMainExit = true);
+    ir::ClassDeclaration *TransformNamespace(ir::ETSNamespace * ns, parser::Program *program);
+    void MergeNamespace(ArenaVector<ir::ETSNamespace *> &namespaces);
+    ArenaVector<ir::ClassDeclaration *> TransformNamespaces(ArenaVector<ir::ETSNamespace *> &namespaces, parser::Program *program);
+    ir::ClassDeclaration *CreateGlobalClass(std::string &className, bool isMainExit = true);
     ir::ClassStaticBlock *CreateStaticBlock(ir::ClassDefinition *classDef);
     ir::MethodDefinition *CreateGlobalMethod(const std::string_view name, ArenaVector<ir::Statement *> &&statements);
     void AddInitCallFromStaticBlock(ir::ClassDefinition *globalClass, ir::MethodDefinition *initMethod);

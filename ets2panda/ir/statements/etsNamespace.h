@@ -17,7 +17,6 @@
 #define ES2PANDA_IR_STATEMENT_DECLARE_ETS_NAMESPACE_H
 
 #include "etsTopLevel.h"
-#include "ir/ets/etsScript.h"
 
 namespace ark::es2panda::ir {
 

@@ -38,8 +38,16 @@ ir::ETSNamespace *ETSParser::ParseNamespaceImp(ir::ModifierFlags flags)
 {
     Lexer()->NextToken();
     flags |= ir::ModifierFlags::DECLARE;
-    auto opt = TypeAnnotationParsingOptions::NO_OPTS;
-    ir::Expression *expr = ParseTypeReference(&opt);
+    ir::ETSNamespace *result = AllocNode<ir::ETSNamespace>(Allocator(), ArenaVector<ir::Statement *>(Allocator()->Adapter()), ExpectIdentifier());
+    ir::ETSNamespace *parent = result;
+    ir::ETSNamespace *child = nullptr;
+    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
+        Lexer()->NextToken();
+        child = AllocNode<ir::ETSNamespace>(Allocator(), ArenaVector<ir::Statement *>(Allocator()->Adapter()), ExpectIdentifier());
+        child->SetParent(parent);
+        parent->Statements().emplace_back(child);
+        parent = child;
+    }
     ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_BRACE);
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
@@ -51,14 +59,20 @@ ir::ETSNamespace *ETSParser::ParseNamespaceImp(ir::ModifierFlags flags)
             continue;
         }
         auto stmt = ParseTopLevelStatement();
-        if (stmt != nullptr) {
-            statements.emplace_back(stmt);
+        if (stmt == nullptr) {
+            LogSyntaxError("Failed to parse statement.");
+            break;
+        } else {
+            statements.emplace_back(stmt); 
         }
     }
     Lexer()->NextToken();
-    auto ns = AllocNode<ir::ETSNamespace>(Allocator(), std::move(statements), expr);
-    return ns;
+    if (child != nullptr) {
+        child->SetStatements(std::move(statements));
+    } else {
+        result->SetStatements(std::move(statements));
+    }
+    return result;
 }
-
 
 }  // namespace ark::es2panda::parser
