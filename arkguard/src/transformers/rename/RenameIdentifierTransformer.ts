@@ -64,7 +64,8 @@ import {
   isInterfaceScope,
   isObjectLiteralScope,
   exportElementsWithoutSymbol,
-  getNameWithScopeLoc
+  getNameWithScopeLoc,
+  symbolAlias
 } from '../../utils/ScopeAnalyzer';
 
 import type {
@@ -691,6 +692,10 @@ namespace secharmony {
           }
         }
 
+        if (symbolAlias.has(sym)) {
+          sym = TypeUtils.getOriginalSymbol(sym, checker);
+        }
+        
         // Add new names to name cache
         const symbolInfo: MangledSymbolInfo = mangledSymbolNames.get(sym);
         const identifierCache = nameCache?.get(IDENTIFIER_CACHE);

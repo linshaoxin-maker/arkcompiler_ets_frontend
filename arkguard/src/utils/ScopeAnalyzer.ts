@@ -66,6 +66,7 @@ import type {
 
 import {NodeUtils} from './NodeUtils';
 import {isParameterPropertyModifier, isViewPUBasedClass} from './OhsUtil';
+import { TypeUtils } from './TypeUtils';
 /**
  * kind of a scope
  */
@@ -76,6 +77,7 @@ namespace secharmony {
    * A map used to track whether identifiers without symbols are in the top-level scope.
    */
   export const exportElementsWithoutSymbol: Map<Node, boolean> = new Map();
+  export const symbolAlias: Set<Symbol> = new Set();
 
   /**
    * type of scope
@@ -350,6 +352,12 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
+
+      if (current.kind !== ScopeKind.GLOBAL) {
+        symbolAlias.add(defSymbols);
+        defSymbols = TypeUtils.getOriginalSymbol(defSymbols, checker);
+      }
+      
       current.addDefinition(defSymbols, true);
     }
 
@@ -989,6 +997,32 @@ namespace secharmony {
       const sym: Symbol | undefined = checker.getSymbolAtLocation(node);
       if (!sym) {
         current.mangledNames.add((node as Identifier).text);
+      }
+    }
+
+    function tryAddExportNamesIntoParentScope(sym: Symbol, currentScope: Scope): void {
+      if (currentScope.kind === ScopeKind.GLOBAL) {
+        return;
+      }
+      let parentScope: Scope = currentScope;
+      let originalSymbol: Symbol = TypeUtils.getOriginalSymbol(sym, checker);
+      while (parentScope) {
+        tryAddExportNamesIntoCurrentScope(sym, originalSymbol, parentScope);
+        parentScope = parentScope.parent;
+      }
+    }
+
+    function tryAddExportNamesIntoCurrentScope(sym: Symbol, originalSymbol: Symbol, currentScope: Scope): void {
+      if (currentScope.exportNames.has(sym.name)) {
+        return;
+      }
+      let currentDefs: Set<Symbol> = currentScope.defs;
+      for (const curDef of currentDefs) {
+        let curOriginalSym: Symbol = TypeUtils.getOriginalSymbol(curDef, checker);
+        if (curOriginalSym === originalSymbol) {
+          currentScope.exportNames.add(sym.name);
+          return;
+        }
       }
     }
 
