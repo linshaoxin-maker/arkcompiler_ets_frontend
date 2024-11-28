@@ -787,7 +787,7 @@ ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
     if (unaryExpressionNode == nullptr) {
-        return AllocNode<ir::Identifier>(Allocator());
+        return AllocErrorExpression();
     }
 
     if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {

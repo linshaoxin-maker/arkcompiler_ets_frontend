@@ -1388,4 +1388,8 @@ bool ParserImpl::CheckModuleAsModifier()
     return true;
 }
 
+ir::Identifier *ParserImpl::AllocErrorExpression()
+{
+    return AllocNode<ir::Identifier>(Allocator());
+}
 }  // namespace ark::es2panda::parser

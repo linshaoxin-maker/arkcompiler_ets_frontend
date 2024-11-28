@@ -891,7 +891,8 @@ ir::Expression *ParserImpl::ParseNewExpression()
 
 ir::Expression *ParserImpl::ParseLeftHandSideExpression(ExpressionParseFlags flags)
 {
-    return ParseMemberExpression(false, flags);
+    auto expr = ParseMemberExpression(false, flags);
+    return expr != nullptr ? expr : AllocErrorExpression();
 }
 
 ir::MetaProperty *ParserImpl::ParsePotentialNewTarget()

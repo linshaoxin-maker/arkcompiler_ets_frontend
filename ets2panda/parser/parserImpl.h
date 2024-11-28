@@ -19,6 +19,7 @@
 #include "es2panda.h"
 #include "forwardDeclForParserImpl.h"
 #include "ir/base/scriptFunctionSignature.h"
+#include "ir/visitor/AstVisitor.h"
 #include "lexer/token/sourceLocation.h"
 #include "lexer/token/tokenType.h"
 #include "parser/context/classPrivateContext.h"
@@ -192,6 +193,8 @@ protected:
         }
         return ret;
     }
+
+    ir::Identifier *AllocErrorExpression();
 
     ArenaAllocator *Allocator() const
     {
