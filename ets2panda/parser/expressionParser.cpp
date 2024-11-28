@@ -208,6 +208,9 @@ ir::ArrayExpression *ParserImpl::ParseArrayExpression(ExpressionParseFlags flags
         util::ErrorRecursionGuard infiniteLoopBlocker(lexer_);
 
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
+            if (IsETSParser()) {
+                LogSyntaxError("Array initialization cannot assignable omitted expression");
+            }
             auto *omitted = AllocNode<ir::OmittedExpression>();
             omitted->SetRange(lexer_->GetToken().Loc());
             elements.push_back(omitted);

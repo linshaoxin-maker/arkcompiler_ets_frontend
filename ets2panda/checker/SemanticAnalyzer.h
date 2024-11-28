@@ -42,6 +42,7 @@
 #include "ir/ets/etsNewArrayInstanceExpression.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
 #include "ir/ets/etsNewMultiDimArrayInstanceExpression.h"
+#include "ir/ets/etsNullishTypes.h"
 #include "ir/ets/etsPackageDeclaration.h"
 #include "ir/ets/etsParameterExpression.h"
 #include "ir/ets/etsPrimitiveType.h"

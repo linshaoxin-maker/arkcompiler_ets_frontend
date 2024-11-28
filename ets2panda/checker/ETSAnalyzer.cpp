@@ -558,14 +558,16 @@ checker::Type *ETSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
     return node->GetType(checker);
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSNullType *node) const
+checker::Type *ETSAnalyzer::Check(ir::ETSNullType *node) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return node->GetType(checker);
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSUndefinedType *node) const
+checker::Type *ETSAnalyzer::Check(ir::ETSUndefinedType *node) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return node->GetType(checker);
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSNeverType *node) const
