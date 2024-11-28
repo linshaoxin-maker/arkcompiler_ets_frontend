@@ -43,6 +43,7 @@ public:
     void CheckObjectExprProps(const ir::ObjectExpression *expr, checker::PropertySearchFlags searchFlags) const;
     std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
                                                                          Type *leftType) const;
+    [[nodiscard]] checker::Type *ReturnTypeForStatement([[maybe_unused]] const ir::Statement *const st) const;
 
 private:
     ETSChecker *GetETSChecker() const;
@@ -63,12 +64,9 @@ private:
     checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
     {
         checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
-        if (calleeType->IsTypeError()) {
-            expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
-            return checker->GlobalTypeError();
-        }
+        ASSERT(calleeType != nullptr);
 
-        if (!calleeType->IsETSObjectType()) {
+        if (calleeType->IsTypeError() || !calleeType->IsETSObjectType()) {
             checker->LogTypeError("This expression is not constructible.", expr->Start());
             expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
             return checker->GlobalTypeError();

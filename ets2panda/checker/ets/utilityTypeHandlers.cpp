@@ -24,13 +24,15 @@
 
 namespace ark::es2panda::checker {
 
-ir::TypeNode *ETSChecker::GetUtilityTypeTypeParamNode(const ir::TSTypeParameterInstantiation *const typeParams,
-                                                      const std::string_view &utilityTypeName)
+std::optional<ir::TypeNode *> ETSChecker::GetUtilityTypeTypeParamNode(
+    const ir::TSTypeParameterInstantiation *const typeParams, const std::string_view &utilityTypeName)
 {
+    // NOTE(kaskov) Replace check parameters by universal function, probably "CheckNumberOfTypeArguments"
     if (typeParams->Params().size() != 1) {
-        LogTypeError({"Invalid number of type parameters for ", utilityTypeName, " type"}, typeParams->Start());
+        LogTypeError({"Invalid number of type parameters for ", utilityTypeName, " type, should be 1."},
+                     typeParams->Start());
+        return std::nullopt;
     }
-
     return typeParams->Params().front();
 }
 
@@ -38,17 +40,16 @@ Type *ETSChecker::HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstan
                                                  const std::string_view &utilityType)
 {
     if (typeParams == nullptr) {
+        ASSERT(typeParams != nullptr);
+        return GlobalTypeError();
+    }
+    std::optional<ir::TypeNode *> possiblyTypeParam = GetUtilityTypeTypeParamNode(typeParams, utilityType);
+    if (!possiblyTypeParam.has_value()) {
         return GlobalTypeError();
     }
 
-    ir::TypeNode *typeParam = GetUtilityTypeTypeParamNode(typeParams, utilityType);
-
-    Type *bareType = typeParam->Check(this);
-
-    if (bareType == nullptr) {
-        bareType = typeParam->GetType(this);
-    }
-
+    Type *bareType = possiblyTypeParam.value()->Check(this);
+    ASSERT(bareType);
     if (!bareType->IsETSReferenceType()) {
         LogTypeError("Only reference types can be converted to utility types.", typeParams->Start());
         return GlobalTypeError();
@@ -872,26 +873,6 @@ ir::MethodDefinition *ETSChecker::CreateNonStaticClassInitializer(varbinder::Cla
     ctor->SetTsType(funcType);
 
     return ctor;
-}
-
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// Readonly utility type
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
-{
-    if (typeParams == nullptr) {
-        return GlobalTypeError();
-    }
-
-    auto *const typeParamNode = GetUtilityTypeTypeParamNode(typeParams, compiler::Signatures::READONLY_TYPE_NAME);
-    auto *typeToBeReadonly = typeParamNode->Check(this);
-
-    if (auto found = NamedTypeStack().find(typeToBeReadonly); found != NamedTypeStack().end()) {
-        return *found;
-    }
-
-    NamedTypeStackElement ntse(this, typeToBeReadonly);
-    return GetReadonlyType(typeToBeReadonly);
 }
 
 Type *ETSChecker::GetReadonlyType(Type *type)

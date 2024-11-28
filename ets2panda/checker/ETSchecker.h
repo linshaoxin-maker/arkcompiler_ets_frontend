@@ -142,6 +142,8 @@ public:
     [[nodiscard]] Type *InvalidateType(ir::Typed<ir::AstNode> *node);
     [[nodiscard]] Type *TypeError(ir::Typed<ir::AstNode> *node, std::string_view message,
                                   const lexer::SourcePosition &at);
+    [[nodiscard]] Type *TypeError(ir::Typed<ir::AstNode> *node, std::initializer_list<TypeErrorMessageElement> list,
+                                  const lexer::SourcePosition &at);
     [[nodiscard]] Type *TypeError(varbinder::Variable *var, std::string_view message, const lexer::SourcePosition &at);
 
     void InitializeBuiltins(varbinder::ETSBinder *varbinder);
@@ -646,8 +648,8 @@ public:
     bool CheckVoidAnnotation(const ir::ETSPrimitiveType *typeAnnotation);
 
     // Utility type handler functions
-    ir::TypeNode *GetUtilityTypeTypeParamNode(const ir::TSTypeParameterInstantiation *typeParams,
-                                              const std::string_view &utilityTypeName);
+    std::optional<ir::TypeNode *> GetUtilityTypeTypeParamNode(const ir::TSTypeParameterInstantiation *typeParams,
+                                                              const std::string_view &utilityTypeName);
     Type *HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstantiation *typeParams,
                                          const std::string_view &utilityType);
     // Partial
@@ -694,7 +696,6 @@ public:
     ir::MethodDefinition *CreateNonStaticClassInitializer(varbinder::ClassScope *classScope,
                                                           varbinder::RecordTable *recordTable);
     // Readonly
-    Type *HandleReadonlyType(const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetReadonlyType(Type *type);
     void MakePropertiesReadonly(ETSObjectType *classType);
     // Required
