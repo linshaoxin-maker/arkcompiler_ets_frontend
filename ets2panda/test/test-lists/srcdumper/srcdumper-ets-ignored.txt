@@ -221,6 +221,7 @@ ast/parser/ets/extension_function_tests/extension_function_array2_primitive.sts
 ast/parser/ets/extension_function_tests/extension_function_array3.sts
 ast/parser/ets/extension_function_tests/extension_function_array3_primitive.sts
 ast/parser/ets/extension_function_tests/extension_function_array_primitive.sts
+ast/parser/ets/record_value_memberexpression.sts
 ast/compiler/ets/extension_function_tests/extension_function_primitive.sts
 
 # FailKind.ES2PANDA_FAIL
