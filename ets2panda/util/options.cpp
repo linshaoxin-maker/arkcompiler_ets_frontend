@@ -215,6 +215,13 @@ struct AllArgs {
     ark::PandArg<bool> opDumpDebugInfo {"dump-debug-info", false, "Dump debug info"};
     ark::PandArg<int> opOptLevel {"opt-level", 0, "Compiler optimization level (options: 0 | 1 | 2)", 0, MAX_OPT_LEVEL};
     ark::PandArg<bool> opEtsModule {"ets-module", false, "Compile the input as ets-module"};
+    ark::PandArg<bool> opRunAssignAnalyzer {"assign-analyzer",
+#ifndef NDEBUG
+                                            true,
+#else
+                                            false,
+#endif
+                                            "Execute assign analyzer"};
 
     // ETS-warnings
     ark::PandArg<bool> opEtsEnableAll {"ets-warnings-all", false, "Show performance-related ets-warnings"};
@@ -364,6 +371,7 @@ struct AllArgs {
         argparser.Add(&opDumpAssembly);
         argparser.Add(&opDebugInfo);
         argparser.Add(&opDumpDebugInfo);
+        argparser.Add(&opRunAssignAnalyzer);
 
         argparser.Add(&opOptLevel);
         argparser.Add(&opEtsModule);
@@ -420,6 +428,7 @@ struct AllArgs {
         compilerOptions.opDumpAstOnlySilent = opDumpAstOnlySilent.GetValue();
         compilerOptions.dumpCheckedAst = opDumpCheckedAst.GetValue();
         compilerOptions.dumpDebugInfo = opDumpDebugInfo.GetValue();
+        compilerOptions.runAssignAnalyzer = opRunAssignAnalyzer.GetValue();
         compilerOptions.isDebug = opDebugInfo.GetValue();
         compilerOptions.parseOnly = opParseOnly.GetValue();
         compilerOptions.stdLib = stdLib.GetValue();
