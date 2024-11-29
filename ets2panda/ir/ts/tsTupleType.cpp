@@ -29,7 +29,7 @@
 namespace ark::es2panda::ir {
 void TSTupleType::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : elementTypes_) {
+    for (auto *&it : SafeIter(elementTypes_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = static_cast<TypeNode *>(transformedNode);

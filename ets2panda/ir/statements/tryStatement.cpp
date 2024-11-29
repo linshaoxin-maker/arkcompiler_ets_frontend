@@ -33,7 +33,7 @@ void TryStatement::TransformChildren(const NodeTransformer &cb, std::string_view
         block_ = transformedNode->AsBlockStatement();
     }
 
-    for (auto *&it : catchClauses_) {
+    for (auto *&it : SafeIter(catchClauses_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsCatchClause();

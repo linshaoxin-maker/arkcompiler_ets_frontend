@@ -29,7 +29,7 @@ void SwitchStatement::TransformChildren(const NodeTransformer &cb, std::string_v
         discriminant_ = transformedNode->AsExpression();
     }
 
-    for (auto *&it : cases_) {
+    for (auto *&it : SafeIter(cases_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsSwitchCaseStatement();

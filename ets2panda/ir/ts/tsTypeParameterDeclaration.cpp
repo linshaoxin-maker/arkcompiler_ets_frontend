@@ -25,7 +25,7 @@
 namespace ark::es2panda::ir {
 void TSTypeParameterDeclaration::TransformChildren(const NodeTransformer &cb, std::string_view transformationName)
 {
-    for (auto *&it : params_) {
+    for (auto *&it : SafeIter(params_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsTSTypeParameter();

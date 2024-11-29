@@ -23,7 +23,7 @@
 namespace ark::es2panda::ir {
 void ETSUnionType::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : types_) {
+    for (auto *&it : SafeIter(types_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = static_cast<TypeNode *>(transformedNode);

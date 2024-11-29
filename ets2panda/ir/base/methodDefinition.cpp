@@ -93,14 +93,14 @@ void MethodDefinition::TransformChildren(const NodeTransformer &cb, std::string_
         value_ = transformedNode->AsExpression();
     }
 
-    for (auto *&it : overloads_) {
+    for (auto *&it : SafeIter(overloads_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsMethodDefinition();
         }
     }
 
-    for (auto *&it : decorators_) {
+    for (auto *&it : SafeIter(decorators_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsDecorator();
