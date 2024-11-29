@@ -75,6 +75,14 @@ def parse_args():
                         'only: Only include use cases for ES2023' +
                         'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
                         'and es2022_tests and es2023_tests and intl_tests and other_tests')
+    parser.add_argument('--es2024', default=False, const='all',
+                        nargs='?', choices=['all', 'only', 'other'],
+                        help='Run test262 - ES2024. ' +
+                        'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and es2023_tests and es2024_tests and intl_tests' +
+                        'only: Only include use cases for ES2024' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and es2023_tests and es2024_tests and intl_tests and other_tests')
     parser.add_argument('--intl', default=False, const='intl',
                         nargs='?', choices=['intl'],
                         help='Run test262 - Intltest. ' +
@@ -217,6 +225,7 @@ def init(args):
     remove_dir(TEST_SENDABLE_DIR)
     remove_dir(TEST_ES2022_DIR)
     remove_dir(TEST_ES2023_DIR)
+    remove_dir(TEST_ES2024_DIR)
     remove_dir(TEST_CI_DIR)
     get_all_skip_tests(args)
     excuting_npm_install(args)
@@ -348,6 +357,8 @@ class TestPrepare():
                 self.args.es2022 = "all"
             elif TEST_ES2023_DIR in self.args.dir:
                 self.args.es2023 = "all"
+            elif TEST_ES2024_DIR in self.args.dir:
+                self.args.es2024 = "all"
             elif TEST_OTHERTESTS_DIR in self.args.dir:
                 self.args.other = "other"
 
@@ -364,6 +375,8 @@ class TestPrepare():
                 self.args.es2022 = "all"
             elif TEST_ES2023_DIR in self.args.file:
                 self.args.es2023 = "all"
+            elif TEST_ES2024_DIR in self.args.file:
+                self.args.es2024 = "all"
             elif TEST_OTHERTESTS_DIR in self.args.file:
                 self.args.other = "other"
 
@@ -380,6 +393,8 @@ class TestPrepare():
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2022")
         elif self.args.es2023:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2023")
+        elif self.args.es2024:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2024")
         elif self.args.ci_build:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_CI")
         elif self.args.sendable:
@@ -407,6 +422,8 @@ class TestPrepare():
             self.args.dir = TEST_ES2022_DIR
         elif self.args.es2023:
             self.args.dir = TEST_ES2023_DIR
+        elif self.args.es2024:
+            self.args.dir = TEST_ES2024_DIR
         elif self.args.other:
             self.args.dir = TEST_OTHERTESTS_DIR
         elif self.args.ci_build:
@@ -437,6 +454,8 @@ class TestPrepare():
             dstdir = os.path.join(TEST_ES2022_DIR, file)
         elif self.args.es2023:
             dstdir = os.path.join(TEST_ES2023_DIR, file)
+        elif self.args.es2024:
+            dstdir = os.path.join(TEST_ES2024_DIR, file)
         elif self.args.other:
             dstdir = os.path.join(TEST_OTHERTESTS_DIR, file)
         elif self.args.ci_build:
@@ -453,7 +472,7 @@ class TestPrepare():
         esid = ""
         if self.args.es51:
             esid = "es5id"
-        elif self.args.es2021 or self.args.es2022 or self.args.es2023:
+        elif self.args.es2021 or self.args.es2022 or self.args.es2023 or self.args.es2024:
             esid = "es6id"
 
         for file_name in file_names:
@@ -522,6 +541,28 @@ class TestPrepare():
             files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
+    def prepare_es2024_tests(self):
+        files = []
+        files.extend(self.get_tests_from_file(ES2024_LIST_FILE))
+        if self.args.es2024 == "all":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2023_LIST_FILE))
+        if self.args.es2024 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2023_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
+        return files
+
     def prepare_intl_tests(self):
         files = []
         files = self.collect_tests()
@@ -567,6 +608,9 @@ class TestPrepare():
         elif self.args.es2023:
             test_dir = TEST_ES2023_DIR
             files = self.prepare_es2023_tests()
+        elif self.args.es2024:
+            test_dir = TEST_ES2024_DIR
+            files = self.prepare_es2024_tests()
         elif self.args.sendable:
             test_dir = TEST_SENDABLE_DIR
             files = self.prepare_sendable_tests()
@@ -608,6 +652,9 @@ class TestPrepare():
         elif self.args.es2023:
             self.prepare_test_suit()
             src_dir = TEST_ES2023_DIR
+        elif self.args.es2024:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2024_DIR
         elif self.args.ci_build:
             self.prepare_test_suit()
             src_dir = TEST_CI_DIR
@@ -883,6 +930,7 @@ def reset_args(args):
     args.es2021 = None
     args.es2022 = None
     args.es2023 = None
+    args.es2024 = None
     args.ci_build = None
     args.esnext = None
     args.dir = None
