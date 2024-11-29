@@ -32,7 +32,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&bundle&lib/importfile1&2.0.0
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -40,7 +39,6 @@ slotNum = 0x0
 .function any com.inter_app.hsp&bytecodehar/bytecodehar-dynamic-import&.#*#testNonOhmurl(any a0, any a1, any a2) {
 	lda.str aaa
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -56,7 +54,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&com.inter_app.hsp&@ohos/lib2/importfile4&
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -72,7 +69,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&com.inter_app.hsp&lib2/importfile3&
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -84,7 +80,6 @@ slotNum = 0x4
 	definefunc 0x3, com.inter_app.hsp&bytecodehar/bytecodehar-dynamic-import&.#*#testReplacementWoAt, 0x0
 	lda.str test
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 }
 
@@ -196,7 +191,6 @@ slotNum = 0x18
 	stownbyindex 0x14, v1, 0x9
 	lda v0
 	callarg1 0x16, v1
-	ldundefined
 	returnundefined
 }
 
@@ -224,7 +218,6 @@ slotNum = 0x1
 	stlexvar 0x0, 0x8
 	getmodulenamespace 0x9
 	stlexvar 0x0, 0x9
-	ldundefined
 	returnundefined
 }
 
@@ -424,7 +417,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -485,7 +477,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -546,7 +537,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -607,7 +597,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -684,7 +673,6 @@ label_0:
 	sta v1
 	lda v0
 	callarg1 0x8, v1
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -767,7 +755,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&bundle&lib/importfile1&2.0.0
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -775,7 +762,6 @@ slotNum = 0x0
 .function any com.inter_app.hsp&bytecodehar/bytecodehar-dynamic-import&.#*#testNonOhmurl(any a0, any a1, any a2) {
 	lda.str aaa
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -791,7 +777,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&com.inter_app.hsp&@ohos/lib2/importfile4&
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -807,7 +792,6 @@ slotNum = 0x0
 	dynamicimport
 	lda.str @normalized:N&&com.inter_app.hsp&lib2/importfile3&
 	dynamicimport
-	ldundefined
 	returnundefined
 }
 
@@ -819,7 +803,6 @@ slotNum = 0x4
 	definefunc 0x3, com.inter_app.hsp&bytecodehar/bytecodehar-dynamic-import&.#*#testReplacementWoAt, 0x0
 	lda.str test
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 }
 
@@ -931,7 +914,6 @@ slotNum = 0x18
 	stownbyindex 0x14, v1, 0x9
 	lda v0
 	callarg1 0x16, v1
-	ldundefined
 	returnundefined
 }
 
@@ -959,7 +941,6 @@ slotNum = 0x1
 	stlexvar 0x0, 0x8
 	getmodulenamespace 0x9
 	stlexvar 0x0, 0x9
-	ldundefined
 	returnundefined
 }
 
@@ -1159,7 +1140,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -1220,7 +1200,6 @@ label_1:
 label_0: 
 	ldtrue
 	stmodulevar 0x0
-	ldundefined
 	returnundefined
 label_2: 
 }
@@ -1297,7 +1276,6 @@ label_0:
 	sta v1
 	lda v0
 	callarg1 0x8, v1
-	ldundefined
 	returnundefined
 label_2: 
 }

@@ -52,7 +52,6 @@ label_1:
 	sta v0
 	lda v1
 	callarg1 0x9, v0
-	ldundefined
 	returnundefined
 label_8: 
 }
@@ -65,7 +64,6 @@ label_1:
 label_0: 
 	lda.str a
 	definefieldbyname 0x0, a, a2
-	ldundefined
 	returnundefined
 label_2: 
 }
