@@ -126,4 +126,11 @@ ETSNewClassInstanceExpression *ETSNewClassInstanceExpression::Clone(ArenaAllocat
 
     throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
+
+bool ETSNewClassInstanceExpression::TypeIsAllowedForInstantiation(checker::Type *type)
+{
+    // NOTE(kaskov) Is necessary to check `never` and `void` ?
+    return !(type->PossiblyETSNullish() || type->IsETSNeverType() || type->IsETSVoidType());
+}
+
 }  // namespace ark::es2panda::ir

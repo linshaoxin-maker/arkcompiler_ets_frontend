@@ -168,7 +168,7 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
     }
 
     if (scriptFunc->IsProxy()) {
-        return nullptr;
+        return ReturnTypeForStatement(node);
     }
 
     // NOTE: aszilagyi. make it correctly check for open function not have body
@@ -262,7 +262,8 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::Property *expr) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return checker->GlobalTypeError();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::SpreadElement *expr) const
@@ -399,6 +400,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     }
     expr->SetTsType(checker->CreateETSArrayType(elementType));
     checker->CreateBuiltinArraySignature(expr->TsType()->AsETSArrayType(), 1);
+    ASSERT(expr->TsType() != nullptr);
     return expr->TsType();
 }
 
@@ -437,20 +439,33 @@ void ETSAnalyzer::CheckInstantatedClass(ir::ETSNewClassInstanceExpression *expr,
     }
 }
 
+static checker::Type *CheckInstantiatedNewType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr)
+{
+    checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
+    if (calleeType->IsTypeError()) {
+        return checker->InvalidateType(expr->GetTypeRef());
+    }
+    if (!ir::ETSNewClassInstanceExpression::TypeIsAllowedForInstantiation(calleeType)) {
+        // NOTE(kaskov) Here may be more precise description about error
+        return checker->TypeError(expr->GetTypeRef(), "'undefined', 'null' or 'never' couldn't be instantiated.",
+                                  expr->Start());
+    }
+    if (!calleeType->IsETSObjectType()) {
+        return checker->TypeError(expr->GetTypeRef(), "This expression is not constructible.", expr->Start());
+    }
+    return calleeType;
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
 {
     if (expr->TsType() != nullptr) {
         return expr->TsType();
     }
     ETSChecker *checker = GetETSChecker();
-    auto *calleeType = GetCalleeType(checker, expr);
-    if (calleeType == nullptr) {
-        return expr->TsType();
-    }
+    auto *calleeType = CheckInstantiatedNewType(checker, expr);
 
     if (calleeType->IsTypeError()) {
-        expr->SetTsType(calleeType);
-        return expr->TsType();
+        return checker->InvalidateType(expr);
     }
     auto *calleeObj = calleeType->AsETSObjectType();
     expr->SetTsType(calleeObj);
@@ -508,28 +523,28 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewMultiDimArrayInstanceExpression *exp
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSPackageDeclaration *st) const
 {
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ETSParameterExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
-    if (expr->TsType() == nullptr) {
-        checker::Type *paramType;
-
-        if (expr->Ident()->TsType() != nullptr) {
-            paramType = expr->Ident()->TsType();
-        } else {
-            paramType = !expr->IsRestParameter() ? expr->Ident()->Check(checker) : expr->spread_->Check(checker);
-            if (expr->IsDefault()) {
-                std::cout << __LINE__ << std::endl;
-                [[maybe_unused]] auto *const initType = expr->Initializer()->Check(checker);
-            }
-        }
-
-        expr->SetTsType(paramType);
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
     }
 
+    checker::Type *paramType {};
+    if (expr->Ident()->TsType() != nullptr) {
+        paramType = expr->Ident()->TsType();
+    } else {
+        paramType = !expr->IsRestParameter() ? expr->Ident()->Check(checker) : expr->spread_->Check(checker);
+        if (expr->IsDefault()) {
+            std::cout << __LINE__ << std::endl;
+            [[maybe_unused]] auto *const initType = expr->Initializer()->Check(checker);
+        }
+    }
+
+    expr->SetTsType(paramType);
     return expr->TsType();
 }
 
@@ -543,7 +558,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSStructDeclaration *node) const
 {
     ETSChecker *checker = GetETSChecker();
     node->Definition()->Check(checker);
-    return nullptr;
+    return ReturnTypeForStatement(node);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ETSTypeReference *node) const
@@ -560,17 +575,20 @@ checker::Type *ETSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSNullType *node) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return checker->GlobalETSNullishObjectType();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSUndefinedType *node) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return checker->GlobalETSUndefinedType();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSNeverType *node) const
 {
-    return nullptr;
+    ETSChecker *checker = GetETSChecker();
+    return checker->GlobalETSNeverType();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSStringLiteralType *node) const
@@ -901,7 +919,7 @@ checker::Type *ETSAnalyzer::GetSmartType(ir::AssignmentExpression *expr, checker
     ETSChecker *checker = GetETSChecker();
     checker::Type *smartType = leftType;
 
-    if (expr->Left()->IsIdentifier()) {
+    if (expr->Left()->IsIdentifier() && expr->Target() != nullptr) {
         //  Now try to define the actual type of Identifier so that smart cast can be used in further checker processing
         smartType = checker->ResolveSmartType(rightType, leftType);
         auto const *const variable = expr->Target();
@@ -1031,9 +1049,8 @@ checker::Type *ETSAnalyzer::Check(ir::AwaitExpression *expr) const
     // Check the argument type of await expression
     if (!argType->IsETSObjectType() ||
         (argType->AsETSObjectType()->GetOriginalBaseType() != checker->GlobalBuiltinPromiseType())) {
-        checker->LogTypeError("'await' expressions require Promise object as argument.", expr->Argument()->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->TypeError(expr, "'await' expressions require Promise object as argument.",
+                                  expr->Argument()->Start());
     }
 
     Type *type = argType->AsETSObjectType()->TypeArguments().at(0);
@@ -1050,13 +1067,10 @@ checker::Type *ETSAnalyzer::Check(ir::ImportExpression *expr) const
 
     Type *const argType = expr->Source()->Check(checker);
     if (argType->IsTypeError()) {
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->InvalidateType(expr);
     }
     if (!checker->Relation()->IsSupertypeOf(checker->GlobalBuiltinETSStringType(), argType)) {
-        checker->LogTypeError("'import' expressions require string as argument.", expr->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->TypeError(expr, "'import' expressions require string as argument.", expr->Start());
     }
 
     expr->SetTsType(checker->CreatePromiseOf(checker->GlobalBuiltinJSValueType()));
@@ -1111,20 +1125,21 @@ checker::Type *ETSAnalyzer::Check(ir::BinaryExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::BlockExpression *st) const
 {
+    if (st->TsType() != nullptr) {
+        return st->TsType();
+    }
+
     ETSChecker *checker = GetETSChecker();
     checker::ScopeContext scopeCtx(checker, st->Scope());
 
-    if (st->TsType() == nullptr) {
-        // NOLINTNEXTLINE(modernize-loop-convert)
-        for (std::size_t idx = 0; idx < st->Statements().size(); idx++) {
-            st->Statements()[idx]->Check(checker);
-        }
-
-        auto lastStmt = st->Statements().back();
-        ASSERT(lastStmt->IsExpressionStatement());
-        st->SetTsType(lastStmt->AsExpressionStatement()->GetExpression()->TsType());
+    // NOLINTNEXTLINE(modernize-loop-convert)
+    for (std::size_t idx = 0; idx < st->Statements().size(); idx++) {
+        st->Statements()[idx]->Check(checker);
     }
 
+    auto lastStmt = st->Statements().back();
+    ASSERT(lastStmt->IsExpressionStatement());
+    st->SetTsType(lastStmt->AsExpressionStatement()->GetExpression()->TsType());
     return st->TsType();
 }
 
@@ -1417,20 +1432,21 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 {
-    if (expr->TsType() == nullptr) {
-        ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+    ETSChecker *checker = GetETSChecker();
 
-        auto *identType = checker->ResolveIdentifier(expr);
-        if (expr->Variable() != nullptr && (expr->Parent() == nullptr || !expr->Parent()->IsAssignmentExpression() ||
-                                            expr != expr->Parent()->AsAssignmentExpression()->Left())) {
-            if (auto *const smartType = checker->Context().GetSmartCast(expr->Variable()); smartType != nullptr) {
-                identType = smartType;
-            }
+    auto *identType = checker->ResolveIdentifier(expr);
+    if (expr->Variable() != nullptr && (expr->Parent() == nullptr || !expr->Parent()->IsAssignmentExpression() ||
+                                        expr != expr->Parent()->AsAssignmentExpression()->Left())) {
+        if (auto *const smartType = checker->Context().GetSmartCast(expr->Variable()); smartType != nullptr) {
+            identType = smartType;
         }
-        expr->SetTsType(identType);
-        if (!identType->IsTypeError()) {
-            checker->Context().CheckIdentifierSmartCastCondition(expr);
-        }
+    }
+    expr->SetTsType(identType);
+    if (!identType->IsTypeError()) {
+        checker->Context().CheckIdentifierSmartCastCondition(expr);
     }
     return expr->TsType();
 }
@@ -1656,9 +1672,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         }
     }
     if (!haveEmptyConstructor) {
-        checker->LogTypeError({"type ", objType->Name(), " has no parameterless constructor"}, expr->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->TypeError(expr, {"type ", objType->Name(), " has no parameterless constructor"}, expr->Start());
     }
 
     CheckObjectExprProps(expr, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
@@ -1743,7 +1757,7 @@ checker::Type *ETSAnalyzer::Check(ir::SequenceExpression *expr) const
     }
     ASSERT(!expr->Sequence().empty());
     expr->SetTsType(expr->Sequence().back()->TsType());
-    return nullptr;
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::SuperExpression *expr) const
@@ -2036,11 +2050,12 @@ checker::Type *ETSAnalyzer::Check(ir::NamespaceDeclaration *st) const
 {
     ETSChecker *checker = GetETSChecker();
     st->Definition()->Check(checker);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NamespaceDefinition *st) const
 {
+    // NOTE It is Typed node, but not a Statement and not a Expression
     return nullptr;
 }
 
@@ -2092,7 +2107,7 @@ checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
 {
     ETSChecker *checker = GetETSChecker();
     if (st->Local()->Name().Empty()) {
-        return nullptr;
+        return ReturnTypeForStatement(st);
     }
 
     if (st->Local()->AsIdentifier()->TsType() != nullptr) {
@@ -2124,10 +2139,11 @@ checker::Type *ETSAnalyzer::Check(ir::AssertStatement *st) const
 
         if (!msgType->IsETSStringType()) {
             checker->LogTypeError("Assert message must be string", st->Second()->Start());
+            return checker->GlobalTypeError();
         }
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
@@ -2170,7 +2186,7 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
         }
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BreakStatement *st) const
@@ -2183,14 +2199,14 @@ checker::Type *ETSAnalyzer::Check(ir::BreakStatement *st) const
     st->SetTarget(*node);
 
     checker->Context().OnBreakStatement(st);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ClassDeclaration *st) const
 {
     ETSChecker *checker = GetETSChecker();
     st->Definition()->Check(checker);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::AnnotationDeclaration *st) const
@@ -2201,7 +2217,7 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationDeclaration *st) const
         property->Check(checker);
         checker->CheckAnnotationPropertyType(property);
     }
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
@@ -2224,7 +2240,7 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
 
     if (!st->GetBaseName()->Variable()->Declaration()->Node()->IsAnnotationDeclaration()) {
         checker->LogTypeError({"'", st->GetBaseName()->Name(), "' is not an annotation."}, st->GetBaseName()->Start());
-        return nullptr;
+        return ReturnTypeForStatement(st);
     }
 
     auto *annoDecl = st->GetBaseName()->Variable()->Declaration()->Node()->AsAnnotationDeclaration();
@@ -2239,7 +2255,7 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
     if (annoDecl->Properties().size() < st->Properties().size()) {
         checker->LogTypeError(
             "The number of arguments provided for the annotation exceeds the number of fields defined.", st->Start());
-        return nullptr;
+        return ReturnTypeForStatement(st);
     }
 
     if (st->Properties().size() == 1 &&
@@ -2252,7 +2268,7 @@ checker::Type *ETSAnalyzer::Check(ir::AnnotationUsage *st) const
 
     checker->ProcessRequiredFields(fieldMap, st, checker);
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ContinueStatement *st) const
@@ -2265,7 +2281,7 @@ checker::Type *ETSAnalyzer::Check(ir::ContinueStatement *st) const
     st->SetTarget(*node);
 
     checker->AddStatus(CheckerStatus::MEET_CONTINUE);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::DoWhileStatement *st) const
@@ -2280,12 +2296,12 @@ checker::Type *ETSAnalyzer::Check(ir::DoWhileStatement *st) const
     st->Body()->Check(checker);
 
     checker->Context().ExitLoop(smartCasts, clearFlag, st);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::EmptyStatement *st) const
 {
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ExpressionStatement *st) const
@@ -2370,7 +2386,7 @@ checker::Type *ETSAnalyzer::Check(ir::ForOfStatement *const st) const
     st->Body()->Check(checker);
 
     checker->Context().ExitLoop(smartCasts, clearFlag, st);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ForUpdateStatement *st) const
@@ -2396,7 +2412,7 @@ checker::Type *ETSAnalyzer::Check(ir::ForUpdateStatement *st) const
     st->Body()->Check(checker);
 
     checker->Context().ExitLoop(smartCasts, clearFlag, st);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::IfStatement *st) const
@@ -2449,14 +2465,14 @@ checker::Type *ETSAnalyzer::Check(ir::IfStatement *st) const
         }
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
     st->body_->Check(checker);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 bool ETSAnalyzer::CheckInferredFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc,
@@ -2550,7 +2566,7 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
             checker->LogTypeError("Return statement with expression isn't allowed in constructor.", st->Start());
             return checker->GlobalTypeError();
         }
-        return nullptr;
+        return ReturnTypeForStatement(st);
     }
 
     st->returnType_ = GetFunctionReturnType(st, containingFunc);
@@ -2559,7 +2575,7 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
         containingFunc->AddReturnStatement(st);
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
@@ -2607,7 +2623,7 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
     checker->Context().CombineBreakSmartCasts(st);
 
     checker->CheckForSameSwitchCases(st->Cases());
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ThrowStatement *st) const
@@ -2621,7 +2637,7 @@ checker::Type *ETSAnalyzer::Check(ir::ThrowStatement *st) const
     }
 
     checker->AddStatus(CheckerStatus::MEET_THROW);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TryStatement *st) const
@@ -2665,7 +2681,7 @@ checker::Type *ETSAnalyzer::Check(ir::TryStatement *st) const
         st->FinallyBlock()->Check(checker);
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::VariableDeclarator *st) const
@@ -2714,7 +2730,7 @@ checker::Type *ETSAnalyzer::Check(ir::VariableDeclaration *st) const
         it->Check(checker);
     }
 
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::WhileStatement *st) const
@@ -2729,7 +2745,7 @@ checker::Type *ETSAnalyzer::Check(ir::WhileStatement *st) const
     st->Body()->Check(checker);
 
     checker->Context().ExitLoop(smartCasts, clearFlag, st);
-    return nullptr;
+    return ReturnTypeForStatement(st);
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
@@ -2740,7 +2756,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 
     const auto arrayType = node->TsType()->AsETSArrayType();
     checker->CreateBuiltinArraySignature(arrayType, arrayType->Rank());
-    return nullptr;
+    return node->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
@@ -2752,6 +2768,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     auto *const targetType = expr->TypeAnnotation()->AsTypeNode()->GetType(checker);
+    ASSERT(targetType != nullptr);
+
     // Object expression requires that its type be set by the context before checking. in this case, the target type
     // provides that context.
     if (expr->Expr()->IsObjectExpression()) {
@@ -2764,8 +2782,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     auto *const sourceType = expr->Expr()->Check(checker);
     if (sourceType->IsTypeError()) {
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->InvalidateType(expr);
     }
 
     // NOTE(vpukhov): #20510 lowering
@@ -2777,9 +2794,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     if (sourceType->DefinitelyETSNullish() && !targetType->PossiblyETSNullish()) {
-        checker->LogTypeError("Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Expr()->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->TypeError(expr, "Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Start());
     }
 
     const checker::CastingContext ctx(
@@ -2803,9 +2818,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     if (targetType == checker->GetGlobalTypesHolder()->GlobalETSNeverType()) {
-        checker->LogTypeError("Cast to 'never' is prohibited", expr->Start());
-        expr->SetTsType(checker->GlobalTypeError());
-        return expr->TsType();
+        return checker->TypeError(expr, "Cast to 'never' is prohibited", expr->Start());
     }
 
     checker->ComputeApparentType(targetType);
@@ -2839,42 +2852,41 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
 {
-    if (st->TsType() == nullptr) {
-        ETSChecker *checker = GetETSChecker();
+    if (st->TsType() != nullptr) {
+        return st->TsType();
+    }
+    ETSChecker *checker = GetETSChecker();
+    checker::ETSObjectType *interfaceType = checker->BuildBasicInterfaceProperties(st);
+    ASSERT(interfaceType != nullptr);
 
-        checker::ETSObjectType *interfaceType = checker->BuildBasicInterfaceProperties(st);
-        ASSERT(interfaceType != nullptr);
+    interfaceType->SetSuperType(checker->GlobalETSObjectType());
+    checker->CheckInvokeMethodsLegitimacy(interfaceType);
+    st->SetTsType(interfaceType);
 
-        interfaceType->SetSuperType(checker->GlobalETSObjectType());
-        checker->CheckInvokeMethodsLegitimacy(interfaceType);
-        st->SetTsType(interfaceType);
+    checker::ScopeContext scopeCtx(checker, st->Scope());
+    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::IN_INTERFACE, interfaceType);
 
-        checker::ScopeContext scopeCtx(checker, st->Scope());
-        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::IN_INTERFACE, interfaceType);
-
-        for (auto *it : st->Body()->Body()) {
-            it->Check(checker);
-        }
+    for (auto *it : st->Body()->Body()) {
+        it->Check(checker);
     }
     return st->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
 {
-    if (expr->TsType() == nullptr) {
-        ETSChecker *checker = GetETSChecker();
-        auto exprType = expr->expr_->Check(checker);
-        //  If the actual [smart] type is definitely 'null' or 'undefined' then probably CTE should be thrown.
-        //  Anyway we'll definitely obtain NullPointerException at runtime.
-        if (exprType->DefinitelyETSNullish()) {
-            checker->LogTypeError(
-                "Bad operand type, the operand of the non-nullish expression is 'null' or 'undefined'.",
-                expr->Expr()->Start());
-            expr->SetTsType(checker->GlobalTypeError());
-            return expr->TsType();
-        }
-        expr->SetTsType(checker->GetNonNullishType(exprType));
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
     }
+    ETSChecker *checker = GetETSChecker();
+    auto exprType = expr->expr_->Check(checker);
+    //  If the actual [smart] type is definitely 'null' or 'undefined' then probably CTE should be thrown.
+    //  Anyway we'll definitely obtain NullPointerException at runtime.
+    if (exprType->DefinitelyETSNullish()) {
+        return checker->TypeError(
+            expr, "Bad operand type, the operand of the non-nullish expression is 'null' or 'undefined'.",
+            expr->Expr()->Start());
+    }
+    expr->SetTsType(checker->GetNonNullishType(exprType));
     expr->SetOriginalType(expr->TsType());
     return expr->TsType();
 }
@@ -2931,7 +2943,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
             st->TypeAnnotation()->Check(checker);
         }
 
-        return nullptr;
+        return ReturnTypeForStatement(st);
     }
 
     if (st->TypeParameterTypes().empty()) {
@@ -2966,6 +2978,13 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
         st->TypeAnnotation()->Check(checker);
     }
 
+    return ReturnTypeForStatement(st);
+}
+
+checker::Type *ETSAnalyzer::ReturnTypeForStatement([[maybe_unused]] const ir::Statement *const st) const
+{
+    ASSERT(st->IsStatement());
     return nullptr;
 }
+
 }  // namespace ark::es2panda::checker
