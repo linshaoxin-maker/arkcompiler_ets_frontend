@@ -88,38 +88,40 @@ ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpress
         }
 
         auto defaultValue = ParseExpression();
-        if (!paramIdent->IsIdentifier() || defaultValue == nullptr) {  // Error processing.
-            return nullptr;
-        }
+        // if (!paramIdent->IsIdentifier() || defaultValue == nullptr) {  // Error! processing.
+        //     return nullptr;
+        // }
 
         paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), defaultValue);
 
         std::string value = GetArgumentsSourceView(Lexer(), lexerPos);
         paramExpression->SetLexerSaved(util::UString(value, Allocator()).View());
         paramExpression->SetRange({paramIdent->Start(), paramExpression->Initializer()->End()});
-    } else if (paramIdent == nullptr) {  // Error processing.
+    } else /* if (paramIdent == nullptr) {  // Error! processing.
         return nullptr;
-    } else if (paramIdent->IsIdentifier()) {
-        auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
+    } else */
+        if (paramIdent->IsIdentifier()) {
+            auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
 
-        const auto typeAnnotationValue = [this, typeAnnotation,
-                                          defaultUndef]() -> std::pair<ir::Expression *, std::string> {
-            if (typeAnnotation == nullptr) {
-                return std::make_pair(nullptr, "");
+            const auto typeAnnotationValue = [this, typeAnnotation,
+                                              defaultUndef]() -> std::pair<ir::Expression *, std::string> {
+                if (typeAnnotation == nullptr) {
+                    return std::make_pair(nullptr, "");
+                }
+                return std::make_pair(defaultUndef != nullptr ? AllocNode<ir::UndefinedLiteral>() : nullptr,
+                                      "undefined");
+            }();
+
+            paramExpression =
+                AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), std::get<0>(typeAnnotationValue));
+            if (defaultUndef != nullptr) {
+                paramExpression->SetLexerSaved(util::UString(std::get<1>(typeAnnotationValue), Allocator()).View());
             }
-            return std::make_pair(defaultUndef != nullptr ? AllocNode<ir::UndefinedLiteral>() : nullptr, "undefined");
-        }();
-
-        paramExpression =
-            AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), std::get<0>(typeAnnotationValue));
-        if (defaultUndef != nullptr) {
-            paramExpression->SetLexerSaved(util::UString(std::get<1>(typeAnnotationValue), Allocator()).View());
+            paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
+        } else {
+            paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsRestElement(), nullptr);
+            paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
         }
-        paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
-    } else {
-        paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsRestElement(), nullptr);
-        paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
-    }
     return paramExpression;
 }
 
@@ -224,9 +226,9 @@ ir::Expression *ETSParser::ParsePropertyDefinition(ExpressionParseFlags flags)
     ir::Expression *key = ParsePropertyKey(flags);
 
     ir::Expression *value = ParsePropertyValue(&propertyKind, &methodStatus, flags);
-    if (key == nullptr || value == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (key == nullptr || value == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     lexer::SourcePosition end = value->End();
 
@@ -460,9 +462,9 @@ ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterLis
         LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
     }
 
-    if (expr == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (expr == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     expr->SetGrouped();
     expr->SetRange({start, Lexer()->GetToken().End()});

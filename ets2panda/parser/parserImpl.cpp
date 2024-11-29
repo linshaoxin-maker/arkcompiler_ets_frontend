@@ -392,6 +392,7 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
         }
         default: {
             LogSyntaxError("Unexpected token in class property");
+            propName = AllocErrorExpression();
         }
     }
 
@@ -552,9 +553,9 @@ void ParserImpl::ConsumeClassPrivateIdentifier(ClassElementDescriptor *desc, cha
 
 void ParserImpl::AddPrivateElement(const ir::ClassElement *elem)
 {
-    if (elem->Id() == nullptr) {  // Error processing.
-        return;
-    }
+    // if (elem->Id() == nullptr) {  // Error! processing.
+    //     return;
+    // }
 
     if (!classPrivateContext_.AddElement(elem)) {
         LogSyntaxError("Private field has already been declared");
@@ -626,10 +627,10 @@ ir::AstNode *ParserImpl::ParseClassElement(const ArenaVector<ir::AstNode *> &pro
     }
 
     ir::Expression *propName = ParseClassKey(&desc);
-    if (propName == nullptr) {  // Error processing.
-        context_.Status() &= ~ParserStatus::ALLOW_THIS_TYPE;
-        return nullptr;
-    }
+    // if (propName == nullptr) {  // Error! processing.
+    //     context_.Status() &= ~ParserStatus::ALLOW_THIS_TYPE;
+    //     return nullptr;
+    // }
 
     ValidateClassMethodStart(&desc, nullptr);
     ir::ClassElement *property = ParseClassProperty(&desc, properties, propName, nullptr);
@@ -830,10 +831,10 @@ ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers mo
             }
 
             ir::AstNode *property = ParseClassElement(properties, modifiers, flags);
-            if (property == nullptr) {  // Error processing.
-                lexer_->NextToken();
-                continue;
-            }
+            // if (property == nullptr) {  // Error! processing.
+            //     lexer_->NextToken();
+            //     continue;
+            // }
 
             if (CheckClassElement(property, ctor, properties)) {
                 continue;
@@ -894,9 +895,9 @@ ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams()
             util::ErrorRecursionGuard infiniteLoopBlocker(lexer_);
 
             ir::Expression *parameter = ParseFunctionParameter();
-            if (parameter == nullptr) {  // Error processing.
-                continue;
-            }
+            // if (parameter == nullptr) {  // Error! processing.
+            //     continue;
+            // }
 
             ValidateRestParameter(parameter);
             params.push_back(parameter);
@@ -1015,9 +1016,9 @@ ir::SpreadElement *ParserImpl::ParseSpreadElement(ExpressionParseFlags flags)
         argument = ParseExpression(flags);
     }
 
-    if (argument == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (argument == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     if (inPattern && argument->IsAssignmentExpression()) {
         LogSyntaxError("RestParameter does not support an initializer");
@@ -1254,7 +1255,8 @@ ir::Identifier *ParserImpl::ExpectIdentifier([[maybe_unused]] bool isReference, 
 
     if (tokenName.Empty()) {
         LogSyntaxError({"Identifier expected, got '", TokenToString(tokenType), "'."}, tokenStart);
-        tokenName = ERROR_LITERAL;
+        lexer_->NextToken();
+        return AllocErrorExpression();
     }
 
     auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
@@ -1392,4 +1394,9 @@ ir::Identifier *ParserImpl::AllocErrorExpression()
 {
     return AllocNode<ir::Identifier>(Allocator());
 }
+
+// ir::Identifier *ParserImpl::AllocErrorExpression()
+// {
+//     return AllocNode<ir::Identifier>(Allocator());
+// }
 }  // namespace ark::es2panda::parser

@@ -115,9 +115,10 @@ ir::TypeNode *ETSParser::ParseUnionType(ir::TypeNode *const firstType)
         Lexer()->NextToken();  // eat '|'
 
         auto options = TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::DISALLOW_UNION;
-        if (auto typeAnnotation = ParseTypeAnnotation(&options); typeAnnotation != nullptr) {  // Error processing.
-            types.push_back(typeAnnotation);
-        }
+        auto typeAnnotation = ParseTypeAnnotation(&options);
+        // if (auto typeAnnotation = ParseTypeAnnotation(&options); typeAnnotation != nullptr) {  // Error! processing.
+        types.push_back(typeAnnotation);
+        // }
     }
 
     auto const endLoc = types.back()->End();
@@ -177,9 +178,9 @@ ir::TypeNode *ETSParser::ParseWildcardType(TypeAnnotationParsingOptions *options
     ir::ETSTypeReference *typeReference = nullptr;
     if (!isUnboundOut) {
         auto reference = ParseTypeReference(options);
-        if (reference == nullptr) {  // Error processing.
-            return nullptr;
-        }
+        // if (reference == nullptr) {  // Error! processing.
+        //     return nullptr;
+        // }
 
         typeReference = reference->AsETSTypeReference();
     }
@@ -200,9 +201,9 @@ ir::TypeNode *ETSParser::ParseFunctionType()
         TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
         return ParseTypeAnnotation(&options);
     }();
-    if (returnTypeAnnotation == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (returnTypeAnnotation == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     ir::ScriptFunctionFlags throwMarker = ParseFunctionThrowMarker(false);
 
@@ -290,10 +291,10 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         spreadTypePresent = ParseTriplePeriod(spreadTypePresent);
 
         auto *const currentTypeAnnotation = ParseTypeAnnotation(options);
-        if (currentTypeAnnotation == nullptr) {  // Error processing.
-            Lexer()->NextToken();
-            continue;
-        }
+        // if (currentTypeAnnotation == nullptr) {  // Error! processing.
+        //     Lexer()->NextToken();
+        //     continue;
+        // }
 
         currentTypeAnnotation->SetParent(tupleType);
 
@@ -343,9 +344,9 @@ ir::TypeNode *ETSParser::ParsePotentialFunctionalType(TypeAnnotationParsingOptio
         GetContext().Status() |= ParserStatus::ALLOW_DEFAULT_VALUE;
         auto typeAnnotation = ParseFunctionType();
         GetContext().Status() ^= ParserStatus::ALLOW_DEFAULT_VALUE;
-        if (typeAnnotation == nullptr) {  // Error processing.
-            return nullptr;
-        }
+        // if (typeAnnotation == nullptr) {  // Error! processing.
+        //     return nullptr;
+        // }
 
         typeAnnotation->SetStart(startLoc);
         return typeAnnotation;

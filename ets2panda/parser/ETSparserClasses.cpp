@@ -739,9 +739,9 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
     Lexer()->NextToken();
 
     ir::Identifier *identNode = ParseClassIdent(modifiers);
-    if (identNode == nullptr && Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        Lexer()->NextToken();  // Error processing.
-    }
+    // if (identNode == nullptr && Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+    //     Lexer()->NextToken();  // Error! processing.
+    // }
 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -839,9 +839,9 @@ ir::ClassProperty *ETSParser::ParseInterfaceField()
     }
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     typeAnnotation = ParseTypeAnnotation(&options);
-    if (typeAnnotation == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (typeAnnotation == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     name->SetTsTypeAnnotation(typeAnnotation);
     typeAnnotation->SetParent(name);
@@ -962,7 +962,10 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
         char32_t nextCp = Lexer()->Lookahead();
         if (nextCp == lexer::LEX_CHAR_LEFT_PAREN || nextCp == lexer::LEX_CHAR_LESS_THAN) {
             LogSyntaxError("Modifier 'readonly' cannot be applied to an interface method", startLoc);
-            return nullptr;  // Error processing.
+            ir::ModifierFlags modfiers = ParseInterfaceMethodModifiers();
+            auto *method = ParseInterfaceMethod(modfiers, ir::MethodDefinitionKind::METHOD);
+            method->SetStart(startLoc);
+            return method;
         }
         auto *field = ParseInterfaceField();
         field->SetStart(startLoc);
@@ -973,7 +976,7 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
     ir::ModifierFlags modfiers = ParseInterfaceMethodModifiers();
     if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
         LogSyntaxError("Identifier expected");
-        return nullptr;  // Error processing.
+        return AllocErrorExpression();  // Error! processing.
     }
 
     char32_t nextCp = Lexer()->Lookahead();
