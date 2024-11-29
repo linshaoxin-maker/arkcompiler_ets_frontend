@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-let toplevelElement4 = 1; // export and export obfuscation
-let toplevelElement5 = 1; // toplevel obfuscation
-let toplevelElement6 = 1; // kept
-declare namespace TestNs2{
+type toplevelElement4 = string; // export and export obfuscation
+type toplevelElement5 = number; // toplevel obfuscation
+type toplevelElement6 = boolean; // kept
+declare module TestNs2{
   export{toplevelElement4, toplevelElement6};
   export{toplevelElement5 as te5};
 }
-let nsElement1 = TestNs2.toplevelElement4;
-let nsElement2 = TestNs2.te5;
+declare const nsElement1: TestNs2.toplevelElement4;
+declare const nsElement2: TestNs2.te5;
 export{};

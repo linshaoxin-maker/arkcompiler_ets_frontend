@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,7 @@
  * limitations under the License.
  */
 
-type toplevelElement10 = string; // export and export obfuscation
-type toplevelElement11 = number; // toplevel obfuscation
-type toplevelElement12 = boolean; // kept
-declare namespace TestNs2{
-  export{toplevelElement10, toplevelElement12};
-  export{toplevelElement11 as te11};
+declare module 'testModule2' {
+  import { noSymbolIdentifier2 as ni2 } from 'module2';
+  export { ni2 };
 }
-declare const nsElement1: TestNs2.toplevelElement10;
-declare const nsElement2: TestNs2.te11;
-export{};

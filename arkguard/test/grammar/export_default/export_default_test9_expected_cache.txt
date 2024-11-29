@@ -1,6 +1,7 @@
 {
   "IdentifierCache": {
-    "#defaultAlias": "h1"
+    "#defaultAlias": "h1",
+    "#default": "default"
   },
   "MemberMethodCache": {}
 }

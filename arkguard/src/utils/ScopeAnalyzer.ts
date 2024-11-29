@@ -356,8 +356,9 @@ namespace secharmony {
       if (current.kind !== ScopeKind.GLOBAL) {
         symbolAlias.add(defSymbols);
         defSymbols = TypeUtils.getOriginalSymbol(defSymbols, checker);
+        tryAddExportNamesIntoParentScope(defSymbols, current);
       }
-      
+
       current.addDefinition(defSymbols, true);
     }
 

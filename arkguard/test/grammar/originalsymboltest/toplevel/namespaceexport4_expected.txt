@@ -12,14 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 type toplevelElement10 = string; // export and export obfuscation
-type toplevelElement11 = number; // toplevel obfuscation
+type a = number; // toplevel obfuscation
 type toplevelElement12 = boolean; // kept
-declare namespace TestNs2{
-  export{toplevelElement10, toplevelElement12};
-  export{toplevelElement11 as te11};
+declare namespace b {
+    export { toplevelElement10, toplevelElement12 };
+    export { a as te11 };
 }
-declare const nsElement1: TestNs2.toplevelElement10;
-declare const nsElement2: TestNs2.te11;
-export{};
+declare const c: b.toplevelElement10;
+declare const d: b.te11;
+export {};
