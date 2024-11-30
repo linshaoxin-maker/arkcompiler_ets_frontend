@@ -58,7 +58,6 @@ function(ets2panda_add_gtest TARGET)
     )
 endfunction(ets2panda_add_gtest)
 
-
 if(PANDA_WITH_ETS)
     if (NOT (PANDA_ENABLE_ADDRESS_SANITIZER OR PANDA_ENABLE_THREAD_SANITIZER) OR
         NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR
@@ -70,3 +69,4 @@ endif()
 add_subdirectory(tsconfig)
 add_subdirectory(options)
 add_subdirectory(unit)
+add_subdirectory(depanalyzer)

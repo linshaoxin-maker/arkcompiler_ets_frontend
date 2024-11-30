@@ -517,6 +517,10 @@ extern "C" __attribute__((unused)) es2panda_Context *ProceedToState(es2panda_Con
     switch (state) {
         case ES2PANDA_STATE_NEW:
             break;
+        case ES2PANDA_STATE__IMPORT_PARSED:
+            ctx->parser->SetParserStatus(parser::ParserStatus::PARSE_IMPORTS);
+            ctx = Parse(ctx);
+            break;
         case ES2PANDA_STATE_PARSED:
             ctx = Parse(ctx);
             break;
