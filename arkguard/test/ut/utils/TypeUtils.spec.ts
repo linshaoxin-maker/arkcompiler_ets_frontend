@@ -15,7 +15,7 @@
 
 import {assert} from 'chai';
 import {before, describe} from 'mocha';
-import {createSourceFile, ScriptTarget, SourceFile} from 'typescript';
+import {createProgram, createSourceFile, ExportDeclaration, ExportSpecifier, Identifier, ImportDeclaration, ImportSpecifier, ModuleBlock, ModuleDeclaration, NamedExports, NamedImports, ScriptTarget, SourceFile, VariableStatement} from 'typescript';
 
 import {TypeUtils} from '../../../src/utils/TypeUtils';
 import { FileUtils } from '../../../src/utils/FileUtils';
@@ -84,6 +84,69 @@ describe('test for TypeUtils', function () {
         TypeUtils.tsToJs(sourceFile);
         assert.strictEqual(sourceFile.fileName, 'demo.js');
       });
+    });
+  });
+
+  describe('test for function getOriginalSymbol', function () {
+    it('should return the same symbol for non-alias symbols', function () {
+      const source = `
+        let X = 1;
+        console.log(X);
+      `;
+      const sourceFile = createSourceFile('test.ts', source, ScriptTarget.ES2015, true);
+      const checker = TypeUtils.createChecker(sourceFile);
+  
+      const variableDeclaration = (sourceFile.statements[0] as VariableStatement)
+        .declarationList.declarations[0].name as Identifier;
+      const symbol = checker.getSymbolAtLocation(variableDeclaration)!;
+      const resultSymbol = TypeUtils.getOriginalSymbol(symbol, checker);
+  
+      assert.strictEqual(resultSymbol, symbol);
+    });
+  
+    it('should return the original symbol when alias symbol name differs from original symbol name', function () {
+      const source = `
+        let A = 1;
+        export { A as B };
+      `;
+      const sourceFile = createSourceFile('test.ts', source, ScriptTarget.ES2015, true);
+      const checker = TypeUtils.createChecker(sourceFile);
+  
+      const exportSpecifier = (((sourceFile.statements[1] as ExportDeclaration)
+        .exportClause! as NamedExports)
+        .elements[0] as ExportSpecifier).name;
+      const aliasSymbol = checker.getSymbolAtLocation(exportSpecifier)!;
+      const resultSymbol = TypeUtils.getOriginalSymbol(aliasSymbol, checker);
+  
+      assert.strictEqual(resultSymbol, aliasSymbol);
+      assert.strictEqual(resultSymbol.name, 'B');
+    });
+  
+    it('should return the same symbol for alias symbols with the same name as original symbol', function () {
+      const source = `
+        let A = 1;
+        declare namespace ns {
+          export { A };
+        }
+        export {};
+      `;
+      const sourceFile = createSourceFile('test.ts', source, ScriptTarget.ES2015, true);
+      const checker = TypeUtils.createChecker(sourceFile);
+  
+      const namespaceExportSpecifier = (((sourceFile.statements[1] as ModuleDeclaration)
+        .body! as ModuleBlock)
+        .statements[0] as ExportDeclaration)
+        .exportClause! as NamedExports;
+      const aliasSymbol = checker.getSymbolAtLocation(namespaceExportSpecifier.elements[0].name)!;
+      const resultSymbol = TypeUtils.getOriginalSymbol(aliasSymbol, checker);
+  
+      assert.strictEqual(resultSymbol.name, aliasSymbol.name);
+      assert.strictEqual(
+        resultSymbol,
+        checker.getSymbolAtLocation(
+          (sourceFile.statements[0] as VariableStatement).declarationList.declarations[0].name,
+        ),
+      );
     });
   });
 });
