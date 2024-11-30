@@ -643,14 +643,16 @@ export namespace ApiExtractor {
         break;
       case ApiType.PROJECT:
         mCurrentExportNameSet.clear();
+        collectEnumMembersOfFile(sourceFile);
         if (fileName.endsWith('.d.ts') || fileName.endsWith('.d.ets')) {
           forEachChild(sourceFile, visitChildNode);
+        } else {
+          let isRemoteHarFile = isRemoteHar(fileName);
+          forEachChild(sourceFile, node => visitProjectExport(node, isRemoteHarFile));
+          forEachChild(sourceFile, visitProjectNode);
+          collectEnumMembersOfFile(sourceFile);
         }
 
-        let isRemoteHarFile = isRemoteHar(fileName);
-        forEachChild(sourceFile, node => visitProjectExport(node, isRemoteHarFile));
-        forEachChild(sourceFile, visitProjectNode);
-        collectEnumMembersOfFile(sourceFile);
         mCurrentExportedPropertySet = handleWhiteListWhenExportObfs(fileName, mCurrentExportedPropertySet);
         mCurrentExportNameSet = handleWhiteListWhenExportObfs(fileName, mCurrentExportNameSet);
         break;

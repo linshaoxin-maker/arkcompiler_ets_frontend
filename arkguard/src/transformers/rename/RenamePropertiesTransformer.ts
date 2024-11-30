@@ -81,12 +81,12 @@ namespace secharmony {
       return null;
     }
 
+    let options: NameGeneratorOptions = {};
+    let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
+
     return renamePropertiesFactory;
 
-    function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
-      let options: NameGeneratorOptions = {};
-      let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
-
+    function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {  
       return renamePropertiesTransformer;
 
       function renamePropertiesTransformer(node: Node): Node {

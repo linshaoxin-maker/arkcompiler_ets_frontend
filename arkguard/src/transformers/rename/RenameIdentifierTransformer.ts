@@ -64,6 +64,7 @@ import {
   isInterfaceScope,
   isObjectLiteralScope,
   noSymbolIdentifier,
+  symbolMap,
   getNameWithScopeLoc
 } from '../../utils/ScopeAnalyzer';
 
@@ -681,7 +682,7 @@ namespace secharmony {
           return node;
         }
 
-        let sym: Symbol | undefined = NodeUtils.findSymbolOfIdentifier(checker, node);
+        let sym: Symbol | undefined = symbolMap.get(node) ?? NodeUtils.findSymbolOfIdentifier(checker, node);
         let mangledPropertyNameOfNoSymbolImportExport = '';
         if (!sym) {
           if (exportObfuscation && noSymbolIdentifier.has(node.text) && trySearchImportExportSpecifier(node)) {
