@@ -860,6 +860,55 @@ describe('test for ConfigResolve', function() {
     
         fs.unlinkSync(systemApiPath);
       });
+
+      it('1-4: test getSystemApiCache: -enable-byteCodeObf', function () {
+        let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'byte_code_obfuscation');
+        let obfuscationOptions = {
+          'selfConfig': {
+            'ruleOptions': {
+              'enable': true,
+              'rules': [ 
+                path.join(OBFUSCATE_TESTDATA_DIR, 'byte_code_obfuscation/byte_code_obfuscation.txt')
+              ],
+              'byteCodeObf': {
+                "enable": true,
+              }
+            },
+            'consumerRules': [],
+          },
+          'dependencies': {
+            'libraries': [],
+            'hars': []
+          },
+          'obfuscationCacheDir': obfuscationCacheDir,
+          'sdkApis': [
+            path.join(OBFUSCATE_TESTDATA_DIR, 'system_api.d.ts')
+          ]
+        };
+        let projectConfig = {
+          obfuscationOptions,
+          compileHar: false
+        };
+        const obConfig: ObConfigResolver =  new ObConfigResolver(projectConfig, undefined);
+        obConfig.resolveObfuscationConfigs();
+        const reservedSdkApiForProp = UnobfuscationCollections.reservedSdkApiForProp;
+        const reservedSdkApiForGlobal = UnobfuscationCollections.reservedSdkApiForGlobal;
+        const reservedSdkApiForLocal = UnobfuscationCollections.reservedSdkApiForLocal;
+        expect(reservedSdkApiForProp.size == 0).to.be.false;
+        expect(reservedSdkApiForGlobal.size == 0).to.be.false;
+        expect(reservedSdkApiForLocal.size == 0).to.be.false;
+        UnobfuscationCollections.clear();
+    
+        let systemApiPath = obfuscationCacheDir + '/systemApiCache.json';
+        const data = fs.readFileSync(systemApiPath, 'utf8');
+        const systemApiContent = JSON.parse(data);
+        
+        expect(systemApiContent.ReservedGlobalNames.size == 0).to.be.false;
+        expect(systemApiContent.ReservedPropertyNames.size == 0).to.be.false;
+        expect(systemApiContent.ReservedLocalNames.size == 0).to.be.false;
+
+        fs.unlinkSync(systemApiPath);
+      });
     });
   });
   
