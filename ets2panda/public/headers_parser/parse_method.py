@@ -82,7 +82,7 @@ def parse_method_or_constructor(data: str, start: int = 0) -> Tuple[int, Dict]:
 
 def parse_declaration_without_postfix(data: str, start: int, res: Dict[str, Any]) -> int:
     # Arguments
-    start_of_args = find_first_of_characters("(", data, start)
+    start_of_args = smart_find_first_of_characters("(", data, start)
 
     if start_of_args >= len("operator") and data[start_of_args - len("operator") : start_of_args] == "operator":
         start_of_args = find_first_of_characters("(", data, start_of_args + 1)

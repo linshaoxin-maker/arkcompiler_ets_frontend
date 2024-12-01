@@ -81,10 +81,13 @@ typedef struct es2panda_Declaration es2panda_Declaration;
 typedef struct es2panda_RecordTable es2panda_RecordTable;
 typedef struct es2panda_BoundContext es2panda_BoundContext;
 typedef struct es2panda_AstVisitor es2panda_AstVisitor;
+typedef struct es2panda_AstVerifier es2panda_AstVerifier;
+typedef struct es2panda_VerifierMessage es2panda_VerifierMessage;
 typedef struct es2panda_CodeGen es2panda_CodeGen;
 typedef struct es2panda_VReg es2panda_VReg;
 typedef struct es2panda_IRNode es2panda_IRNode;
 typedef struct es2panda_ErrorLogger es2panda_ErrorLogger;
+typedef struct es2panda_VerificationContext es2panda_VerificationContext;
 typedef void (*NodeTraverser)(es2panda_AstNode *);
 typedef es2panda_AstNode *(*NodeTransformer)(es2panda_AstNode *);
 typedef bool (*NodePredicate)(es2panda_AstNode *);
@@ -147,6 +150,17 @@ struct es2panda_Impl {
 
 #undef SET_NUMBER_LITERAL_DECL
 
+#define CREATE_UPDATE_NUMBER_LITERAL_IMPL(num, type)                                   \
+    es2panda_AstNode *(*CreateNumberLiteral##num)(es2panda_Context * ctx, type value); \
+    es2panda_AstNode *(*UpdateNumberLiteral##num)(es2panda_Context * ctx, es2panda_AstNode * original, type value)
+
+    CREATE_UPDATE_NUMBER_LITERAL_IMPL(, int32_t);
+    CREATE_UPDATE_NUMBER_LITERAL_IMPL(1, int64_t);
+    CREATE_UPDATE_NUMBER_LITERAL_IMPL(2, double);
+    CREATE_UPDATE_NUMBER_LITERAL_IMPL(3, float);
+
+#undef CREATE_UPDATE_NUMBER_LITERAL_IMPL
+
     void *(*AllocMemory)(es2panda_Context *context, size_t numberOfElements, size_t sizeOfElement);
     es2panda_SourcePosition *(*CreateSourcePosition)(es2panda_Context *context, size_t index, size_t line);
     es2panda_SourceRange *(*CreateSourceRange)(es2panda_Context *context, es2panda_SourcePosition *start,
@@ -155,6 +169,9 @@ struct es2panda_Impl {
     size_t (*SourcePositionLine)(es2panda_Context *context, es2panda_SourcePosition *position);
     es2panda_SourcePosition *(*SourceRangeStart)(es2panda_Context *context, es2panda_SourceRange *range);
     es2panda_SourcePosition *(*SourceRangeEnd)(es2panda_Context *context, es2panda_SourceRange *range);
+    void (*InitScopesPhaseETSRunExternalNode)(es2panda_Context *ctx, es2panda_AstNode *node);
+    es2panda_Scope *(*AstNodeFindNearestScope)(es2panda_Context *ctx, es2panda_AstNode *node);
+    void (*AstNodeRecheck)(es2panda_Context *ctx, es2panda_AstNode *node);
 
 // CC-OFFNXT(G.INC.08) project code style
 #include "generated/es2panda_lib/es2panda_lib_decl.inc"

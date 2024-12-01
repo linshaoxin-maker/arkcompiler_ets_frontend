@@ -741,6 +741,8 @@ HEADERS_TO_BE_PARSED = [
   "parser/ETSparser.h",
   "parser/parserFlags.h",
   "es2panda.h",
+  "ast_verifier/ASTVerifier.h",
+  "ast_verifier/checkContext.h",
 ]
 
 ES2PANDA_API_GENERATED = [
@@ -1000,6 +1002,8 @@ ES2PANDA_API_GENERATED = [
   "$LIBGEN_DIR/gen/headers/checker/resolveResult.yaml",
   "$LIBGEN_DIR/gen/headers/parser/parserFlags.yaml",
   "$LIBGEN_DIR/gen/headers/parser/ETSparser.yaml",
+  "$LIBGEN_DIR/gen/headers/ast_verifier/ASTVerifier.yaml",
+  "$LIBGEN_DIR/gen/headers/ast_verifier/checkContext.yaml",
 ]
 
 ES2PANDA_API = [ "public/cppToCTypes.yaml" ]

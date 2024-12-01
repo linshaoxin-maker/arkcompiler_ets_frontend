@@ -71,13 +71,13 @@ bool IdentifierHasVariable::CheckMoreAstExceptions(const ir::Identifier *ast) co
 
 bool IdentifierHasVariable::CheckAstExceptions(const ir::Identifier *ast) const
 {
+    const auto *parent = ast->Parent();
     // NOTE(kkonkuznetsov): skip length property
-    if (ast->Parent()->IsMemberExpression() && ast->Name().Is("length")) {
+    if (parent != nullptr && ast->Parent()->IsMemberExpression() && ast->Name().Is("length")) {
         return true;
     }
 
     // NOTE(kkonkuznetsov): skip package declarations
-    const auto *parent = ast->Parent();
     while (parent != nullptr) {
         if (parent->IsETSPackageDeclaration()) {
             return true;

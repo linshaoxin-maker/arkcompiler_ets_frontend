@@ -33,7 +33,8 @@ module Enums
     end
 
     def namespace
-      dig(:namespace)
+      if Enums.change_namespace&.include?(dig(:namespace)) then
+      Enums.change_namespace[dig(:namespace)] else dig(:namespace) end
     end
 
     def parent_class_name
@@ -48,6 +49,13 @@ module Enums
   end
 
   @enums = {}
+  @change_namespace = {
+    "ast_verifier" => "compiler::ast_verifier"
+  }
+
+  def change_namespace
+    @change_namespace
+  end
 
   def enums
     @enums
@@ -98,7 +106,7 @@ module Enums
                                                        'namespace' => 'varbinder', 'name' => 'DeclType' }))
   end
 
-  module_function :wrap_data, :enums
+  module_function :wrap_data, :enums, :change_namespace
 end
 
 def Gen.on_require(data)

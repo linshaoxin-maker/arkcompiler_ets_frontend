@@ -105,7 +105,7 @@ end %>::<%= name %>::<%= flag %>:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define IS(public_name, e2p_name)                                               \
-    extern "C" bool Is##public_name(es2panda_AstNode *ast)                  \
+    extern "C" bool Is##public_name(es2panda_AstNode *ast)                      \
     {                                                                           \
         auto *node = reinterpret_cast<ir::AstNode *>(ast);                      \
         return node->Is##e2p_name();                                            \

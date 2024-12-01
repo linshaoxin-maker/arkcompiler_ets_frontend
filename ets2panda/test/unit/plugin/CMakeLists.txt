@@ -41,6 +41,12 @@ set(PLUGIN_TESTS
   "plugin_proceed_to_state_update_statements_lambda compile.sts ${RUNTIME_MODE} cpp ${EXECUTABLE_PLUGIN}"
   "plugin_proceed_to_state_change_func runtime_change_func_call.sts ${RUNTIME_MODE} cpp ${EXECUTABLE_PLUGIN}"
   "plugin_proceed_to_state_change_call_lambda compile.sts ${COMPILE_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_check_script_function_flags compile.sts ${COMPILE_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_find_import_declaration compile.sts ${COMPILE_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_test_number_literal compile.sts ${RUNTIME_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_rerun_scopes_after_check compile.sts ${RUNTIME_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_rerun_scopes_after_lowered compile.sts ${RUNTIME_MODE} cpp ${EXECUTABLE_PLUGIN}"
+  "plugin_proceed_to_state_run_verifier compile.sts ${EXPECTED_MODE} cpp ${EXECUTABLE_PLUGIN}"
 )
 
 set(RUNTIME_ARGUMENTS

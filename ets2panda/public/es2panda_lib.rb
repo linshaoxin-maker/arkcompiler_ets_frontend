@@ -165,7 +165,10 @@ module Es2pandaLibApi
         'es2panda_BindingProps',
         'es2panda_BoundContext',
         'es2panda_ErrorLogger',
-        'es2panda_ArkTsConfig'
+        'es2panda_ArkTsConfig',
+        'es2panda_VerificationContext',
+        'es2panda_AstVerifier',
+        'es2panda_VerifierMessage'
       ]
       @es2panda_arg = arg_info
 
@@ -1033,7 +1036,7 @@ module Es2pandaLibApi
       'arg_type' =>
       [{ 'name' => 'Tag' }, { 'name' => 'T' }, { 'name' => 'K' },
        { 'name' => 'Number', 'namespace' => 'lexer' }, { 'name' => 'ModuleEntry', 'namespace' => 'varbinder' },
-       { 'name' => 'Property', 'namespace' => 'AstDumper' },
+       { 'name' => 'Property', 'namespace' => 'AstDumper' }, { 'namespace' => 'std', 'name' => 'function' },
        { 'name' => 'TSChecker', 'namespace' => 'checker' }, { 'name' => 'RelationHolder', 'namespace' => 'checker' },
        { 'name' => 'initializer_list' }, { 'name' => 'stringstream' }, { 'name' => 'Holder' }, { 'name' => 'tuple' },
        { 'name' => 'UnaryPredicate', 'namespace' => 'checker' }, { 'name' => 'ScopedDebugInfoPlugin' },
@@ -1053,7 +1056,7 @@ module Es2pandaLibApi
       [{ 'name' => 'AstNode' }, { 'name' => 'ClassElement' }, { 'name' => 'TypedStatement' }, { 'name' => 'Annotated' },
        { 'name' => 'Scope' }, { 'name' => 'Type' }, { 'name' => 'ObjectType' }, { 'name' => 'VarBinder' },
        { 'name' => 'ETSBinder' }, { 'name' => 'BoundContext', 'namespace' => 'varbinder' },
-       { 'name' => 'Checker' }, { 'name' => 'ETSChecker' }, { 'name' => 'ETSParser' }],
+       { 'name' => 'Checker' }, { 'name' => 'ETSChecker' }, { 'name' => 'ETSParser' }, { 'name' => 'NumberLiteral' }],
       'arg_name' =>
       ['[N]'] }
   end
@@ -1083,7 +1086,8 @@ module Es2pandaLibApi
        { 'name' => 'RelationHolder', 'namespace' => 'checker' }, { 'name' => 'auto' }, { 'name' => 'recursive_mutex' },
        { 'name' => 'SmartCastArray' }, { 'name' => 'SmartCastTypes' }, { 'name' => 'SemanticAnalyzer' },
        { 'name' => 'optional', 'namespace' => 'std' }, { 'name' => 'WrapperDesc' }, { 'name' => 'Language' },
-       { 'name' => 'ScopedDebugInfoPlugin' }, { 'name' => 'Args', 'namespace' => 'parser' }, { 'name' => 'ETSParser' }],
+       { 'name' => 'ScopedDebugInfoPlugin' }, { 'name' => 'Args', 'namespace' => 'parser' }, { 'name' => 'ETSParser' },
+       { 'namespace' => 'std', 'name' => 'function' }],
       'arg_type' =>
       [{ 'name' => 'Tag' }, { 'name' => 'Number', 'namespace' => 'lexer' }, { 'name' => 'K' },
        { 'name' => 'Property', 'namespace' => 'AstDumper' }, { 'name' => 'TSChecker', 'namespace' => 'checker' },
@@ -1096,7 +1100,7 @@ module Es2pandaLibApi
        { 'name' => 'InsertResult', 'namespace' => 'varbinder' }, { 'name' => 'auto' }, { 'name' => 'SmartCastArray' },
        { 'name' => 'SmartCastTypes' }, { 'name' => 'ConstraintCheckRecord' }, { 'name' => 'WrapperDesc' },
        { 'name' => 'optional', 'namespace' => 'std' }, { 'name' => 'RelationHolder', 'namespace' => 'checker' },
-       { 'name' => 'Args', 'namespace' => 'parser' }],
+       { 'name' => 'Args', 'namespace' => 'parser' }, { 'namespace' => 'std', 'name' => 'function' }],
       'template_type' =>
       [{ 'name' => 'Checker' }, { 'name' => 'ETSChecker' }, { 'name' => 'Program' }, { 'name' => 'stringstream' },
        { 'name' => 'TSChecker', 'namespace' => 'checker' }, { 'name' => 'T' }, { 'name' => 'K' },
@@ -1169,6 +1173,8 @@ module Es2pandaLibApi
       type = "Parser manipulation"
     elsif class_base_namespace == "es2panda"
       type = "Getters for compiler options"
+    elsif class_base_namespace == "compiler::ast_verifier"
+      type = "AST Verifier functions"
     else
       raise "Unsupported class type for stats class name: \"" +
       class_name + "\" class namespace: \"" + class_base_namespace + "\""
@@ -1291,6 +1297,9 @@ module Es2pandaLibApi
       RecordTable
       BoundContext
       ETSParser
+      VerificationContext
+      ASTVerifier
+      CheckMessage
     ]
   end
 
@@ -1406,6 +1415,14 @@ module Es2pandaLibApi
       if additional_classes_to_generate.include?(class_definition.name)
         @classes['parser'][class_definition.name] = ClassData.new(class_definition&.public)
         @classes['parser'][class_definition.name].class_base_namespace = 'parser'
+      end
+    end
+
+    @classes['ast_verifier'] = {} unless @classes['ast_verifier']
+    data['ast_verifier']&.class_definitions&.each do |class_definition|
+      if additional_classes_to_generate.include?(class_definition.name)
+        @classes['ast_verifier'][class_definition.name] = ClassData.new(class_definition&.public)
+        @classes['ast_verifier'][class_definition.name].class_base_namespace = 'compiler::ast_verifier'
       end
     end
 
