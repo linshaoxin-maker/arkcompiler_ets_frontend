@@ -54,7 +54,7 @@ static ir::ClassProperty *CreateAnonClassField(ir::MethodDefinition *ifaceMethod
     auto *fieldTypeNode = checker->AllocNode<ir::OpaqueTypeNode>(fieldType);
 
     // Field identifier
-    util::UString fieldName(std::string("_"), allocator);
+    util::UString fieldName(std::string("@anonymous_class_field@"), allocator);
     fieldName.Append(ifaceMethod->Id()->Name());
     auto *fieldId = checker->AllocNode<ir::Identifier>(fieldName.View(), nullptr, allocator);
 
@@ -91,7 +91,7 @@ static ir::MethodDefinition *CreateAnonClassFieldGetterSetter(checker::ETSChecke
         ASSERT(retType != nullptr);
 
         // Field identifier
-        util::UString fieldName(std::string("_"), allocator);
+        util::UString fieldName(std::string("@anonymous_class_field@"), allocator);
         fieldName.Append(ifaceMethod->Id()->Name());
         auto *fieldId = checker->AllocNode<ir::Identifier>(fieldName.View(), nullptr, allocator);
 
