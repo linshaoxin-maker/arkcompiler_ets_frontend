@@ -116,12 +116,20 @@ checker::Type *ETSTypeReferencePart::HandleInternalTypes(checker::ETSChecker *co
 
     if (ident->Name() == compiler::Signatures::READONLY_TYPE_NAME ||
         ident->Name() == compiler::Signatures::REQUIRED_TYPE_NAME) {
-        return checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
+        auto *utilityType = checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
+
+        if (utilityType != nullptr && utilityType->IsETSObjectType() &&
+            !checker->HasStatus(checker::CheckerStatus::NO_CHECK_INHERIT)) {
+            utilityType->AsETSObjectType()->GetDeclNode()->AddModifier(ir::ModifierFlags::FINAL);
+        }
+        return utilityType;
     }
 
     if (ident->Name() == compiler::Signatures::PARTIAL_TYPE_NAME) {
         auto *baseType = checker->HandleUtilityTypeParameterNode(typeParams_, ident->Name().Utf8());
-        if (baseType->IsETSObjectType() && !baseType->AsETSObjectType()->TypeArguments().empty()) {
+
+        if (baseType != nullptr && baseType->IsETSObjectType() &&
+            !baseType->AsETSObjectType()->TypeArguments().empty()) {
             // we treat Partial<A<T,D>> class as a different copy from A<T,D> now,
             // but not a generic type param for Partial<>
             for (auto &typeRef : typeParams_->Params()) {
@@ -129,6 +137,15 @@ checker::Type *ETSTypeReferencePart::HandleInternalTypes(checker::ETSChecker *co
                                                   typeRef->AsETSTypeReference()->Part()->typeParams_, Start());
                 baseType = ctx.Result();
             }
+        }
+
+        if (baseType != nullptr && baseType->IsETSObjectType() &&
+            !checker->HasStatus(checker::CheckerStatus::NO_CHECK_INHERIT)) {
+            // If A is a SubClass of B, and we make Partial<A> as a typeAnnotation
+            // in function parameters or variable declareion,
+            // Partial<B> will be created as the superType of Partial<A>,
+            // so need to clarify whether now is in 'ClassDef','FuncBuild' or 'VariableDecl' context.
+            baseType->AsETSObjectType()->GetDeclNode()->AddModifier(ir::ModifierFlags::FINAL);
         }
         return baseType;
     }
