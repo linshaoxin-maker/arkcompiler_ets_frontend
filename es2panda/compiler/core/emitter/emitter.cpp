@@ -202,6 +202,12 @@ uint32_t FunctionEmitter::UpdateForReturnIns(const ir::AstNode *astNode, panda::
     } else {
         pandaIns->ins_debug.line_number = astNode ? astNode->Range().start.line : INVALID_LINE;
         columnNum = astNode ? (GetLineIndex().GetLocation(astNode->Range().start).col - OFFSET_COL) : INVALID_COL;
+
+        if (astNode != nullptr && astNode->IsMemberExpression()){
+            auto prop_start = astNode->AsMemberExpression()->Property()->Start();
+            columnNum = prop_start ? (GetLineIndex().GetLocation(prop_start).col - OFFSET_COL) : columnNum;
+            
+        }
     }
     return columnNum;
 }
