@@ -107,6 +107,10 @@ static pandasm::Type PandasmTypeWithRank(checker::Type const *type, uint32_t ran
     if (type->IsETSUnionType()) {
         return PandasmTypeWithRank(type->AsETSUnionType()->GetAssemblerLUB());
     }
+    if (type->IsETSFunctionType() && type->AsETSFunctionType()->FunctionalInterface() == nullptr) {
+        // Note(lujiahui): Will implement after common union member bytecode is ready.
+        UNREACHABLE();
+    }
 
     std::stringstream ss;
     type->ToAssemblerType(ss);

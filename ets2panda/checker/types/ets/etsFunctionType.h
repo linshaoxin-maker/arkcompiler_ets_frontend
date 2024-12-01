@@ -129,6 +129,7 @@ public:
     checker::RelationResult CastFunctionParams(TypeRelation *relation, Signature *targetInvokeSig);
     ETSFunctionType *BoxPrimitives(ETSChecker *checker);
     void IsSubtypeOf(TypeRelation *relation, Type *target) override;
+    void HasSameSignatures(ETSChecker *checker, ETSFunctionType *sourceFuncType);
 
 private:
     ArenaVector<Signature *> callSignatures_;

@@ -325,4 +325,26 @@ ETSFunctionType *ETSFunctionType::BoxPrimitives(ETSChecker *checker)
     }
     return ret;
 }
+
+void ETSFunctionType::HasSameSignatures(ETSChecker *checker, ETSFunctionType *sourceFuncType)
+{
+    auto targetSigs = CallSignatures();
+    auto sourceSigs = sourceFuncType->AsETSFunctionType()->CallSignatures();
+    if (targetSigs.size() != sourceSigs.size()) {
+        checker->Relation()->Result(false);
+        return;
+    }
+
+    for (auto &targetSig : targetSigs) {
+        for (auto &sourceSig : sourceSigs) {
+            targetSig->AssignmentTarget(checker->Relation(), sourceSig);
+            if (checker->Relation()->IsTrue()) {
+                break;
+            }
+        }
+        if (!checker->Relation()->IsTrue()) {
+            return;
+        }
+    }
+}
 }  // namespace ark::es2panda::checker
