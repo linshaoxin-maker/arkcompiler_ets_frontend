@@ -1075,6 +1075,15 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
     return true;
 }
 
+static bool IsEmitMissingInstructionBasedOnNode(const ir::AstNode *node)
+{
+    if (!node->IsExpression() || node->Variable() == nullptr) {
+        return false;
+    }
+
+    return node->Variable()->TsType()->IsIntType() && node->AsExpression()->TsTypeOrError()->IsLongType();
+}
+
 void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *targetType)
 {
     switch (checker::ETSChecker::TypeKind(targetType)) {
@@ -1087,6 +1096,11 @@ void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *t
             break;
         }
         case checker::TypeFlag::LONG: {
+            if (IsEmitMissingInstructionBasedOnNode(node)) {
+                Sa().Emit<I32toi64>(node);
+                node->Variable()->SetTsType(Checker()->GlobalLongType());
+            }
+
             CastToLong(node);
             break;
         }
