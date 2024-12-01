@@ -14,7 +14,7 @@
  */
 
 import mocha from 'mocha';
-import { isDebug, isFileExist, sortAndDeduplicateStringArr } from '../../../src/initialization/utils';
+import { isDebug, isFileExist, sortAndDeduplicateStringArr, mergeSet, convertSetToArray } from '../../../src/initialization/utils';
 import { assert, expect } from 'chai';
 import { DEBUG } from "../../../src/initialization/CommonObject";
 import * as fs from 'fs';
@@ -57,6 +57,45 @@ describe('Tester Cases for <utils>.', function () {
       const arr2: string[] = ['test0', 'test1', 'test2'];
       let arr1 = sortAndDeduplicateStringArr(arr0);
       expect(arr1).to.deep.equal(arr2);
+    });
+  });
+
+  describe('Tester Case for <mergeSet>.', function () {
+    /** test for mergeSet */
+    it('Tester: <The length of set1 and the length of set2 are both greater than 0> case for mergeSet', function () {
+      const set1: Set<string> = new Set(['a', 'b']);
+      const set2: Set<string> = new Set(['b', 'c']);
+      const set3: Set<string> = new Set(['a', 'b', 'c']);
+      const result: Set<string> = mergeSet(set1, set2);
+      expect(result).to.deep.equal(set3);
+    });
+
+    it('Tester: <The length of set1 is greater than 0> case for mergeSet', function () {
+      const set1: Set<string> = new Set(['a', 'b']);
+      const set2: Set<string> = new Set([]);
+      const result1: Set<string> = mergeSet(set1, set2);
+      expect(result1).to.deep.equal(set1);
+    });
+
+    it('Tester: <The length of set1 is greater than 0> case for mergeSet', function () {
+      const set1: Set<string> = new Set([]);
+      const set2: Set<string> = new Set(['a', 'b']);
+      const result1: Set<string> = mergeSet(set1, set2);
+      expect(result1).to.deep.equal(set2);
+    });
+  });
+
+  describe('Tester Case for <convertSetToArray>.', function () {
+    it('Tester: reservedSet is undefined', function () {
+      const reservedSet: Set<string> | undefined = undefined;
+      const expect1: string[] = [];
+      expect(expect1).to.deep.equal(convertSetToArray(reservedSet))
+    });
+
+    it('Tester: reservedSet is not undefined', function () {
+      const reservedSet: Set<string> = new Set(['a', 'b']);
+      const expect1: string[] = ['a', 'b'];
+      expect(expect1).to.deep.equal(convertSetToArray(reservedSet))
     });
   });
 });
