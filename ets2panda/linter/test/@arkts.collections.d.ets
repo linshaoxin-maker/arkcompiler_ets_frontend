@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,11 @@
  * limitations under the License.
  */
 
-import { collections } from './@arkts.collections';
+declare namespace collections {
+  @Sendable
+  class BitVector {
+    [index: number]: number;
+  }
+}
 
-const pt2D = { x: 1, y: 2 };
-
-console.log(pt2D);
-
-const pt3D = { ...pt2D, z: 3 };
-
-console.log(pt3D);
-
-const arr: collections.BitVector = new collections.BitVector(10);
-arr[0] = 1;
-const targetArr: number[] = [...arr];
+export {collections};

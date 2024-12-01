@@ -15,18 +15,18 @@
     ],
     "nodes": [
         {
-            "line": 16,
+            "line": 18,
             "column": 14,
             "problem": "ObjectLiteralNoContextType",
             "autofix": [
                 {
-                    "start": 610,
-                    "end": 610,
+                    "start": 663,
+                    "end": 663,
                     "replacementText": "interface GeneratedObjectLiteralInterface_1 {\n    x: number;\n    y: number;\n}\n"
                 },
                 {
-                    "start": 620,
-                    "end": 620,
+                    "start": 673,
+                    "end": 673,
                     "replacementText": ": GeneratedObjectLiteralInterface_1"
                 }
             ],
@@ -34,14 +34,14 @@
             "rule": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)"
         },
         {
-            "line": 20,
+            "line": 22,
             "column": 14,
             "problem": "ObjectLiteralNoContextType",
             "suggest": "",
             "rule": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)"
         },
         {
-            "line": 20,
+            "line": 22,
             "column": 16,
             "problem": "SpreadOperator",
             "suggest": "",
