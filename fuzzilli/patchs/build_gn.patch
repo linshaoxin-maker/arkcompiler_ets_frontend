@@ -1,0 +1,11 @@
+diff -uN b/BUILD.gn a/BUILD.gn
+--- b/BUILD.gn	2023-12-29 19:04:37.622829550 +0800
++++ a/BUILD.gn	2023-12-29 19:04:03.174744288 +0800
+@@ -15,6 +15,7 @@
+ 
+ group("ets_frontend_build") {
+   deps = [
++    "./fuzzilli:arkfuzzer_build",
+     "./es2panda:es2panda_build",
+     "./merge_abc:merge_proto_abc_build",
+   ]
