@@ -103,7 +103,6 @@ class Helpers {
 public:
     Helpers() = delete;
 
-    static bool IsGlobalIdentifier(const util::StringView &str);
     static bool ContainSpreadElement(const ArenaVector<ir::Expression *> &args);
     static util::StringView LiteralToPropName(const ir::Expression *lit);
 

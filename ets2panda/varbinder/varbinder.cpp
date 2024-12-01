@@ -302,11 +302,6 @@ void VarBinder::BuildVarDeclaratorId(ir::AstNode *childNode)
         case ir::AstNodeType::IDENTIFIER: {
             auto *ident = childNode->AsIdentifier();
             const auto &name = ident->Name();
-
-            if (util::Helpers::IsGlobalIdentifier(name)) {
-                break;
-            }
-
             auto *variable = scope_->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS);
             ASSERT(variable);
             ident->SetVariable(variable);
