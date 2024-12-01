@@ -61,6 +61,9 @@ checker::Type *OpaqueTypeNode::GetType([[maybe_unused]] checker::TSChecker *chec
 
 checker::Type *OpaqueTypeNode::GetType([[maybe_unused]] checker::ETSChecker *checker)
 {
+    if (TsType() == nullptr) {
+        SetTsType(checker->GlobalTypeError());
+    }
     return TsType();
 }
 

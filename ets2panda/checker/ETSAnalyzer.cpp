@@ -437,13 +437,26 @@ void ETSAnalyzer::CheckInstantatedClass(ir::ETSNewClassInstanceExpression *expr,
     }
 }
 
+static checker::Type *CheckInstantiatedNewType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr)
+{
+    checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
+    if (calleeType->IsETSObjectType()) {
+        return calleeType;
+    }
+    if (!calleeType->IsTypeError()) {
+        checker->LogTypeError("Only object types could be instantiated.", expr->Start());
+    }
+    expr->GetTypeRef()->SetTsType(checker->GlobalTypeError());
+    return checker->GlobalTypeError();
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
 {
     if (expr->TsType() != nullptr) {
         return expr->TsType();
     }
     ETSChecker *checker = GetETSChecker();
-    auto *calleeType = GetCalleeType(checker, expr);
+    auto *calleeType = CheckInstantiatedNewType(checker, expr);
     if (calleeType == nullptr) {
         return expr->TsType();
     }
@@ -1417,6 +1430,9 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 {
+    if (expr->IsDummy()) {
+        return GetETSChecker()->GlobalTypeError();
+    }
     if (expr->TsType() == nullptr) {
         ETSChecker *checker = GetETSChecker();
 
@@ -1728,6 +1744,9 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker
 
 checker::Type *ETSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
 {
+    if (expr->TsType() == nullptr) {
+        expr->SetTsType(GetETSChecker()->GlobalTypeError());
+    }
     return expr->TsType();
 }
 

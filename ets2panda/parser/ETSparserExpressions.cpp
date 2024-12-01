@@ -15,6 +15,9 @@
 
 #include "ETSparser.h"
 
+#include "ir/opaqueTypeNode.h"
+#include "ir/statements/emptyStatement.h"
+#include "ir/visitor/AstVisitor.h"
 #include "lexer/lexer.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/ets/etsTuple.h"
@@ -85,38 +88,40 @@ ir::Expression *ETSParser::ParseFunctionParameterExpression(ir::AnnotatedExpress
         }
 
         auto defaultValue = ParseExpression();
-        if (!paramIdent->IsIdentifier() || defaultValue == nullptr) {  // Error processing.
-            return nullptr;
-        }
+        // if (!paramIdent->IsIdentifier() || defaultValue == nullptr) {  // Error! processing.
+        //     return nullptr;
+        // }
 
         paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), defaultValue);
 
         std::string value = GetArgumentsSourceView(Lexer(), lexerPos);
         paramExpression->SetLexerSaved(util::UString(value, Allocator()).View());
         paramExpression->SetRange({paramIdent->Start(), paramExpression->Initializer()->End()});
-    } else if (paramIdent == nullptr) {  // Error processing.
+    } else /* if (paramIdent == nullptr) {  // Error! processing.
         return nullptr;
-    } else if (paramIdent->IsIdentifier()) {
-        auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
+    } else */
+        if (paramIdent->IsIdentifier()) {
+            auto *typeAnnotation = paramIdent->AsIdentifier()->TypeAnnotation();
 
-        const auto typeAnnotationValue = [this, typeAnnotation,
-                                          defaultUndef]() -> std::pair<ir::Expression *, std::string> {
-            if (typeAnnotation == nullptr) {
-                return std::make_pair(nullptr, "");
+            const auto typeAnnotationValue = [this, typeAnnotation,
+                                              defaultUndef]() -> std::pair<ir::Expression *, std::string> {
+                if (typeAnnotation == nullptr) {
+                    return std::make_pair(nullptr, "");
+                }
+                return std::make_pair(defaultUndef != nullptr ? AllocNode<ir::UndefinedLiteral>() : nullptr,
+                                      "undefined");
+            }();
+
+            paramExpression =
+                AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), std::get<0>(typeAnnotationValue));
+            if (defaultUndef != nullptr) {
+                paramExpression->SetLexerSaved(util::UString(std::get<1>(typeAnnotationValue), Allocator()).View());
             }
-            return std::make_pair(defaultUndef != nullptr ? AllocNode<ir::UndefinedLiteral>() : nullptr, "undefined");
-        }();
-
-        paramExpression =
-            AllocNode<ir::ETSParameterExpression>(paramIdent->AsIdentifier(), std::get<0>(typeAnnotationValue));
-        if (defaultUndef != nullptr) {
-            paramExpression->SetLexerSaved(util::UString(std::get<1>(typeAnnotationValue), Allocator()).View());
+            paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
+        } else {
+            paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsRestElement(), nullptr);
+            paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
         }
-        paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
-    } else {
-        paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent->AsRestElement(), nullptr);
-        paramExpression->SetRange({paramIdent->Start(), paramIdent->End()});
-    }
     return paramExpression;
 }
 
@@ -225,9 +230,9 @@ ir::Expression *ETSParser::ParsePropertyDefinition(ExpressionParseFlags flags)
     ir::Expression *key = ParsePropertyKey(flags);
 
     ir::Expression *value = ParsePropertyValue(&propertyKind, &methodStatus, flags);
-    if (key == nullptr || value == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (key == nullptr || value == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     lexer::SourcePosition end = value->End();
 
@@ -461,9 +466,9 @@ ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterLis
         LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
     }
 
-    if (expr == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (expr == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     expr->SetGrouped();
     expr->SetRange({start, Lexer()->GetToken().End()});
@@ -570,16 +575,11 @@ ir::Expression *ETSParser::ParsePotentialAsExpression(ir::Expression *primaryExp
 
 //  Extracted from 'ParseNewExpression()' to reduce function's size
 ir::ClassDefinition *ETSParser::CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
-                                                                      ir::TypeNode *typeReference,
-                                                                      ir::TypeNode *baseTypeReference)
+                                                                      ir::TypeNode *typeReference)
 {
     lexer::SourcePosition endLoc = typeReference->End();
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
-        if (baseTypeReference != nullptr) {
-            LogSyntaxError("Can not use 'new' on primitive types.", baseTypeReference->Start());
-        }
-
         Lexer()->NextToken();
 
         while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
@@ -621,24 +621,14 @@ ir::Expression *ETSParser::ParseNewExpression()
 
     Lexer()->NextToken();  // eat new
 
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
-    ir::TypeNode *baseTypeReference = ParseBaseTypeReference(&options);
-    ir::TypeNode *typeReference = baseTypeReference;
-    if (typeReference == nullptr) {
-        options |= TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE | TypeAnnotationParsingOptions::ALLOW_WILDCARD |
-                   TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY;
-        typeReference = ParseTypeReference(&options);
-        if (typeReference == nullptr) {
-            typeReference = ParseTypeAnnotation(&options);
-        }
-    } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        LogSyntaxError("Invalid { after base types.");
-        Lexer()->NextToken();  // eat '{'
-    }
-
-    if (typeReference == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    TypeAnnotationParsingOptions options =
+        TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
+        TypeAnnotationParsingOptions::ALLOW_WILDCARD | TypeAnnotationParsingOptions::POTENTIAL_NEW_ARRAY;
+    // ir::TypeNode *typeReference = ParseTypeReference(&options);
+    // if (typeReference == nullptr) {
+    auto typeReference = ParseTypeAnnotation(&options);
+    // }
+    ASSERT(typeReference != nullptr);
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET) {
         Lexer()->NextToken();
@@ -670,8 +660,7 @@ ir::Expression *ETSParser::ParseNewExpression()
     }
 
     ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
-    ir::ClassDefinition *classDefinition =
-        CreateClassDefinitionForNewExpression(arguments, typeReference, baseTypeReference);
+    ir::ClassDefinition *classDefinition = CreateClassDefinitionForNewExpression(arguments, typeReference);
 
     auto *newExprNode =
         AllocNode<ir::ETSNewClassInstanceExpression>(typeReference, std::move(arguments), classDefinition);
@@ -775,7 +764,7 @@ ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
     if (unaryExpressionNode == nullptr) {
-        return nullptr;
+        return AllocErrorExpression();
     }
 
     if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {

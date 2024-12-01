@@ -24,7 +24,6 @@ namespace ark::es2panda::ir {
 
 class OpaqueTypeNode : public TypeNode {
 public:
-    OpaqueTypeNode() = delete;
     ~OpaqueTypeNode() override = default;
 
     NO_COPY_SEMANTIC(OpaqueTypeNode);
@@ -35,6 +34,8 @@ public:
         ASSERT(type != nullptr);
         SetTsType(type);
     }
+
+    explicit OpaqueTypeNode() : TypeNode(AstNodeType::OPAQUE_TYPE_NODE) {}
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;

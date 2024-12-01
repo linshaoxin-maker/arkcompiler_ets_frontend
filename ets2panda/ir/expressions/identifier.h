@@ -19,6 +19,7 @@
 #include "checker/checkerContext.h"
 #include "ir/expression.h"
 #include "ir/validationInfo.h"
+#include "parser/parserImpl.h"
 
 namespace ark::es2panda::varbinder {
 class Variable;
@@ -38,6 +39,7 @@ enum class IdentifierFlags : uint32_t {
     IGNORE_BOX = 1U << 5U,
     ANNOTATIONDECL = 1U << 6U,
     ANNOTATIONUSAGE = 1U << 7U,
+    DUMMY = 1U << 8U,
 };
 
 }  // namespace ark::es2panda::ir
@@ -60,15 +62,21 @@ public:
     NO_MOVE_SEMANTIC(Identifier);
 
 public:
-    explicit Identifier(ArenaAllocator *const allocator) : Identifier("", allocator) {}
+    explicit Identifier(ArenaAllocator *const allocator) : Identifier(parser::ParserImpl::ERROR_LITERAL, allocator) {}
     explicit Identifier(util::StringView const name, ArenaAllocator *const allocator)
         : AnnotatedExpression(AstNodeType::IDENTIFIER), name_(name), decorators_(allocator->Adapter())
     {
+        if (name == parser::ParserImpl::ERROR_LITERAL) {
+            flags_ &= IdentifierFlags::DUMMY;
+        }
     }
 
     explicit Identifier(util::StringView const name, TypeNode *const typeAnnotation, ArenaAllocator *const allocator)
         : AnnotatedExpression(AstNodeType::IDENTIFIER, typeAnnotation), name_(name), decorators_(allocator->Adapter())
     {
+        if (name == parser::ParserImpl::ERROR_LITERAL) {
+            flags_ |= IdentifierFlags::DUMMY;
+        }
     }
 
     explicit Identifier(Tag tag, Identifier const &other, ArenaAllocator *allocator);
@@ -85,6 +93,7 @@ public:
 
     void SetName(const util::StringView &newName) noexcept
     {
+        ASSERT(newName != parser::ParserImpl::ERROR_LITERAL);
         name_ = newName;
     }
 
@@ -96,6 +105,11 @@ public:
     const ArenaVector<Decorator *> *DecoratorsPtr() const override
     {
         return &Decorators();
+    }
+
+    bool IsDummy() const noexcept
+    {
+        return (flags_ & IdentifierFlags::DUMMY) != 0;
     }
 
     [[nodiscard]] bool IsOptional() const noexcept

@@ -200,9 +200,12 @@ ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags
     auto token = Lexer()->GetToken();
     switch (token.Type()) {
         case lexer::TokenType::KEYW_FUNCTION: {
-            if (result = ParseFunctionDeclaration(false, memberModifiers); result != nullptr) {  // Error processing.
-                result->SetStart(startLoc);
-            }
+            // if (result = ParseFunctionDeclaration(false, memberModifiers); result != nullptr) {  // Error!
+            // processing.
+            //     result->SetStart(startLoc);
+            // }
+            result = ParseFunctionDeclaration(false, memberModifiers);
+            result->SetStart(startLoc);
             break;
         }
         case lexer::TokenType::KEYW_CONST:
@@ -292,9 +295,9 @@ ir::Statement *ETSParser::ParseAssertStatement()
     Lexer()->NextToken();
 
     ir::Expression *test = ParseExpression();
-    if (test == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (test == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     lexer::SourcePosition endLoc = test->End();
     ir::Expression *second = nullptr;
@@ -302,9 +305,9 @@ ir::Statement *ETSParser::ParseAssertStatement()
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
         Lexer()->NextToken();  // eat ':'
         second = ParseExpression();
-        if (second != nullptr) {  // Error processing.
-            endLoc = second->End();
-        }
+        // if (second != nullptr) {  // Error! processing.
+        endLoc = second->End();
+        // }
     }
 
     auto *asStatement = AllocNode<ir::AssertStatement>(test, second);

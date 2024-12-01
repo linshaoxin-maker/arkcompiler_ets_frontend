@@ -341,9 +341,9 @@ ir::ScriptFunction *ETSParser::ParseFunction(ParserStatus newStatus, ir::TypeNod
             ParseFunctionBody(signature.Params(), newStatus, GetContext().Status());
     } else if (isArrow) {
         body = ParseExpression();
-        if (body != nullptr) {  // Error processing.
-            endLoc = body->AsExpression()->End();
-        }
+        // if (body != nullptr) {  // Error! processing.
+        //     endLoc = body->AsExpression()->End();
+        // }
         functionContext.AddFlag(ir::ScriptFunctionFlags::EXPRESSION);
     }
 
@@ -523,9 +523,9 @@ ir::AstNode *ETSParser::ParseInnerRest(const ArenaVector<ir::AstNode *> &propert
     }
 
     auto *memberName = ExpectIdentifier();
-    if (memberName == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (memberName == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -662,10 +662,7 @@ ir::AstNode *ETSParser::ParseAnnotationProperty(ir::Identifier *fieldName, ir::M
 
     if (typeAnnotation == nullptr && (memberModifiers & ir::ModifierFlags::ANNOTATION_DECLARATION) != 0) {
         auto nameField = fieldName->Name().Mutf8();
-        auto logField = " '" + nameField + "'.";
-        if (nameField == ERROR_LITERAL) {
-            logField = ".";
-        }
+        auto logField = !fieldName->IsDummy() ? " '" + nameField + "'." : ".";
         ThrowSyntaxError("Missing type annotation for property" + logField, Lexer()->GetToken().Start());
     }
 
@@ -880,10 +877,10 @@ ir::TSTypeAliasDeclaration *ETSParser::ParseTypeAliasDeclaration()
 
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     ir::TypeNode *typeAnnotation = ParseTypeAnnotation(&options);
-    if (typeAnnotation != nullptr) {  // Error processing.
-        typeAliasDecl->SetTsTypeAnnotation(typeAnnotation);
-        typeAnnotation->SetParent(typeAliasDecl);
-    }
+    // if (typeAnnotation != nullptr) {  // Error! processing.
+    typeAliasDecl->SetTsTypeAnnotation(typeAnnotation);
+    typeAnnotation->SetParent(typeAliasDecl);
+    // }
 
     typeAliasDecl->SetRange({typeStart, Lexer()->GetToken().End()});
     return typeAliasDecl;
@@ -1285,9 +1282,9 @@ ir::ETSPackageDeclaration *ETSParser::ParsePackageDeclaration()
     Lexer()->NextToken();
 
     ir::Expression *name = ParseQualifiedName();
-    if (name == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (name == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     auto *packageDeclaration = AllocNode<ir::ETSPackageDeclaration>(name);
     packageDeclaration->SetRange({startLoc, Lexer()->GetToken().End()});
@@ -1530,10 +1527,7 @@ std::pair<ImportSpecifierVector, ImportDefaultSpecifierVector> ETSParser::ParseN
         }
     }
     Lexer()->NextToken();  // eat '}'
-    std::pair<ArenaVector<ir::ImportSpecifier *>, ArenaVector<ir::ImportDefaultSpecifier *>> resultSpecifiers(
-        result, resultDefault);
-
-    return resultSpecifiers;
+    return {result, resultDefault};
 }
 
 void ETSParser::ParseNameSpaceSpecifier(ArenaVector<ir::AstNode *> *specifiers, bool isReExport)
@@ -1636,7 +1630,7 @@ ir::AnnotatedExpression *ETSParser::GetAnnotatedExpressionFromParam()
 
         default: {
             LogSyntaxError("Unexpected token, expected an identifier.");
-            return nullptr;
+            return AllocErrorExpression();
         }
     }
 
@@ -1671,9 +1665,9 @@ ir::ETSUnionType *ETSParser::CreateOptionalParameterTypeNode(ir::TypeNode *typeA
 ir::Expression *ETSParser::ParseFunctionParameter()
 {
     auto *const paramIdent = GetAnnotatedExpressionFromParam();
-    if (paramIdent == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (paramIdent == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     ir::ETSUndefinedType *defaultUndef = nullptr;
 
@@ -1691,9 +1685,9 @@ ir::Expression *ETSParser::ParseFunctionParameter()
     if (Lexer()->TryEatTokenType(lexer::TokenType::PUNCTUATOR_COLON)) {
         TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
         ir::TypeNode *typeAnnotation = ParseTypeAnnotation(&options);
-        if (typeAnnotation == nullptr) {  // Error processing.
-            return nullptr;
-        }
+        // if (typeAnnotation == nullptr) {  // Error! processing.
+        //     return nullptr;
+        // }
 
         if (defaultUndef != nullptr) {
             typeAnnotation = CreateOptionalParameterTypeNode(typeAnnotation, defaultUndef);
@@ -1765,9 +1759,9 @@ ir::VariableDeclarator *ETSParser::ParseVariableDeclaratorInitializer(ir::Expres
     Lexer()->NextToken();
 
     ir::Expression *initializer = ParseExpression();
-    if (initializer == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (initializer == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     lexer::SourcePosition endLoc = initializer->End();
 
@@ -2204,14 +2198,14 @@ ir::FunctionDeclaration *ETSParser::ParseFunctionDeclaration(bool canBeAnonymous
         LogSyntaxError("Unexpected token, expected identifier after 'function' keyword");
     }
 
-    if (funcIdentNode != nullptr) {
-        CheckRestrictedBinding(funcIdentNode->Name(), funcIdentNode->Start());
-    }
+    // if (funcIdentNode != nullptr) {
+    CheckRestrictedBinding(funcIdentNode->Name(), funcIdentNode->Start());
+    // }
 
     ir::ScriptFunction *func = ParseFunction(newStatus | ParserStatus::FUNCTION_DECLARATION, typeAnnotation);
-    if (funcIdentNode != nullptr) {  // Error processing.
-        func->SetIdent(funcIdentNode);
-    }
+    // if (funcIdentNode != nullptr) {  // Error! processing.
+    func->SetIdent(funcIdentNode);
+    // }
 
     auto *funcDecl = AllocNode<ir::FunctionDeclaration>(Allocator(), func);
     if (func->IsOverload() && Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {

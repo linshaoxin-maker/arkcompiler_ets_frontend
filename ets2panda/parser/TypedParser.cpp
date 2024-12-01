@@ -90,9 +90,9 @@ ir::Expression *TypedParser::ParseExpression(ExpressionParseFlags flags)
     }
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
-    if (unaryExpressionNode == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (unaryExpressionNode == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     if (unaryExpressionNode->IsArrowFunctionExpression()) {
         return unaryExpressionNode;
@@ -407,9 +407,9 @@ ir::TypeNode *TypedParser::ParseInterfaceExtendsElement()
         heritageEnd = typeParamInst->End();
     }
 
-    if (expr == nullptr) {  // Error rocessing.
-        return nullptr;
-    }
+    // if (expr == nullptr) {  // !Error rocessing.
+    //     return nullptr;
+    // }
 
     auto *typeReference = AllocNode<ir::TSTypeReference>(expr, typeParamInst);
     typeReference->SetRange({heritageStart, heritageEnd});
@@ -424,7 +424,7 @@ ArenaVector<ir::TSInterfaceHeritage *> TypedParser::ParseInterfaceExtendsClause(
 
     while (true) {
         auto *typeReference = ParseInterfaceExtendsElement();
-        if (typeReference != nullptr) {  // Error processing.
+        if (typeReference != nullptr) {  // Error! processing.
             auto *heritage = AllocNode<ir::TSInterfaceHeritage>(typeReference);
             heritage->SetRange(typeReference->Range());
             extends.push_back(heritage);
@@ -463,9 +463,9 @@ ir::Statement *TypedParser::ParseInterfaceDeclaration(bool isStatic)
     Lexer()->NextToken();  // eat interface keyword
 
     auto id = ExpectIdentifier(true);
-    if (id == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (id == nullptr) {  // Error !processing.
+    //     return nullptr;
+    // }
 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -557,10 +557,10 @@ ArenaVector<ir::AstNode *> TypedParser::ParseTypeLiteralOrInterfaceBody()
         util::ErrorRecursionGuard infiniteLoopBlocker(Lexer());
 
         ir::AstNode *member = ParseTypeLiteralOrInterfaceMember();
-        // Error processing.
-        if (member == nullptr || (member->IsMethodDefinition() && member->AsMethodDefinition()->Function() != nullptr &&
-                                  member->AsMethodDefinition()->Function()->IsOverload() &&
-                                  member->AsMethodDefinition()->Function()->Body() != nullptr)) {
+        // Error! processing.
+        if (member->IsMethodDefinition() && member->AsMethodDefinition()->Function() != nullptr &&
+            member->AsMethodDefinition()->Function()->IsOverload() &&
+            member->AsMethodDefinition()->Function()->Body() != nullptr) {
             continue;
         }
 
@@ -580,7 +580,7 @@ ArenaVector<ir::AstNode *> TypedParser::ParseTypeLiteralOrInterfaceBody()
             Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
             if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
                 LogSyntaxError("Interface member initialization is prohibited");
-                Lexer()->NextToken();  // Error processing.
+                Lexer()->NextToken();  // Error! processing.
             }
             if (!Lexer()->GetToken().NewLine()) {
                 LogExpectedToken(lexer::TokenType::PUNCTUATOR_COMMA);
@@ -671,11 +671,11 @@ ir::TSEnumDeclaration *TypedParser::ParseEnumMembers(ir::Identifier *key, const 
             memberInit = ParseExpression();
         }
 
-        if (memberKey != nullptr) {  // Error processing.
-            auto *member = AllocNode<ir::TSEnumMember>(memberKey, memberInit);
-            member->SetRange({initStart, Lexer()->GetToken().End()});
-            members.push_back(member);
-        }
+        // if (memberKey != nullptr) {  // Error! processing.
+        auto *member = AllocNode<ir::TSEnumMember>(memberKey, memberInit);
+        member->SetRange({initStart, Lexer()->GetToken().End()});
+        members.push_back(member);
+        // }
 
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
             Lexer()->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);  // eat ','
@@ -879,11 +879,11 @@ ArenaVector<ir::TSClassImplements *> TypedParser::ParseClassImplementClause()
     while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
         lexer::SourcePosition implStart = Lexer()->GetToken().Start();
         auto [expr, implTypeParams] = ParseClassImplementsElement();
-        if (expr != nullptr) {  // Error processing.
-            auto *impl = AllocNode<ir::TSClassImplements>(expr, implTypeParams);
-            impl->SetRange({implStart, Lexer()->GetToken().End()});
-            implements.push_back(impl);
-        }
+        // if (expr != nullptr) {  // Error! processing.
+        auto *impl = AllocNode<ir::TSClassImplements>(expr, implTypeParams);
+        impl->SetRange({implStart, Lexer()->GetToken().End()});
+        implements.push_back(impl);
+        // }
 
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
             Lexer()->NextToken();
@@ -1069,9 +1069,9 @@ ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &pr
     }
 
     ir::Expression *propName = ParseClassKey(&desc);
-    if (propName == nullptr) {  // Error processing.
-        return nullptr;
-    }
+    // if (propName == nullptr) {  // Error! processing.
+    //     return nullptr;
+    // }
 
     if (desc.methodKind == ir::MethodDefinitionKind::CONSTRUCTOR && !desc.decorators.empty()) {
         LogSyntaxError("Decorators are not valid here.", desc.decorators.front()->Start());
@@ -1208,7 +1208,7 @@ ir::Expression *TypedParser::ParseQualifiedName(ExpressionParseFlags flags)
                 return expr;
             }
             LogSyntaxError("Identifier expected");
-            return nullptr;
+            return AllocErrorExpression();
     }
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
