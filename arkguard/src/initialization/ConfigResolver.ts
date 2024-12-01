@@ -31,6 +31,7 @@ import {
   renameFileNameModule,
   separateUniversalReservedItem,
   wildcardTransformer,
+  ObfuscationResultType,
 } from '../ArkObfuscator';
 
 import { isDebug, isFileExist, sortAndDeduplicateStringArr, mergeSet, convertSetToArray } from './utils';
@@ -39,6 +40,7 @@ import { historyUnobfuscatedPropMap } from './Initializer';
 import { LocalVariableCollections, UnobfuscationCollections } from '../utils/CommonCollections';
 import { INameObfuscationOption } from '../configs/INameObfuscationOption';
 import { WhitelistType } from '../utils/TransformUtil';
+import { Source } from '../utils/SourceMapMergingUtil';
 import { endFilesEvent, startFilesEvent } from '../utils/PrinterUtils';
 
 enum OptionType {
@@ -189,12 +191,14 @@ export class ObConfigResolver {
   sourceObConfig: any;
   logger: any;
   isHarCompiled: boolean | undefined;
+  isHspCompiled: boolean | undefined;
   isTerser: boolean;
 
   constructor(projectConfig: any, logger: any, isTerser?: boolean) {
     this.sourceObConfig = projectConfig.obfuscationOptions;
     this.logger = logger;
     this.isHarCompiled = projectConfig.compileHar;
+    this.isHspCompiled = projectConfig.compileShared;
     this.isTerser = isTerser;
   }
 
@@ -214,7 +218,7 @@ export class ObConfigResolver {
     }
 
     let needConsumerConfigs: boolean =
-      this.isHarCompiled &&
+      (this.isHarCompiled || this.isHspCompiled) &&
       sourceObConfig.selfConfig.consumerRules &&
       sourceObConfig.selfConfig.consumerRules.length > 0;
     let needDependencyConfigs: boolean = enableObfuscation || needConsumerConfigs;
@@ -223,6 +227,8 @@ export class ObConfigResolver {
     const dependencyMaxLength: number = Math.max(
       sourceObConfig.dependencies.libraries.length,
       sourceObConfig.dependencies.hars.length,
+      sourceObConfig.dependencies.hsps.length,
+      sourceObConfig.dependencies.hspLibraries.length
     );
     if (needDependencyConfigs && dependencyMaxLength > 0) {
       dependencyConfigs = new MergedConfig();
@@ -644,7 +650,7 @@ export class ObConfigResolver {
     ApiExtractor.extractStringsFromFile(uiApiPath);
   }
 
-  private getDependencyConfigs(sourceObConfig: any, dependencyConfigs: MergedConfig): void {
+  private getDependencyConfigs(sourceObConfig: sourceObConfig, dependencyConfigs: MergedConfig): void {
     for (const lib of sourceObConfig.dependencies.libraries || []) {
       if (lib.consumerRules && lib.consumerRules.length > 0) {
         for (const path of lib.consumerRules) {
@@ -666,9 +672,31 @@ export class ObConfigResolver {
         dependencyConfigs.merge(thisHarConfigs);
       }
     }
+
+    if(
+      sourceObConfig.dependencies &&
+      sourceObConfig.dependencies.hsps &&
+      sourceObConfig.dependencies.hsps.length > 0
+    ){
+      for (const path of sourceObConfig.dependencies.hsps){
+        const thisHapConfigs = new MergedConfig();
+        this.getConfigByPath(path,dependencyConfigs);
+        dependencyConfigs.merge(thisHapConfigs);
+      }
+    }
+
+    for (const lib of sourceObConfig.dependencies.hspLibraries || []) {
+      if(lib.consumerRules && lib.consumerRules.length > 0 ) {
+        for (const path of lib.consumerRules) {
+          const thisLibConfigs = new MergedConfig();
+          this.getConfigByPath(path, dependencyConfigs);
+          dependencyConfigs.merge(thisLibConfigs);
+        }
+      }
+    }
   }
 
-  public getDependencyConfigsForTest(sourceObConfig: any, dependencyConfigs: MergedConfig): void {
+  public getDependencyConfigsForTest(sourceObConfig: sourceObConfig, dependencyConfigs: MergedConfig): void {
     return this.getDependencyConfigs(sourceObConfig, dependencyConfigs);
   }
 
@@ -716,17 +744,19 @@ export class ObConfigResolver {
   }
 
   private genConsumerConfigFiles(
-    sourceObConfig: any,
+    sourceObConfig: sourceObConfig,
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
-    selfConsumerConfig.merge(dependencyConfigs);
+    if(this.isHarCompiled){
+      selfConsumerConfig.merge(dependencyConfigs);
+    }
     selfConsumerConfig.sortAndDeduplicate();
     this.writeConsumerConfigFile(selfConsumerConfig, sourceObConfig.exportRulePath);
   }
 
   public genConsumerConfigFilesForTest(
-    sourceObConfig: any,
+    sourceObConfig: sourceObConfig,
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
@@ -1164,4 +1194,45 @@ export function getRelativeSourcePath(
   }
 
   return relativeFilePath;
+}
+
+export interface sourceObConfig{
+  selfConfig:Obfuscation; //当前工程的混淆配置,例子{ruleOptions：{enable:true, rules:[Array]},consumerRules:[]}
+  sdkApis:string[];
+  // SDK 接口列表:[
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\api',
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\arkts',
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\kits',
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\hms\\ets\\api',
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\hms\\ets\\kits',
+  //   'D:\\Program Files\\DevEco Studio\\sdk\\default\\openharmony\\ets\\api'
+  // ],
+  obfuscationCacheDir:string;//混淆缓存目录路径'D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\cache\\default\\default@CompileArkTS\\esmodule\\release\\obfuscation',
+  exportRulePath:string;//导出规则的路径：'D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\intermediates\\obfuscation\\default\\obfuscation.txt',
+  dependencies:ObfuscationDependencies;//依赖项，包括库、HARS 和 HSP 库dependencies: { libraries: [], hars: [], haps: [] }
+}
+
+export interface Obfuscation{
+  ruleOptions?:RuleOptions; //对应IDE build-profile.json5中的ruleOptions
+  consumerRules?:string[]; //--对应IDE build-profile.json5中的consumerFiles（已拼接为绝对路径）
+  consumerFiles?:string|string[]; //无用字段(暂时还没有)
+  libDir?:string; //当前依赖根路径(暂时还没有)
+}
+
+export interface RuleOptions{
+  enable?: boolean; //是否开启混淆
+  files?: string | string[]; //无用字段（暂时还没有）
+  rules?: string[]; //对应IDE build-profile.json5中的files字段（已拼接为绝对路径）
+}
+
+// 定义混淆依赖项结构
+export interface ObfuscationDependencies {
+  // 混淆库列表
+  libraries: Obfuscation[];
+  // 依赖的HARS 文件路径列表
+  hars: string[];
+  // 依赖的HSP 文件路径列表(暂时还没有)
+  hsps: string[];
+  // 依赖的HSP 库的混淆配置列表(暂时还没有)
+  hspLibraries: Obfuscation[];
 }

@@ -1,0 +1,4 @@
+-keep-global-name 
+RemoteHspClass
+-keep-property-name 
+remoteHspMethod
