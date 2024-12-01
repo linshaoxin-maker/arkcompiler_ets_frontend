@@ -235,7 +235,7 @@ bool ETSChecker::StartChecker(varbinder::VarBinder *varbinder, const CompilerOpt
         debugInfoPlugin_->PreCheck();
     }
 
-    CheckProgram(Program(), true);
+    CheckProgram(Program(), options.runAssignAnalyzer);
 
     if (UNLIKELY(isEvalMode)) {
         debugInfoPlugin_->PostCheck();
