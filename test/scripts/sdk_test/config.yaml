@@ -22,7 +22,7 @@ node_js_path: D:\Software\nodejs  # The nodejs which is used in Deveco
 api_version_file_name_map:
   '4.0.0(10)': "HarmonyOS-NEXT-DP0"
   '4.1.0(11)': "HarmonyOS-NEXT-DP1"
-  '5.0.0(12)': "HarmonyOS-NEXT-DB0"
+  '5.0.0(12)': "default"
 
 # output settings
 output_html_file: ./sdk_test_report.html
@@ -246,7 +246,8 @@ patch_content:
   patch_new_file_ets:
     # This new file will be added to the same directory as 'inc_modify_file' specified in haps
     name: test.ets
-    path: pages/Test
+    new_name: TEST.ets
+    path: pages/test
     content: "export function a() {return 'a'}\n"
     component: "@Entry\n@Component\nstruct NewPage {\n@State message: string = 'Hello World';\nbuild() {\n}\n}\n"
   patch_new_file_js:
@@ -260,6 +261,9 @@ patch_content:
     name: test.js
     content: "export function a() {return 'a'}\n"
   patch_lines_1:
+    ets:
+      head: "import {a} from './test'\n"
+      tail: "\nconsole.log(a().toString());\n"
     js:
       head: "import {a} from './test'\n"
       tail: "\nconsole.log(a().toString());\n"
@@ -269,6 +273,9 @@ patch_content:
     har:
       head: "import {a} from 'staticlibrary';\n"
       tail: "\nconsole.log(a().toString());\n"
+      export_handel:
+        origin_content: "export function a() {return 'a';}\n"
+        new_content1: "export function a() {return 'a123';}\n"
     hsp:
       head: "import {a} from 'sharelibrary';\n"
       tail: "\nconsole.log(a().toString());\n"
@@ -276,13 +283,13 @@ patch_content:
       head: "import {a} from 'libcpp.so';\n"
       tail: "\nconsole.log(a().toString());\n"
     externalhar:
-      head: "import {a} from 'outHar';\n"
+      head: "import {a} from 'outhar';\n"
       tail: "\nconsole.log(a().toString());\n"
     externalhsp:
-      head: "import {a} from 'outHsp';\n"
+      head: "import {a} from 'outhsp';\n"
       tail: "\nconsole.log(a().toString());\n"
     externalcpp:
-      head: "import {a} from 'outCpp';\n"
+      head: "import {a} from 'outcpp';\n"
       tail: "\nconsole.log(a().toString());\n"
   patch_lines_2:
     tail: "\n console.log('This is a new line');\n"

@@ -104,7 +104,7 @@ class Config():
                         name='HelloWorld',
 
                         # The following params is not neccessary to be modified
-                        preview_build=True
+                        preview_build=True,
                         debug_package_path=r'entry/build/default/outputs/default/entry-default-unsigned.hap',
                         release_package_path=r'entry/build/default/outputs/default/entry-default-unsigned.hap',
                         incremental_code_path=r'entry/src/main/ets/pages/Index.ets',

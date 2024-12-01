@@ -33,11 +33,12 @@ def setup_env():
     deveco_path = options.configs.get('deveco_path')
     java_home = os.path.join(deveco_path, 'jbr')
     tool_home = os.path.join(deveco_path)
+    if is_mac:
+        tool_home = os.path.join(tool_home, 'Contents')
     sdk_home = os.path.join(tool_home, 'sdk')
     node_js_path = os.path.join(deveco_path, 'tools', 'node')
     if is_mac():
-        node_js_path = os.path.join(node_js_path, 'bin')
-        tool_home = os.path.join(tool_home, 'Contents ')
+        node_js_path = os.path.join(deveco_path, 'Contents', 'tools', 'node', 'bin')
     java_path = os.path.join(java_home, 'bin')
     ohpm_path = os.path.join(tool_home, 'tools', 'ohpm', 'bin')
     hvigor_path = os.path.join(tool_home, 'tools', 'hvigor', 'bin')
@@ -49,16 +50,24 @@ def setup_env():
 
 def check_deveco_env():
     if is_linux():
-        return False
-
+        node_path = os.path.join(options.configs.get('deveco_path'), 'tool', 'node')
+        if not os.path.exists(node_path):
+            logging.error("NodeJS not found!")
+            return False
+        return True
     java_path = os.path.join(options.configs.get('deveco_path'), 'jbr')
+    if is_mac():
+        java_path = os.path.join(options.configs.get('deveco_path'), 'Contents', 'jbr')
+
     if not os.path.exists(java_path):
         logging.error("Java not found!")
         return False
 
     node_path = os.path.join(options.configs.get('deveco_path'), 'tools', 'node')
+    if is_mac():
+        node_path = os.path.join(options.configs.get('deveco_path'), 'Contents', 'tools', 'node')
     if not os.path.exists(node_path):
-        logging.error("Node js not found!")
+        logging.error("NodeJS not found!")
         return False
 
     return True
