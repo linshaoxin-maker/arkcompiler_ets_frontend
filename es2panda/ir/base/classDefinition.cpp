@@ -26,12 +26,16 @@
 #include "ir/base/methodDefinition.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/expression.h"
+#include "ir/expressions/assignmentExpression.h"
 #include "ir/expressions/functionExpression.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/literals/nullLiteral.h"
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/expressions/literals/stringLiteral.h"
 #include "ir/expressions/literals/taggedLiteral.h"
+#include "ir/expressions/memberExpression.h"
+#include "ir/statements/blockStatement.h"
+#include "ir/statements/expressionStatement.h"
 #include "ir/ts/tsClassImplements.h"
 #include "ir/ts/tsIndexSignature.h"
 #include "ir/ts/tsTypeParameter.h"
@@ -726,4 +730,83 @@ void ClassDefinition::CompileGetterOrSetter(compiler::PandaGen *pg, compiler::VR
     pg->DefineGetterSetterByValue(this, dest, keyReg, getter, setter, prop->Computed());
 }
 
+void ClassDefinition::CalculateClassExpectedPropertyCount()
+{
+    std::unordered_set<util::StringView> propertyNames;
+
+    auto addPropertyName = [this, &propertyNames](const util::StringView &name) {
+        if (propertyNames.find(name) == propertyNames.end()) {
+            propertyNames.insert(name);
+            IncreasePropertyCount();
+        }
+    };
+
+    for (const auto &stmt : Body()) {
+        if (stmt->IsClassProperty() && !stmt->AsClassProperty()->IsStatic()) {
+            ProcessClassProperty(stmt->AsClassProperty(), addPropertyName);
+        }
+    }
+
+    auto *ctorFunc = Ctor()->Value()->Function();
+    if (ctorFunc && ctorFunc->Body()) {
+        ProcessConstructorBody(ctorFunc->Body()->AsBlockStatement(), addPropertyName);
+    }
+}
+
+void ClassDefinition::ProcessClassProperty(const ClassProperty *prop,
+                                           const std::function<void(const util::StringView&)>& addPropertyName)
+{
+    // Private fields must be explicitly declared in the class and cannot be directly initialized in the constructor,
+    // so they only need to be accounted for in the class properties.
+    if (prop->IsPrivate()) {
+        IncreasePropertyCount();
+    } else {
+        ProcessPropertyKey(prop->Key(), addPropertyName);
+    }
+}
+
+void ClassDefinition::ProcessConstructorBody(const BlockStatement *body,
+                                             const std::function<void(const util::StringView&)>& addPropertyName)
+{
+    for (const auto &stmt : body->Statements()) {
+        if (!stmt->IsExpressionStatement()) {
+            continue;
+        }
+
+        auto *expr = stmt->AsExpressionStatement()->GetExpression();
+        if (!expr->IsAssignmentExpression()) {
+            continue;
+        }
+
+        auto *assignExpr = expr->AsAssignmentExpression();
+        if (!assignExpr->Left()->IsMemberExpression()) {
+            continue;
+        }
+
+        auto *memberExpr = assignExpr->Left()->AsMemberExpression();
+        if (memberExpr->Object()->IsThisExpression()) {
+            ProcessMemberExpressionWithThis(memberExpr, addPropertyName);
+        }
+    }
+}
+
+void ClassDefinition::ProcessMemberExpressionWithThis(
+    const MemberExpression *memberExpr,
+    const std::function<void(const util::StringView&)>& addPropertyName)
+{
+    ProcessPropertyKey(memberExpr->Property(), addPropertyName);
+}
+
+void ClassDefinition::ProcessPropertyKey(const Expression* key,
+                                         const std::function<void(const util::StringView&)>& addPropertyName)
+{
+    // Private properties are not processed here because the private node is a privateIdentifier
+    if (key->IsIdentifier()) {
+        addPropertyName(key->AsIdentifier()->Name());
+    } else if (key->IsStringLiteral()) {
+        addPropertyName(key->AsStringLiteral()->Str());
+    } else if (key->IsNumberLiteral()) {
+        addPropertyName(key->AsNumberLiteral()->Str());
+    }
+}
 }  // namespace panda::es2panda::ir
