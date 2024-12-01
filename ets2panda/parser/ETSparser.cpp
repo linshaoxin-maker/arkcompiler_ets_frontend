@@ -78,7 +78,7 @@ class FunctionContext;
 using namespace std::literals::string_literals;
 
 ETSParser::ETSParser(Program *program, const CompilerOptions &options, ParserStatus status)
-    : TypedParser(program, options, status), globalProgram_(GetProgram())
+    : ThrowableTypedParser(program, options, status), globalProgram_(GetProgram())
 {
     importPathManager_ = std::make_unique<util::ImportPathManager>(Allocator(), ArkTSConfig(), GetOptions().stdLib);
 }
