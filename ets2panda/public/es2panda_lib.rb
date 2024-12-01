@@ -507,6 +507,12 @@ module Es2pandaLibApi
       end&.join(', ')
     end
 
+    def lib_args_to_idl_str
+        @lib_args.map do |lib_arg|
+          Arg.arg_to_idl_str(lib_arg)
+        end&.join(', ')
+    end
+
     def self.arg_value(arg)
       ptr_depth = arg['type']['ptr_depth'] || 0
       '*' * ptr_depth + arg['name']
@@ -522,6 +528,22 @@ module Es2pandaLibApi
       ptr_depth = type['ptr_depth'] || 0
       ref_depth = type['ref_depth'] || 0
       res + ' ' + '*' * ptr_depth + '&' * ref_depth
+    end
+
+    def self.arg_to_idl_str(arg)
+      name = arg['name']
+      if %w[optional object readonly sequence].include?(name)
+        name += "_arg"
+      end
+      type_to_idl_str(arg['type']) + name
+    end
+
+    def self.type_to_idl_str(type)
+      res = type['name']
+      res += type['const'] ? '_const' : ''
+      ptr_depth = type['ptr_depth'] || 0
+      ref_depth = type['ref_depth'] || 0
+      res + '_ptr' * ptr_depth + '_ref' * ref_depth + ' '
     end
 
     attr_reader :is_change_type
@@ -563,6 +585,10 @@ module Es2pandaLibApi
       Arg.type_to_str(@lib_type)
     end
 
+    def lib_type_to_idl_str
+      Arg.type_to_idl_str(@lib_type)
+    end
+
     def arena_item_type
       type = Marshal.load(Marshal.dump(@lib_type))
       type['ptr_depth'] -= 1
@@ -572,6 +598,10 @@ module Es2pandaLibApi
 
     def call_cast
       if @cast && usage.include?('call')
+        if @cast['call_cast']['call_var']
+            @cast['call_cast']['call_var_str'] = Arg.arg_to_str(@cast['call_cast']['call_var'])
+        end
+
         @cast['call_cast']
       else
         ''
@@ -598,6 +628,14 @@ module Es2pandaLibApi
       res = ''
       @return_args&.map do |arg|
         res += ', ' + Arg.arg_to_str(arg)
+      end
+      res
+    end
+
+    def return_args_to_idl_str
+      res = ''
+      @return_args&.map do |arg|
+        res += ', ' + Arg.arg_to_idl_str(arg)
       end
       res
     end
@@ -936,7 +974,7 @@ module Es2pandaLibApi
             res << { 'name' => method.name, 'const' => const, 'return_arg_to_str' => return_type.return_args_to_str,
                      'overload_name' => get_new_method_name(function_overload, method.name, const), 'args' => args,
                      'return_type' => return_type, 'return_expr' => return_expr, 'raw_decl' => method.raw_declaration,
-                     'const_return' => const_return }
+                     'const_return' => const_return, 'return_arg_to_idl_str' => return_type.return_args_to_idl_str }
           end
         else
           Es2pandaLibApi.log('info', "Banned method\n")
