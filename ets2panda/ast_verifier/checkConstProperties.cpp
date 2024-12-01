@@ -26,7 +26,7 @@ namespace ark::es2panda::compiler::ast_verifier {
     if (ast->IsClassProperty()) {
         auto parent = ast->Parent();
         if (parent != nullptr && parent->IsClassDefinition() &&
-            parent->AsClassDefinition()->Ident()->Name() == "ETSGLOBAL") {
+            parent->AsClassDefinition()->Scope()->HasFlag(varbinder::ScopeFlags::GLOBALSCOPE)) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
         auto property = ast->AsClassProperty();

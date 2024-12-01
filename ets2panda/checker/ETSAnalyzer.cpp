@@ -23,7 +23,7 @@
 #include "checker/types/ets/etsTupleType.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
 #include "evaluate/scopedDebugInfoPlugin.h"
-#include "ir/statements/namespaceDeclaration.h"
+#include "ir/statements/etsNamespace.h"
 
 namespace ark::es2panda::checker {
 
@@ -2032,16 +2032,14 @@ checker::Type *ETSAnalyzer::Check(ir::NullLiteral *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::NamespaceDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]]ir::ETSNamespace *st) const
 {
-    ETSChecker *checker = GetETSChecker();
-    st->Definition()->Check(checker);
-    return nullptr;
+    return nullptr; 
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NamespaceDefinition *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]]ir::ETSTopLevel *st) const
 {
-    return nullptr;
+    return nullptr; 
 }
 
 checker::Type *ETSAnalyzer::Check(ir::NumberLiteral *expr) const

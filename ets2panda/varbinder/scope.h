@@ -156,6 +156,11 @@ public:
         flags_ &= ~flag;
     }
 
+    ScopeFlags Flags()
+    {
+        return flags_;
+    }
+
     bool HasFlag(ScopeFlags flag) const
     {
         return (flags_ & flag) != 0;

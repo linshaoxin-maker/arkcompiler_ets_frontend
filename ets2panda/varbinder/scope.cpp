@@ -179,20 +179,19 @@ Scope::VariableMap::size_type Scope::EraseBinding(const util::StringView &name)
 ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const ResolveBindingOptions options) const
 {
     const auto *scopeIter = this;
-    const auto *scopeParent = this->Parent();
-    // One scope below true global is ETSGLOBAL
-    while (scopeParent != nullptr && !scopeParent->IsGlobalScope()) {
-        scopeIter = scopeParent;
-        scopeParent = scopeIter->Parent();
+    Variable *resolved = nullptr;
+    while (scopeIter != nullptr && !scopeIter->IsGlobalScope()) {
+        if (scopeIter->HasFlag(ScopeFlags::GLOBALSCOPE)) {
+            resolved = scopeIter->FindLocal(name, options);
+            if (resolved != nullptr) {
+                break;
+            }
+        }
+        scopeIter = scopeIter->Parent();
     }
-
-    auto *resolved = scopeIter->FindLocal(name, options);
-    if (resolved == nullptr && scopeParent != nullptr) {
-        // If the variable cannot be found in the scope of the local ETSGLOBAL, than we still need to check the true
-        // global scope which contains all the imported ETSGLOBALs
-        resolved = scopeParent->FindLocal(name, options);
+    if (resolved == nullptr && scopeIter != nullptr &&scopeIter->IsGlobalScope()) {
+        resolved = scopeIter->FindLocal(name, options);
     }
-
     return {name, scopeIter, 0, 0, resolved};
 }
 

@@ -591,16 +591,15 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         }
     }
 
+    const auto *topStatement = declNode->GetTopStatement();
     if (containingObjType != nullptr) {
         prefix = containingObjType->AssemblerName();
-    } else if (const auto *topStatement = declNode->GetTopStatement();
-               topStatement->Type() !=
-               ir::AstNodeType::ETS_SCRIPT) {  // NOTE: should not occur, fix for TS_INTERFACE_DECLARATION
-        ASSERT(declNode->IsTSInterfaceDeclaration());
-        assemblerName = declNode->AsTSInterfaceDeclaration()->InternalName();
-    } else {
+    } else if (topStatement->Type() == ir::AstNodeType::ETS_SCRIPT) {  // NOTE: should not occur, fix for TS_INTERFACE_DECLARATION
         auto program = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program();
         prefix = program->OmitModuleName() ? util::StringView() : program->ModuleName();
+    } else {
+        ASSERT(declNode->IsTSInterfaceDeclaration());
+        assemblerName = declNode->AsTSInterfaceDeclaration()->InternalName();
     }
 
     if (!prefix.Empty()) {

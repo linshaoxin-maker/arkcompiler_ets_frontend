@@ -49,7 +49,7 @@
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/ifStatement.h"
 #include "ir/statements/labelledStatement.h"
-#include "ir/statements/namespaceDeclaration.h"
+#include "ir/statements/etsNamespace.h"
 #include "ir/statements/switchStatement.h"
 #include "ir/statements/throwStatement.h"
 #include "ir/statements/tryStatement.h"
@@ -601,7 +601,7 @@ ir::AstNode *ETSParser::ParseClassElement(const ArenaVector<ir::AstNode *> &prop
         case lexer::TokenType::KEYW_CONSTRUCTOR:
             return ParseInnerConstructorDeclaration(memberModifiers, startLoc);
         case lexer::TokenType::KEYW_NAMESPACE:
-            return ParseNamespaceDeclaration(memberModifiers);
+            return ParseNamespace(memberModifiers);
         case lexer::TokenType::KEYW_PUBLIC:
         case lexer::TokenType::KEYW_PRIVATE:
         case lexer::TokenType::KEYW_PROTECTED: {

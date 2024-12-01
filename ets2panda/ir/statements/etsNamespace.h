@@ -13,34 +13,44 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_IR_STATEMENT_DECLARE_NAMESPACE_DECLARATION_H
-#define ES2PANDA_IR_STATEMENT_DECLARE_NAMESPACE_DECLARATION_H
+#ifndef ES2PANDA_IR_STATEMENT_DECLARE_ETS_NAMESPACE_H
+#define ES2PANDA_IR_STATEMENT_DECLARE_ETS_NAMESPACE_H
 
-#include "ir/statement.h"
-#include "ir/visitor/AstVisitor.h"
-#include "ir/base/namespaceDefinition.h"
+#include "etsTopLevel.h"
 
 namespace ark::es2panda::ir {
-class NamespaceDeclaration : public Statement {
+
+class ETSNamespace : public ETSTopLevel {
 public:
-    NamespaceDeclaration() = delete;
-    ~NamespaceDeclaration() override = default;
-
-    NO_COPY_SEMANTIC(NamespaceDeclaration);
-    NO_MOVE_SEMANTIC(NamespaceDeclaration);
-
-    explicit NamespaceDeclaration(NamespaceDefinition *def) : Statement(AstNodeType::NAMESPACE_DECLARATION), def_(def)
+    explicit ETSNamespace(ArenaAllocator *allocator, ArenaVector<Statement *> &&statementList, Expression *expr)
+        : ETSTopLevel(allocator, std::move(statementList)), expr_(expr)
     {
+        type_ = AstNodeType::ETS_NAMESPACE;
     }
 
-    NamespaceDefinition *Definition()
+    [[nodiscard]] const Expression *Expr() const noexcept
     {
-        return def_;
+        return expr_;
     }
 
-    const NamespaceDefinition *Definition() const
+    [[nodiscard]] Expression *Expr() noexcept
     {
-        return def_;
+        return expr_;
+    }
+
+    [[nodiscard]] const util::StringView &PrivateId() const noexcept
+    {
+        return privateId_;
+    }
+
+    [[nodiscard]] const util::StringView &InternalName() const noexcept
+    {
+        return privateId_;
+    }
+
+    void SetInternalName(util::StringView internalName) noexcept
+    {
+        privateId_ = internalName;
     }
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
@@ -49,9 +59,9 @@ public:
     void Dump(ir::SrcDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     void Compile(compiler::ETSGen *etsg) const override;
-
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
+    Identifier *GetBaseName() const;
 
     void Accept(ASTVisitorT *v) override
     {
@@ -59,7 +69,8 @@ public:
     }
 
 private:
-    NamespaceDefinition *def_;
+    util::StringView privateId_ {};
+    Expression *expr_ {};
 };
 }  // namespace ark::es2panda::ir
 

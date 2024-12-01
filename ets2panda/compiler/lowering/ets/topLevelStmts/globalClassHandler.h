@@ -16,6 +16,8 @@
 #ifndef PANDA_GLOBALCLASSHANDLER_H
 #define PANDA_GLOBALCLASSHANDLER_H
 
+#include <string>
+#include <string_view>
 #include "parser/program/program.h"
 #include "public/public.h"
 #include "ir/astNode.h"
@@ -48,8 +50,12 @@ private:
      */
     void SetupGlobalMethods(parser::Program *program, ArenaVector<ir::Statement *> &&statements,
                             bool mainExists = false, bool topLevelStatementsExist = false);
-
-    ir::ClassDeclaration *CreateGlobalClass();
+    void SetupGlobalMethods(ir::ClassDefinition *globalClass, ArenaVector<ir::Statement *> &&initStatements, bool isDeclare);
+    void AddStaticBlockToClass(ir::AstNode *node);
+    ir::ClassDeclaration *TransformNamespace(ir::ETSNamespace * ns, parser::Program *program);
+    void MergeNamespace(ArenaVector<ir::ETSNamespace *> &namespaces);
+    ArenaVector<ir::ClassDeclaration *> TransformNamespaces(ArenaVector<ir::ETSNamespace *> &namespaces, parser::Program *program);
+    ir::ClassDeclaration *CreateGlobalClass(std::string &className, bool isMainExit = true);
     ir::ClassStaticBlock *CreateStaticBlock(ir::ClassDefinition *classDef);
     ir::MethodDefinition *CreateGlobalMethod(const std::string_view name, ArenaVector<ir::Statement *> &&statements);
     void AddInitCallFromStaticBlock(ir::ClassDefinition *globalClass, ir::MethodDefinition *initMethod);
@@ -61,16 +67,9 @@ private:
     void FormDependentInitTriggers(ArenaVector<ir::Statement *> &statements,
                                    const ModuleDependencies *moduleDependencies);
 
-    /**
-     *
-     * @param program leave only declarations here
-     * @param class_def add new properties such as methods and fields
-     * @param addInitializer $init$ should contain global variable initializers
-     * @return Statements, which should be executed before the start
-     */
-    ArenaVector<ir::Statement *> CollectProgramGlobalStatements(parser::Program *program, ir::ClassDefinition *classDef,
+    ArenaVector<ir::Statement *> CollectProgramGlobalStatements(ArenaVector<ir::Statement *> &stmts, ir::ClassDefinition *classDef,
                                                                 bool addInitializer);
-
+    void CollectProgramGlobalclasses(parser::Program *program, ArenaVector<ir::ETSNamespace *> namespaces);
     ir::Identifier *RefIdent(const util::StringView &name);
     util::UString ReplaceSpecialCharacters(util::UString *word) const;
 

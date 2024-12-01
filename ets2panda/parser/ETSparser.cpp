@@ -33,7 +33,6 @@
 #include "ir/base/scriptFunction.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/spreadElement.h"
-#include "ir/statements/namespaceDeclaration.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/functionExpression.h"
 #include "ir/expressions/dummyNode.h"
@@ -813,15 +812,6 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
         }
         case lexer::TokenType::KEYW_INTERFACE: {
             return ParseInterfaceDeclaration(false);
-        }
-        case lexer::TokenType::KEYW_NAMESPACE: {
-            if (!InAmbientContext()) {
-                ThrowSyntaxError("Namespaces are declare only");
-            }
-            GetContext().Status() |= ParserStatus::IN_NAMESPACE;
-            auto *ns = ParseNamespaceDeclaration(ir::ModifierFlags::DECLARE | ir::ModifierFlags::EXPORT);
-            GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
-            return ns;
         }
         case lexer::TokenType::KEYW_CLASS: {
             return ParseClassDeclaration(modifiers);
