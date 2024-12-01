@@ -4162,7 +4162,7 @@ ir::TSParameterProperty *ParserImpl::CreateTsParameterProperty(ir::Expression *p
     if (modifiers & ir::ModifierFlags::STATIC) {
         isStatic = true;
     }
-    
+
     return AllocNode<ir::TSParameterProperty>(accessibility, parameter, readonly, isOverride, isStatic, isExport);
 }
 
