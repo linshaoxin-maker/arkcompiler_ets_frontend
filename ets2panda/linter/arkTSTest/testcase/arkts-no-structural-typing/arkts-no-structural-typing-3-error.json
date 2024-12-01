@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Structural typing is not supported (arkts-no-structural-typing)",
+      "expectLineAndCharacter": {
+        "line": 31,
+        "character": 5
+      }
+    }
+  ]
+}

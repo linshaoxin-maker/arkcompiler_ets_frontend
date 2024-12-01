@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Construct signatures are not supported in interfaces (arkts-no-ctor-signatures-iface)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Nested functions are not supported (arkts-no-nested-funcs)",
+      "expectLineAndCharacter": {
+        "line": 24,
+        "character": 3
+      }
+    }
+  ]
+}

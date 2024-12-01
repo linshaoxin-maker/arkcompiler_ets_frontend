@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Declaring fields in \"constructor\" is not supported (arkts-no-ctor-prop-decls)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 15
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Reassigning object methods is not supported (arkts-no-method-reassignment)",
+      "expectLineAndCharacter": {
+        "line": 27,
+        "character": 1
+      }
+    },
+    {
+      "messageText": "Prototype assignment is not supported (arkts-no-prototype-assignment)",
+      "expectLineAndCharacter": {
+        "line": 27,
+        "character": 9
+      }
+    }
+  ]
+}

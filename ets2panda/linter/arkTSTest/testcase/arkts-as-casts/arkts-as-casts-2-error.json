@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Only \"as T\" syntax is supported for type casts (arkts-as-casts)",
+      "expectLineAndCharacter": {
+        "line": 26,
+        "character": 9
+      }
+    }
+  ]
+}

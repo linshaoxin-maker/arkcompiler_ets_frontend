@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Function return type inference is limited (arkts-no-implicit-return-types)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 10
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"delete\" operator is not supported (arkts-no-delete)",
+      "expectLineAndCharacter": {
+        "line": 27,
+        "character": 1
+      }
+    }
+  ]
+}

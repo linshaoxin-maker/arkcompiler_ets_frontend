@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Conditional types are not supported (arkts-no-conditional-types)",
+      "expectLineAndCharacter": {
+        "line": 21,
+        "character": 15
+      }
+    }
+  ]
+}

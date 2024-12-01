@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Type inference in case of generic function calls is limited (arkts-no-inferred-generic-params)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 1
+      }
+    }
+  ]
+}

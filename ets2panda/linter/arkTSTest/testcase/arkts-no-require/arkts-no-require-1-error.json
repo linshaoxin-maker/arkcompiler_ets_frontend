@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"require\" and \"import\" assignment are not supported (arkts-no-require)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 1
+      }
+    }
+  ]
+}

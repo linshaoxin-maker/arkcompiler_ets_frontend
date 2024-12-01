@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "The comma operator \",\" is supported only in \"for\" loops (arkts-no-comma-outside-loops)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 9
+      }
+    }
+  ]
+}

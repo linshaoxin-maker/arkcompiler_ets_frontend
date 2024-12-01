@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"export = ...\" assignment is not supported (arkts-no-export-assignment)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 1
+      }
+    },
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 23,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 28,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 32,
+        "character": 13
+      }
+    },
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 34,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)",
+      "expectLineAndCharacter": {
+        "line": 39,
+        "character": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"with\" statement is not supported (arkts-no-with)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 1
+      }
+    }
+  ]
+}

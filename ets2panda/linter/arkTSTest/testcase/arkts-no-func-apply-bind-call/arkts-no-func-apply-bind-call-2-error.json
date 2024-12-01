@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "'Function.bind' is not supported (arkts-no-func-bind)",
+      "expectLineAndCharacter": {
+        "line": 26,
+        "character": 19
+      }
+    }
+  ]
+}

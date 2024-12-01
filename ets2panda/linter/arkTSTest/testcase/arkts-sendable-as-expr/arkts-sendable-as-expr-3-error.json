@@ -1,0 +1,60 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Conversion of type 'NonSendableClass' to type 'undefined' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.",
+      "expectLineAndCharacter": {
+        "line": 45,
+        "character": 16
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 39,
+        "character": 15
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 40,
+        "character": 15
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 41,
+        "character": 15
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 43,
+        "character": 16
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 50,
+        "character": 17
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 51,
+        "character": 17
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 53,
+        "character": 17
+      }
+    }
+  ]
+}

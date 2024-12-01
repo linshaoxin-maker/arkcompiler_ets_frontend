@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"globalThis\" is not supported (arkts-no-globalthis)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 17
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Only one static block is supported (arkts-no-multiple-static-blocks)",
+      "expectLineAndCharacter": {
+        "line": 24,
+        "character": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 30
+      }
+    },
+    {
+      "messageText": "'Function.bind' is not supported (arkts-no-func-bind)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 25
+      }
+    },
+    {
+      "messageText": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)",
+      "expectLineAndCharacter": {
+        "line": 32,
+        "character": 17
+      }
+    }
+  ]
+}

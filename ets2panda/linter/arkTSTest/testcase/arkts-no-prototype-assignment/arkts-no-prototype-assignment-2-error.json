@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Prototype assignment is not supported (arkts-no-prototype-assignment)",
+      "expectLineAndCharacter": {
+        "line": 40,
+        "character": 8
+      }
+    }
+  ]
+}

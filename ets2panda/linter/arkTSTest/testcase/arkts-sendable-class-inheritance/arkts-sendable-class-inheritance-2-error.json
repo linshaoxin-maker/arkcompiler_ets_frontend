@@ -1,0 +1,39 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)",
+      "expectLineAndCharacter": {
+        "line": 31,
+        "character": 30
+      }
+    },
+    {
+      "messageText": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)",
+      "expectLineAndCharacter": {
+        "line": 32,
+        "character": 33
+      }
+    },
+    {
+      "messageText": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)",
+      "expectLineAndCharacter": {
+        "line": 36,
+        "character": 33
+      }
+    },
+    {
+      "messageText": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)",
+      "expectLineAndCharacter": {
+        "line": 38,
+        "character": 34
+      }
+    },
+    {
+      "messageText": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)",
+      "expectLineAndCharacter": {
+        "line": 40,
+        "character": 34
+      }
+    }
+  ]
+}

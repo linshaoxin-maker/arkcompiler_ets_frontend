@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)",
+      "expectLineAndCharacter": {
+        "line": 44,
+        "character": 3
+      }
+    }
+  ]
+}

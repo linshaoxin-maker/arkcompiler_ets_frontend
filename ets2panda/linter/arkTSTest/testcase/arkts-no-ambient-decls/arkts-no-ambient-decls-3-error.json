@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Ambient module declaration is not supported (arkts-no-ambient-decls)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 1
+      }
+    }
+  ]
+}

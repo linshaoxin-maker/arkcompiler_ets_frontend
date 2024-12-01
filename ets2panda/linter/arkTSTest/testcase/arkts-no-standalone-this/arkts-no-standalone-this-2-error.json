@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 17
+      }
+    }
+  ]
+}

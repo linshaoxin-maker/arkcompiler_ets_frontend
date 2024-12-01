@@ -1,0 +1,25 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Use unique names for types and namespaces. (arkts-unique-names)",
+      "expectLineAndCharacter": {
+        "line": 21,
+        "character": 11
+      }
+    },
+    {
+      "messageText": "Construct signatures are not supported in interfaces (arkts-no-ctor-signatures-iface)",
+      "expectLineAndCharacter": {
+        "line": 26,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Use unique names for types and namespaces. (arkts-unique-names)",
+      "expectLineAndCharacter": {
+        "line": 29,
+        "character": 7
+      }
+    }
+  ]
+}

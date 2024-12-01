@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)",
+      "expectLineAndCharacter": {
+        "line": 30,
+        "character": 27
+      }
+    }
+  ]
+}

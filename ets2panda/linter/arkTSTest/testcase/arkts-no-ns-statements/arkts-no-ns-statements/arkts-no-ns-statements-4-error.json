@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Non-declaration statements in namespaces are not supported (single semicolons are considered as empty non-declaration statements) (arkts-no-ns-statements)",
+      "expectLineAndCharacter": {
+        "line": 36,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Non-declaration statements in namespaces are not supported (single semicolons are considered as empty non-declaration statements) (arkts-no-ns-statements)",
+      "expectLineAndCharacter": {
+        "line": 39,
+        "character": 3
+      }
+    }
+  ]
+}

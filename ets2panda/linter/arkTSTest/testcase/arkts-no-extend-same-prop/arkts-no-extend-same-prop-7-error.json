@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Interface can not extend interfaces with the same method (arkts-no-extend-same-prop)",
+      "expectLineAndCharacter": {
+        "line": 27,
+        "character": 1
+      }
+    }
+  ]
+}

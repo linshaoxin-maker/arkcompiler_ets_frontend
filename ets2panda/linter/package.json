@@ -32,13 +32,27 @@
     "eslint-check": "npx eslint --ext .ts .",
     "eslint-fix": "npm run eslint-check -- --fix",
     "prettier-fix": "npx prettier --write .",
-    "fix": "npm run prettier-fix && npm run eslint-fix"
+    "fix": "npm run prettier-fix && npm run eslint-fix",
+    "build_lib": "./node_modules/.bin/babel ./lib --out-dir arkTSTest/lib --extensions .ts",
+    "build_sdk": "./node_modules/.bin/babel ./sdk --out-dir arkTSTest/linterLib --extensions .ts",
+    "build_src": "./node_modules/.bin/babel ./src --out-dir arkTSTest/src --extensions .ts",
+    "build_utils": "./node_modules/.bin/babel ./utils --out-dir arkTSTest/utils --extensions .ts",
+    "build_linter": "npm run build_sdk && npm run build_lib && npm run build_src && npm run build_utils"
   },
   "dependencies": {
+    "@babel/cli": "7.20.7",
+    "@babel/core": "7.20.12",
+    "@babel/plugin-proposal-class-properties": "7.18.6",
+    "@babel/plugin-transform-class-static-block": "^7.24.4",
+    "@babel/preset-env": "7.20.2",
+    "@babel/preset-typescript": "7.18.6",
+    "@babel/runtime": "7.20.13",
+    "babel-loader": "9.1.2",
     "commander": "9.4.0",
     "log4js": "6.4.0"
   },
   "devDependencies": {
+    "@rollup/plugin-babel": "6.0.3",
     "@stylistic/eslint-plugin": "latest",
     "@types/node": "18.11.7",
     "@typescript-eslint/eslint-plugin": "latest",
