@@ -1045,6 +1045,13 @@ export class TypeScriptLinter {
         FaultID.SendableFunctionImportedVariables
       );
     }
+    if (TsUtils.hasConcurrentDecorator(tsFunctionDeclaration)) {
+      this.scanCapturedVarsInSendableScope(
+        tsFunctionDeclaration,
+        tsFunctionDeclaration,
+        FaultID.ConcurrentFunctionImportedVariables
+      );
+    }
   }
 
   private handleMissingReturnType(
@@ -2604,7 +2611,8 @@ export class TypeScriptLinter {
     }
   }
 
-  private processNoCheckEntry(entry: any): void { // CC-OFF(no_explicit_any) std lib
+  private processNoCheckEntry(entry: any): void {
+    // CC-OFF(no_explicit_any) std lib
     if (entry.range?.kind === undefined || entry.range?.pos === undefined || entry.range?.end === undefined) {
       return;
     }

@@ -39,6 +39,7 @@ import type { NameGenerator } from './functions/NameGenerator';
 import { srcFilePathContainsDirectory } from './functions/PathHelper';
 import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
+import { CONCURRENT_DECORATOR } from './consts/ConcurrentAPI';
 
 export const SYMBOL = 'Symbol';
 export const SYMBOL_CONSTRUCTOR = 'SymbolConstructor';
@@ -3015,5 +3016,18 @@ export class TsUtils {
     /* CC-OFFNXT(no_explicit_any) std lib */
     // Ambient flag is not exposed, so we apply dirty hack to make it visible
     return !!(node.flags & (ts.NodeFlags as any).Ambient);
+  }
+
+  static hasConcurrentDecorator(decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration): boolean {
+    return !!TsUtils.getConcurrentDecorator(decl);
+  }
+
+  static getConcurrentDecorator(
+    decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration
+  ): ts.Decorator | undefined {
+    const decorators = ts.getAllDecorators(decl);
+    return decorators?.find((x) => {
+      return TsUtils.getDecoratorName(x) === CONCURRENT_DECORATOR;
+    });
   }
 }
