@@ -46,6 +46,7 @@ constexpr char NORMALIZED_OHMURL_SEPARATOR = '&';
 constexpr char NORMALIZED_OHMURL_PREFIX = '@';
 constexpr char SLASH_TAG = '/';
 constexpr char CHAR_VERTICAL_LINE = '|';
+constexpr char CHAR_CARRIAGE_RETURN = '\r';
 
 constexpr size_t MODULE_NAME_POS = 1U;
 constexpr size_t BUNDLE_NAME_POS = 2U;
