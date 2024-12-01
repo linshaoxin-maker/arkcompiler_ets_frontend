@@ -253,6 +253,33 @@ checker::Type *MemberExpression::CheckUnionMember(checker::ETSChecker *checker, 
     return commonPropType;
 }
 
+// If Record<K, V>, the type of K is contains literal union, the return type of Record.$_get() should be V, not
+// V|undefined. Modify the tstype of the variable and the return type of $_get() to conform to spec7.12.2
+static checker::Type *AdjustRecordGetReturnType(checker::Type *type, checker::Type *objType)
+{
+    if (!type->IsETSUnionType() &&
+        !(type->IsETSFunctionType() && type->AsETSFunctionType()->Name().Is(compiler::Signatures::GET_INDEX_METHOD) &&
+          type->AsETSFunctionType()->CallSignatures()[0]->ReturnType()->IsETSUnionType())) {
+        return type;
+    }
+    auto *recordKeyType = objType->AsETSObjectType()->TypeArguments()[0];
+    auto *recordValueType = objType->AsETSObjectType()->TypeArguments()[1];
+    if (!recordKeyType->IsETSUnionType()) {
+        return type;
+    }
+    for (auto recordKey : recordKeyType->AsETSUnionType()->ConstituentTypes()) {
+        if (!recordKey->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+            return type;
+        }
+    }
+
+    if (type->IsETSUnionType()) {
+        return recordValueType;
+    }
+    type->AsETSFunctionType()->CallSignatures()[0]->SetReturnType(recordValueType);
+    return type;
+}
+
 checker::Type *MemberExpression::AdjustType(checker::ETSChecker *checker, checker::Type *type)
 {
     auto *const objType = checker->GetApparentType(Object()->TsType());
@@ -260,6 +287,9 @@ checker::Type *MemberExpression::AdjustType(checker::ETSChecker *checker, checke
         uncheckedType_ = checker->GuaranteedTypeForUncheckedPropertyAccess(PropVar());
     } else if (IsComputed() && objType->IsETSArrayType()) {  // access erased array or tuple type
         uncheckedType_ = checker->GuaranteedTypeForUncheckedCast(objType->AsETSArrayType()->ElementType(), type);
+    }
+    if (type != nullptr && objType->IsETSObjectType() && objType->ToAssemblerName().str() == "escompat.Record") {
+        type = AdjustRecordGetReturnType(type, objType);
     }
     SetTsType(type == nullptr ? checker->GlobalTypeError() : type);
     return TsType();
