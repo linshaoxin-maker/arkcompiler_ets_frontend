@@ -949,16 +949,28 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
         return expr->TsType();
     }
 
+    // Need to avoid check with nullptr
     if (expr->target_ != nullptr && !expr->IsIgnoreConstAssign()) {
         checker->ValidateUnaryOperatorOperand(expr->target_);
     }
 
     auto [rightType, relationNode] = CheckAssignmentExprOperatorType(expr, leftType);
-    if (rightType == nullptr) {
+    // Need to avoid check with nullptr, change to compare with TypeError. Now both checks, because still not all
+    // expression return "TypeError"
+    if (rightType == nullptr || rightType->IsTypeError()) {
         expr->SetTsType(checker->GlobalTypeError());
         return checker->GlobalTypeError();
     }
 
+    // We should sure that expr->Left() is valide. Check return type only after check expr->Right()
+    ASSERT(leftType != nullptr);
+    if (leftType->IsTypeError()) {
+        return checker->GlobalTypeError();
+    }
+
+    // We sure, both types is correct
+    ASSERT(!leftType->IsTypeError());
+    ASSERT(!rightType->IsTypeError());
     const checker::Type *targetType = checker->TryGettingFunctionTypeFromInvokeFunction(leftType);
     const checker::Type *sourceType = checker->TryGettingFunctionTypeFromInvokeFunction(rightType);
 
@@ -1004,6 +1016,7 @@ std::tuple<Type *, ir::Expression *> ETSAnalyzer::CheckAssignmentExprOperatorTyp
                 checker->ModifyPreferredType(expr->Right()->AsArrayExpression(), leftType);
             }
 
+            // It is ok if here "leftType" has type "ErrorType".
             if (expr->Right()->IsObjectExpression()) {
                 expr->Right()->AsObjectExpression()->SetPreferredType(leftType);
             }
