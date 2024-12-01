@@ -1,0 +1,4 @@
+-keep-global-name
+MainRemoteHspClass 
+-keep-property-name
+mainRemoteHspGreeting

@@ -189,12 +189,14 @@ export class ObConfigResolver {
   sourceObConfig: any;
   logger: any;
   isHarCompiled: boolean | undefined;
+  isHspCompiled: boolean | undefined;
   isTerser: boolean;
 
   constructor(projectConfig: any, logger: any, isTerser?: boolean) {
     this.sourceObConfig = projectConfig.obfuscationOptions;
     this.logger = logger;
     this.isHarCompiled = projectConfig.compileHar;
+    this.isHspCompiled = projectConfig.compileShared;
     this.isTerser = isTerser;
   }
 
@@ -214,7 +216,7 @@ export class ObConfigResolver {
     }
 
     let needConsumerConfigs: boolean =
-      this.isHarCompiled &&
+      (this.isHarCompiled || this.isHspCompiled) &&
       sourceObConfig.selfConfig.consumerRules &&
       sourceObConfig.selfConfig.consumerRules.length > 0;
     let needDependencyConfigs: boolean = enableObfuscation || needConsumerConfigs;
@@ -223,6 +225,8 @@ export class ObConfigResolver {
     const dependencyMaxLength: number = Math.max(
       sourceObConfig.dependencies.libraries.length,
       sourceObConfig.dependencies.hars.length,
+      sourceObConfig.dependencies.hsps.length,
+      sourceObConfig.dependencies.hspLibraries.length
     );
     if (needDependencyConfigs && dependencyMaxLength > 0) {
       dependencyConfigs = new MergedConfig();
@@ -644,12 +648,12 @@ export class ObConfigResolver {
     ApiExtractor.extractStringsFromFile(uiApiPath);
   }
 
-  private getDependencyConfigs(sourceObConfig: any, dependencyConfigs: MergedConfig): void {
+  private getDependencyConfigs(sourceObConfig: sourceObConfig, dependencyConfigs: MergedConfig): void {
     for (const lib of sourceObConfig.dependencies.libraries || []) {
       if (lib.consumerRules && lib.consumerRules.length > 0) {
         for (const path of lib.consumerRules) {
           const thisLibConfigs = new MergedConfig();
-          this.getConfigByPath(path, dependencyConfigs);
+          this.getConfigByPath(path, thisLibConfigs);
           dependencyConfigs.merge(thisLibConfigs);
         }
       }
@@ -662,13 +666,35 @@ export class ObConfigResolver {
     ) {
       for (const path of sourceObConfig.dependencies.hars) {
         const thisHarConfigs = new MergedConfig();
-        this.getConfigByPath(path, dependencyConfigs);
+        this.getConfigByPath(path, thisHarConfigs);
         dependencyConfigs.merge(thisHarConfigs);
+      }
+    }
+
+    if(
+      sourceObConfig.dependencies &&
+      sourceObConfig.dependencies.hsps &&
+      sourceObConfig.dependencies.hsps.length > 0
+    ){
+      for (const path of sourceObConfig.dependencies.hsps){
+        const thisHspConfigs = new MergedConfig();
+        this.getConfigByPath(path,thisHspConfigs);
+        dependencyConfigs.merge(thisHspConfigs);
+      }
+    }
+
+    for (const lib of sourceObConfig.dependencies.hspLibraries || []) {
+      if(lib.consumerRules && lib.consumerRules.length > 0 ) {
+        for (const path of lib.consumerRules) {
+          const thisHspLibConfigs = new MergedConfig();
+          this.getConfigByPath(path, thisHspLibConfigs);
+          dependencyConfigs.merge(thisHspLibConfigs);
+        }
       }
     }
   }
 
-  public getDependencyConfigsForTest(sourceObConfig: any, dependencyConfigs: MergedConfig): void {
+  public getDependencyConfigsForTest(sourceObConfig: sourceObConfig, dependencyConfigs: MergedConfig): void {
     return this.getDependencyConfigs(sourceObConfig, dependencyConfigs);
   }
 
@@ -716,17 +742,19 @@ export class ObConfigResolver {
   }
 
   private genConsumerConfigFiles(
-    sourceObConfig: any,
+    sourceObConfig: sourceObConfig,
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
-    selfConsumerConfig.merge(dependencyConfigs);
+    if(this.isHarCompiled){
+      selfConsumerConfig.merge(dependencyConfigs);
+    }
     selfConsumerConfig.sortAndDeduplicate();
     this.writeConsumerConfigFile(selfConsumerConfig, sourceObConfig.exportRulePath);
   }
 
   public genConsumerConfigFilesForTest(
-    sourceObConfig: any,
+    sourceObConfig: sourceObConfig,
     selfConsumerConfig: MergedConfig,
     dependencyConfigs: MergedConfig,
   ): void {
@@ -1164,4 +1192,46 @@ export function getRelativeSourcePath(
   }
 
   return relativeFilePath;
+}
+
+/**
+ * selfConfig: {ruleOptions：{enable:true, rules:[Array]},consumerRules:[]}
+ * sdkApis:   
+ * 'sdk\\default\\openharmony\\ets\\api',
+ * 'sdk\\default\\openharmony\\ets\\arkts',
+ * '\sdk\\default\\openharmony\\ets\\kits',
+ * 'sdk\\default\\hms\\ets\\api',
+ * 'sdk\\default\\hms\\ets\\kits',
+ * 'sdk\\default\\openharmony\\ets\\api'
+ * obfuscationCacheDir: D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\cache\\default\\default@CompileArkTS\\esmodule\\release\\obfuscation
+ * exportRulePath: D:\\program\\DevEcoProgram\\MyApplication7\\entry\\build\\default\\intermediates\\obfuscation\\default\\obfuscation.txt
+ * dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] }
+ */
+
+export interface sourceObConfig {
+  selfConfig: Obfuscation;
+  sdkApis: string[];
+  obfuscationCacheDir: string;
+  exportRulePath: string;
+  dependencies: ObfuscationDependencies;
+}
+
+export interface Obfuscation {
+  ruleOptions?: RuleOptions; 
+  consumerRules?: string[];  //absolute path of consumer-rules.txt
+  consumerFiles?: string|string[];  //relative path of consumer-rules.txt
+  libDir?: string;
+}
+
+export interface RuleOptions {
+  enable?: boolean;
+  files?: string | string[]; //should be relative path of obfuscation.txt, but undefined now
+  rules?: string[];  //absolute path of obfuscation.txt
+}
+
+export interface ObfuscationDependencies {
+  libraries: Obfuscation[];
+  hars: string[];
+  hsps: string[];
+  hspLibraries: Obfuscation[];
 }

@@ -31,7 +31,8 @@ import {
   handleObfuscatedFilePath,
   enableObfuscateFileName,
   getRelativeSourcePath,
-  OptionTypeForTest
+  OptionTypeForTest,
+  Obfuscation
 } from '../../../src/initialization/ConfigResolver';
 import { PropCollections, renameFileNameModule } from '../../../src/ArkObfuscator';
 import { nameCacheMap } from '../../../src/initialization/CommonObject';
@@ -220,7 +221,7 @@ describe('test for ConfigResolve', function() {
           selfConfig: {
             ruleOptions: { enable: false },
           }, 
-          dependencies: { libraries: [], hars: [] },
+          dependencies: { libraries: [], hars: [], hsps:[], hspLibraries: [] },
         };
         generateConsumerObConfigFile(testClass.sourceObConfig, undefined);
         const result = testClass.resolveObfuscationConfigs();
@@ -235,7 +236,7 @@ describe('test for ConfigResolve', function() {
           selfConfig: {
             ruleOptions: { enable: true },
           },
-          dependencies: { libraries: [], hars: [] },
+          dependencies: { libraries: [], hars: [], hsps:[], hspLibraries: [] },
         };
         generateConsumerObConfigFile(testClass.sourceObConfig, undefined);
         const result = testClass.resolveObfuscationConfigs();
@@ -251,11 +252,13 @@ describe('test for ConfigResolve', function() {
             ruleOptions: { enable: false },
             consumerRules: ['./test/testData/obfuscation/keepDts/obfuscation-template.txt'],
           },
-          dependencies: { libraries: [], hars: [] },
+          dependencies: { libraries: [], hars: [], hsps:[], hspLibraries: [] },
           obfuscationCacheDir: './test/testData/cache',
           options: {
             disableObfuscation: true
-          }
+          },
+          exportRulePath: '',
+          sdkApis: []
         };
         const isHarCompiled = true;
         let enableObfuscation = sourceObConfig.selfConfig.ruleOptions.enable;
@@ -279,19 +282,38 @@ describe('test for ConfigResolve', function() {
       });
 
       it('should handle the case when enableObfuscation is false', () => {
+        const localHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHar/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: '',
+          exportRulePath: ''
+        };
+
         const sourceObConfig = {
           selfConfig: {
             options: {
               disableObfuscation: false,
               enablePropertyObfuscation: true,
               enableExportObfuscation: true,
-              enableToplevelObfuscation:true
+              enableToplevelObfuscation: true
             },
             ruleOptions: { enable: true },
             consumerRules: ['./test/testData/obfuscation/keepDts/obfuscation-template.txt'],
+            libDir: ''
           },
-          dependencies: { libraries: [1, 2, 3], hars: [] },
+          dependencies: { libraries: [localHarConfig.selfConfig], hars: [], hsps: [], hspLibraries: [] },
           obfuscationCacheDir: './test/testData/cache',
+          sdkApis: [],
+          exportRulePath: ''
         };
         const isHarCompiled = true;
         let enableObfuscation = sourceObConfig.selfConfig.ruleOptions.enable;
@@ -328,7 +350,7 @@ describe('test for ConfigResolve', function() {
             ruleOptions: { enable: true },
             consumerRules: ['./test/testData/obfuscation/keepDts/obfuscation-template.txt'],
           },
-          dependencies: { libraries: [], hars: [] },
+          dependencies: { libraries: [], hars: [], hsps:[], hspLibraries:[] },
           obfuscationCacheDir: './test/testData/cache',
           options: {
             disableObfuscation: true
@@ -356,6 +378,1230 @@ describe('test for ConfigResolve', function() {
         expect(needDependencyConfigs).to.be.true;
         expect(dependencyConfigs).to.deep.equal(new MergedConfig());
         expect(enableObfuscation).to.be.false;
+      });
+
+      it('should include only HSP consumerFiles rules in obfuscation.txt when HSP depends on HAR', function () {
+        const remoteHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/output',
+          exportRulePath: './test/testData/outputremoteHar_obfuscation.txt'
+        };
+
+        const localHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/output',
+          exportRulePath: './test/testData/outputlocalHar_obfuscation.txt'
+        };
+
+        const hspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [localHarConfig.selfConfig],
+            hars: [remoteHarConfig.exportRulePath],
+            hsps: [],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/output',
+          exportRulePath: './test/testData/outputHsp_obfuscation.txt'
+        };
+
+        const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+        remoteHarResolver.resolveObfuscationConfigs();
+
+        const hspResolver = new ObConfigResolver({ obfuscationOptions: hspConfig, compileHar: false, compileShared: true }, console);
+        hspResolver.resolveObfuscationConfigs();
+
+        const hspObfuscationContent = fs.readFileSync(hspConfig.exportRulePath, 'utf-8');
+
+        expect(hspObfuscationContent).to.include('-keep-global-name');
+        expect(hspObfuscationContent).to.include('LocalHspClass');
+        expect(hspObfuscationContent).to.include('-keep-property-name');
+        expect(hspObfuscationContent).to.include('localHspMethod');
+
+        expect(hspObfuscationContent).not.to.include('LocalHarClass');
+        expect(hspObfuscationContent).not.to.include('localHarMethod');
+
+        expect(hspObfuscationContent).not.to.include('RemoteHarClass');
+        expect(hspObfuscationContent).not.to.include('remoteHarMethod');
+
+        if (fs.existsSync(remoteHarConfig.exportRulePath)) {
+          fs.unlinkSync(remoteHarConfig.exportRulePath);
+        }
+        if (fs.existsSync(localHarConfig.exportRulePath)) {
+          fs.unlinkSync(localHarConfig.exportRulePath);
+        }
+        if (fs.existsSync(hspConfig.exportRulePath)) {
+          fs.unlinkSync(hspConfig.exportRulePath);
+        }
+      });
+
+      it('should retain HSP consumer rules for HAP to use HSP interface', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+        remoteHspResolver.resolveObfuscationConfigs();
+
+        const configResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+        const finalConfig = configResolver.resolveObfuscationConfigs();
+
+        expect(finalConfig.reservedGlobalNames).to.include('LocalHspClass');;
+        expect(finalConfig.reservedPropertyNames).to.include('localHspMethod');
+        expect(finalConfig.reservedGlobalNames).to.include('RemoteHspClass');;
+        expect(finalConfig.reservedPropertyNames).to.include('remoteHspMethod');
+
+        const serializedConfig = finalConfig.serializeMergedConfig();
+        expect(serializedConfig).to.include('-keep-global-name');
+        expect(serializedConfig).to.include('LocalHspClass');
+        expect(serializedConfig).to.include('localHspMethod');
+        expect(serializedConfig).to.include('RemoteHspClass');
+        expect(serializedConfig).to.include('remoteHspMethod');
+
+        if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+          fs.unlinkSync(remoteHspConfig.exportRulePath);
+        }
+        if (fs.existsSync(localHspConfig.exportRulePath)) {
+          fs.unlinkSync(localHspConfig.exportRulePath);
+        }
+        if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+          fs.unlinkSync('test/testData/output/systemApiCache.json');
+        }
+      });
+
+      it('should retain HSP consumer rules for HAP to use HSP interface when project has legecyHsp', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt', './test/testData/obfuscation/Configs/legacyHsp/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+        remoteHspResolver.resolveObfuscationConfigs();
+
+        const configResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+        const finalConfig = configResolver.resolveObfuscationConfigs();
+
+        expect(finalConfig.reservedGlobalNames).to.include('LocalHspClass');;
+        expect(finalConfig.reservedPropertyNames).to.include('localHspMethod');
+        expect(finalConfig.reservedGlobalNames).to.include('RemoteHspClass');;
+        expect(finalConfig.reservedPropertyNames).to.include('remoteHspMethod');
+        expect(finalConfig.reservedGlobalNames).to.include('LegacyHspClass');;
+        expect(finalConfig.reservedPropertyNames).to.include('legacyHspMethod');
+
+        const serializedConfig = finalConfig.serializeMergedConfig();
+        expect(serializedConfig).to.include('-keep-global-name');
+        expect(serializedConfig).to.include('LocalHspClass');
+        expect(serializedConfig).to.include('localHspMethod');
+        expect(serializedConfig).to.include('RemoteHspClass');
+        expect(serializedConfig).to.include('remoteHspMethod');
+        expect(serializedConfig).to.include('LegacyHspClass');
+        expect(serializedConfig).to.include('legacyHspMethod');
+
+        if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+          fs.unlinkSync(remoteHspConfig.exportRulePath);
+        }
+        if (fs.existsSync(localHspConfig.exportRulePath)) {
+          fs.unlinkSync(localHspConfig.exportRulePath);
+        }
+        if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+          fs.unlinkSync('test/testData/output/systemApiCache.json');
+        }
+      });
+
+      describe('localHAR with localHSP dependency Obfuscation Config Tests', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const localHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHar_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [localHarConfig.selfConfig],
+            hars: [],
+            hsps: [],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        it('should contain both HSP and HAR consumer rules in HAR obfuscation.txt', function () {
+          const localHarResolver = new ObConfigResolver({ obfuscationOptions: localHarConfig, compileHar: true, compileShared: false }, console);
+          localHarResolver.resolveObfuscationConfigs();
+
+          const localHarObfuscationContent = fs.readFileSync(localHarConfig.exportRulePath, 'utf-8');
+          expect(localHarObfuscationContent).to.include('LocalHspClass');
+          expect(localHarObfuscationContent).to.include('localHspMethod');
+          expect(localHarObfuscationContent).to.include('LocalHarClass');
+          expect(localHarObfuscationContent).to.include('localHarMethod');
+        });
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const hspResolver = new ObConfigResolver({ obfuscationOptions: localHspConfig, compileHar: false, compileShared: true }, console);
+          hspResolver.resolveObfuscationConfigs();
+
+          const localHspObfuscationContent = fs.readFileSync(localHspConfig.exportRulePath, 'utf-8');
+          expect(localHspObfuscationContent).to.include('LocalHspClass');
+          expect(localHspObfuscationContent).to.include('localHspMethod');
+          expect(localHspObfuscationContent).not.to.include('LocalHarClass');
+          expect(localHspObfuscationContent).not.to.include('localHarMethod');
+        });
+
+        it('should retain HAR consumer rules for HAP to use HAR interface', function () {
+          const configResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalConfig = configResolver.resolveObfuscationConfigs();
+
+          expect(finalConfig.reservedGlobalNames).to.include('LocalHarClass');;
+          expect(finalConfig.reservedPropertyNames).to.include('localHarMethod');
+
+          const serializedConfig = finalConfig.serializeMergedConfig();
+          expect(serializedConfig).to.include('-keep-global-name');
+          expect(serializedConfig).to.include('LocalHarClass');
+          expect(serializedConfig).to.include('localHarMethod');
+        });
+
+        afterEach(() => {
+          if (fs.existsSync(localHspConfig.exportRulePath)) {
+            fs.unlinkSync(localHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHarConfig.exportRulePath)) {
+            fs.unlinkSync(localHarConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('localHAR with remoteHSP dependency Obfuscation Config Tests', function () {
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const localHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHar_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [localHarConfig.selfConfig],
+            hars: [],
+            hsps: [],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        it('should contain both HSP and HAR consumer rules in HAR obfuscation.txt', function () {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+          const localHarResolver = new ObConfigResolver({ obfuscationOptions: localHarConfig, compileHar: true, compileShared: false }, console);
+          localHarResolver.resolveObfuscationConfigs();
+
+          const localHarObfuscationContent = fs.readFileSync(localHarConfig.exportRulePath, 'utf-8');
+          expect(localHarObfuscationContent).to.include('RemoteHspClass');
+          expect(localHarObfuscationContent).to.include('remoteHspMethod');
+          expect(localHarObfuscationContent).to.include('RemoteHspClass');
+          expect(localHarObfuscationContent).to.include('remoteHspMethod');
+        });
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          hapResolver.resolveObfuscationConfigs();
+
+          const remoteHspObfuscationContent = fs.readFileSync(remoteHspConfig.exportRulePath, 'utf-8');
+          expect(remoteHspObfuscationContent).to.include('RemoteHspClass');
+          expect(remoteHspObfuscationContent).to.include('remoteHspMethod');
+          expect(remoteHspObfuscationContent).not.to.include('LocalHarClass');
+          expect(remoteHspObfuscationContent).not.to.include('localHarMethod');
+        });
+
+        it('should retain HAR consumer rules for HAP to use HAR interface', function () {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+          const configResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalConfig = configResolver.resolveObfuscationConfigs();
+
+          expect(finalConfig.reservedGlobalNames).to.include('LocalHarClass');;
+          expect(finalConfig.reservedPropertyNames).to.include('localHarMethod');
+
+          const serializedConfig = finalConfig.serializeMergedConfig();
+          expect(serializedConfig).to.include('-keep-global-name');
+          expect(serializedConfig).to.include('LocalHarClass');
+          expect(serializedConfig).to.include('localHarMethod');
+        });
+
+        afterEach(() => {
+          if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHarConfig.exportRulePath)) {
+            fs.unlinkSync(localHarConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('remoteHAR with localHSP dependency Obfuscation Config Tests', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHar_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [remoteHarConfig.exportRulePath],
+            hsps: [],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+          remoteHarResolver.resolveObfuscationConfigs();
+          const hspResolver = new ObConfigResolver({ obfuscationOptions: localHspConfig, compileHar: false, compileShared: true }, console);
+          hspResolver.resolveObfuscationConfigs();
+
+          const localHspObfuscationContent = fs.readFileSync(localHspConfig.exportRulePath, 'utf-8');
+          expect(localHspObfuscationContent).to.include('LocalHspClass');
+          expect(localHspObfuscationContent).to.include('localHspMethod');
+          expect(localHspObfuscationContent).not.to.include('RemoteHarClass');
+          expect(localHspObfuscationContent).not.to.include('remoteHarMethod');
+        });
+
+        it('should contain both HSP and HAR consumer rules in HAR obfuscation.txt', function () {
+          const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+          remoteHarResolver.resolveObfuscationConfigs();
+
+          const remoteHarObfuscationContent = fs.readFileSync(remoteHarConfig.exportRulePath, 'utf-8');
+          expect(remoteHarObfuscationContent).to.include('LocalHspClass');
+          expect(remoteHarObfuscationContent).to.include('localHspMethod');
+          expect(remoteHarObfuscationContent).to.include('RemoteHarClass');
+          expect(remoteHarObfuscationContent).to.include('remoteHarMethod');
+        });
+
+        it('should retain HAR consumer rules for HAP to use HAR interface', function () {
+          const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+          remoteHarResolver.resolveObfuscationConfigs();
+          const configResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalConfig = configResolver.resolveObfuscationConfigs();
+
+          expect(finalConfig.reservedGlobalNames).to.include('RemoteHarClass');
+          expect(finalConfig.reservedPropertyNames).to.include('remoteHarMethod');
+          expect(finalConfig.reservedGlobalNames).to.include('LocalHspClass');
+          expect(finalConfig.reservedPropertyNames).to.include('localHspMethod');
+
+          const serializedConfig = finalConfig.serializeMergedConfig();
+          expect(serializedConfig).to.include('-keep-global-name');
+          expect(serializedConfig).to.include('RemoteHarClass');
+          expect(serializedConfig).to.include('remoteHarMethod');
+        });
+
+        afterEach(() => {
+          if (fs.existsSync(localHspConfig.exportRulePath)) {
+            fs.unlinkSync(localHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(remoteHarConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHarConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('remoteHAR with remoteHSP dependency Obfuscation Config Tests', function () {
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const remoteHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHar_obfuscation.txt'
+        };
+
+        function checkFileExistence(filePath: string): Promise<void> {
+          return new Promise((resolve, reject) => {
+            fs.access(filePath, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+              if (err) {
+                reject(new Error(`File not found or not readable: ${filePath}`));
+              } else {
+                resolve();
+              }
+            });
+          });
+        }
+
+        before(async () => {
+          // Ensure files are generated before proceeding to tests
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          await remoteHspResolver.resolveObfuscationConfigs(); // Wait for the HSP config resolution
+          const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+          await remoteHarResolver.resolveObfuscationConfigs(); // Wait for the HAR config resolution
+
+          // Check that files are generated and readable
+          await checkFileExistence(remoteHspConfig.exportRulePath);
+          await checkFileExistence(remoteHarConfig.exportRulePath);
+
+          // Optionally, you can add a delay if files need time to settle
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Adjust this based on your system's speed
+        });
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const remoteHspObfuscationContent = fs.readFileSync(remoteHspConfig.exportRulePath, 'utf-8');
+          expect(remoteHspObfuscationContent).to.include('RemoteHspClass');
+          expect(remoteHspObfuscationContent).to.include('remoteHspMethod');
+          expect(remoteHspObfuscationContent).not.to.include('RemoteHarClass');
+          expect(remoteHspObfuscationContent).not.to.include('remoteHarMethod');
+        });
+
+        it('should contain both HSP and HAR consumer rules in HAR obfuscation.txt', function () {
+          const remoteHarObfuscationContent = fs.readFileSync(remoteHarConfig.exportRulePath, 'utf-8');
+          expect(remoteHarObfuscationContent).to.include('RemoteHspClass');
+          expect(remoteHarObfuscationContent).to.include('remoteHspMethod');
+          expect(remoteHarObfuscationContent).to.include('RemoteHarClass');
+          expect(remoteHarObfuscationContent).to.include('remoteHarMethod');
+        });
+
+        after(() => {
+          if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(remoteHarConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHarConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('HSP with HSP dependency Obfuscation Config Tests', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const mainLocalHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/mainLocalHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/mainLocalHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/mainLocalHsp_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [],
+            hspLibraries: [mainLocalHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        function generateRemoteConfigs() {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+        }
+
+        before(() => {
+          generateRemoteConfigs();
+        });
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+          const localHspResolver = new ObConfigResolver({ obfuscationOptions: localHspConfig, compileHar: false, compileShared: true }, console);
+          localHspResolver.resolveObfuscationConfigs();
+
+          const localHspObfuscationContent = fs.readFileSync(localHspConfig.exportRulePath, 'utf-8');
+          expect(localHspObfuscationContent).to.include('LocalHspClass');
+          expect(localHspObfuscationContent).to.include('localHspMethod');
+          expect(localHspObfuscationContent).not.to.include('MainLocalHspClass');
+          expect(localHspObfuscationContent).not.to.include('mainLocalHspGreeting');
+
+          const remoteHspObfuscationContent = fs.readFileSync(remoteHspConfig.exportRulePath, 'utf-8');
+          expect(remoteHspObfuscationContent).to.include('RemoteHspClass');
+          expect(remoteHspObfuscationContent).to.include('remoteHspMethod');
+          expect(remoteHspObfuscationContent).not.to.include('MainLocalHspClass');
+          expect(remoteHspObfuscationContent).not.to.include('mainLocalHspGreeting');
+        });
+
+        it('should contain only MainHSP consumer rules in MainHSP obfuscation.txt', function () {
+          const mainLocalHspResolver = new ObConfigResolver({ obfuscationOptions: mainLocalHspConfig, compileHar: false, compileShared: true }, console);
+          mainLocalHspResolver.resolveObfuscationConfigs();
+
+          const mainLocalHspObfuscationContent = fs.readFileSync(mainLocalHspConfig.exportRulePath, 'utf-8');
+          expect(mainLocalHspObfuscationContent).to.include('MainLocalHspClass');
+          expect(mainLocalHspObfuscationContent).to.include('mainLocalHspGreeting');
+          expect(mainLocalHspObfuscationContent).not.to.match(/^(?!.*LocalHspClass).*$/);
+          expect(mainLocalHspObfuscationContent).not.to.include('localHspMethod');
+          expect(mainLocalHspObfuscationContent).not.to.include('RemoteHspClass');
+          expect(mainLocalHspObfuscationContent).not.to.include('remoteHspMethod');
+        });
+
+        it('HAP should run successfully with MainHSP dependency', function () {
+
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalConfig = hapResolver.resolveObfuscationConfigs();
+
+          expect(finalConfig.reservedGlobalNames).to.include('MainLocalHspClass');;
+          expect(finalConfig.reservedPropertyNames).to.include('mainLocalHspGreeting');
+
+          const serializedConfig = finalConfig.serializeMergedConfig();
+          expect(serializedConfig).to.include('MainLocalHspClass');
+          expect(serializedConfig).to.include('mainLocalHspGreeting');
+        });
+
+        after(() => {
+          if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHspConfig.exportRulePath)) {
+            fs.unlinkSync(localHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(mainLocalHspConfig.exportRulePath)) {
+            fs.unlinkSync(mainLocalHspConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('MainHSP with myHSP dependency Obfuscation Config Tests', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        const mainRemoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/mainRemoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/mainRemoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/mainRemoteHsp_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [mainRemoteHspConfig.exportRulePath],
+            hspLibraries: []
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        function generateRemoteConfigs() {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+        }
+        before(() => {
+          generateRemoteConfigs();
+        });
+
+        it('should contain only HSP consumer rules in HSP obfuscation.txt', function () {
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+          const localHspResolver = new ObConfigResolver({ obfuscationOptions: localHspConfig, compileHar: false, compileShared: true }, console);
+          localHspResolver.resolveObfuscationConfigs();
+
+          const localHspObfuscationContent = fs.readFileSync(localHspConfig.exportRulePath, 'utf-8');
+          expect(localHspObfuscationContent).to.include('LocalHspClass');
+          expect(localHspObfuscationContent).to.include('localHspMethod');
+          expect(localHspObfuscationContent).not.to.include('MainRemoteHspClass');
+          expect(localHspObfuscationContent).not.to.include('mainRemoteHspGreeting');
+
+          const remoteHspObfuscationContent = fs.readFileSync(remoteHspConfig.exportRulePath, 'utf-8');
+          expect(remoteHspObfuscationContent).to.include('RemoteHspClass');
+          expect(remoteHspObfuscationContent).to.include('remoteHspMethod');
+          expect(remoteHspObfuscationContent).not.to.include('MainRemoteHspClass');
+          expect(remoteHspObfuscationContent).not.to.include('mainRemoteHspGreeting');
+        });
+
+        it('should contain only MainHSP consumer rules in MainHSP obfuscation.txt', function () {
+          const mainRemoteHspResolver = new ObConfigResolver({ obfuscationOptions: mainRemoteHspConfig, compileHar: false, compileShared: true }, console);
+          mainRemoteHspResolver.resolveObfuscationConfigs();
+
+          const mainRemoteHspObfuscationContent = fs.readFileSync(mainRemoteHspConfig.exportRulePath, 'utf-8');
+          expect(mainRemoteHspObfuscationContent).to.include('MainRemoteHspClass');
+          expect(mainRemoteHspObfuscationContent).to.include('mainRemoteHspGreeting');
+          expect(mainRemoteHspObfuscationContent).not.to.include('LocalHspClass');
+          expect(mainRemoteHspObfuscationContent).not.to.include('localHspMethod');
+          expect(mainRemoteHspObfuscationContent).not.to.match(/^(?!.*RemoteHspClass).*$/);
+          expect(mainRemoteHspObfuscationContent).not.to.include('remoteHspMethod');
+        });
+
+        it('HAP should run successfully with MainHSP dependency', function () {
+
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalConfig = hapResolver.resolveObfuscationConfigs();
+
+          expect(finalConfig.reservedGlobalNames).to.include('MainRemoteHspClass');;
+          expect(finalConfig.reservedPropertyNames).to.include('mainRemoteHspGreeting');
+
+          const serializedConfig = finalConfig.serializeMergedConfig();
+          expect(serializedConfig).to.include('MainRemoteHspClass');
+          expect(serializedConfig).to.include('mainRemoteHspGreeting');
+        });
+
+        after(() => {
+          if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHspConfig.exportRulePath)) {
+            fs.unlinkSync(localHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(mainRemoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(mainRemoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      })
+
+      describe('HAP with local and remote HAR and HSP dependencies Obfuscation Config Tests', function () {
+        const localHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHar_obfuscation.txt'
+        };
+
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/localHsp_obfuscation.txt'
+        };
+
+        const remoteHarConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHar/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHar/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHar_obfuscation.txt'
+        };
+
+        const remoteHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/remoteHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/remoteHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: './test/testData/output/remoteHsp_obfuscation.txt'
+        };
+
+        function generateRemoteConfigs() {
+          const remoteHarResolver = new ObConfigResolver({ obfuscationOptions: remoteHarConfig, compileHar: true, compileShared: false }, console);
+          remoteHarResolver.resolveObfuscationConfigs();
+
+          const remoteHspResolver = new ObConfigResolver({ obfuscationOptions: remoteHspConfig, compileHar: false, compileShared: true }, console);
+          remoteHspResolver.resolveObfuscationConfigs();
+        }
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [localHarConfig.selfConfig],
+            hars: [remoteHarConfig.exportRulePath],
+            hsps: [remoteHspConfig.exportRulePath],
+            hspLibraries: [localHspConfig.selfConfig]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        before(() => {
+
+          generateRemoteConfigs();
+        });
+
+        it('should contain all local and remote HAR and HSP consumer rules in final HAP config', function () {
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalHapConfig = hapResolver.resolveObfuscationConfigs();
+
+          expect(finalHapConfig.reservedGlobalNames).to.include('LocalHarClass');
+          expect(finalHapConfig.reservedPropertyNames).to.include('localHarMethod');
+          expect(finalHapConfig.reservedGlobalNames).to.include('LocalHspClass');
+          expect(finalHapConfig.reservedPropertyNames).to.include('localHspMethod');
+
+          expect(finalHapConfig.reservedGlobalNames).to.include('RemoteHarClass');
+          expect(finalHapConfig.reservedPropertyNames).to.include('remoteHarMethod');
+          expect(finalHapConfig.reservedGlobalNames).to.include('RemoteHspClass');
+          expect(finalHapConfig.reservedPropertyNames).to.include('remoteHspMethod');
+
+          const serializedHapConfig = finalHapConfig.serializeMergedConfig();
+          expect(serializedHapConfig).to.include('-keep-global-name');
+          expect(serializedHapConfig).to.include('LocalHarClass');
+          expect(serializedHapConfig).to.include('localHarMethod');
+          expect(serializedHapConfig).to.include('RemoteHarClass');
+          expect(serializedHapConfig).to.include('remoteHarMethod');
+          expect(serializedHapConfig).to.include('LocalHspClass');
+          expect(serializedHapConfig).to.include('localHspMethod');
+          expect(serializedHapConfig).to.include('RemoteHspClass');
+          expect(serializedHapConfig).to.include('remoteHspMethod');
+        });
+
+        after(() => {
+          if (fs.existsSync(remoteHspConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHspConfig.exportRulePath)) {
+            fs.unlinkSync(localHspConfig.exportRulePath);
+          }
+          if (fs.existsSync(remoteHarConfig.exportRulePath)) {
+            fs.unlinkSync(remoteHarConfig.exportRulePath);
+          }
+          if (fs.existsSync(localHarConfig.exportRulePath)) {
+            fs.unlinkSync(localHarConfig.exportRulePath);
+          }
+          if (fs.existsSync('test/testData/output/systemApiCache.json')) {
+            fs.unlinkSync('test/testData/output/systemApiCache.json');
+          }
+        });
+      });
+
+      describe('The existing project now includes a new consumerFiles in the HSP package dependency', function () {
+        const legacyHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/legacyHsp/obfuscation-rules.txt']
+            },
+            consumerRules: [] as string[],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt', legacyHspConfig.selfConfig.ruleOptions.rules[0]]
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [],
+            hspLibraries: [] as Obfuscation[]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+
+        it('should contain all local and remote HAR and HSP consumer rules in final HAP config', function () {
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalHapConfig = hapResolver.resolveObfuscationConfigs();
+
+          const newLegacyConsumerFilePath = './test/testData/obfuscation/Configs/newConsumer-rules.txt';
+          legacyHspConfig.selfConfig.consumerRules.push(newLegacyConsumerFilePath);
+          legacyHspConfig.exportRulePath = './test/testData/obfuscation/Configs/legecyHsp/legacyHsp_obfuscation.txt';
+          hapConfig.dependencies.hspLibraries.push(legacyHspConfig.selfConfig);
+
+          const hapNewResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalHapNewConfig = hapNewResolver.resolveObfuscationConfigs();
+
+          const serializedHapConfig = finalHapNewConfig.serializeMergedConfig();
+          expect(serializedHapConfig).to.include('-keep-global-name');
+          expect(serializedHapConfig).to.include('NewHspClass');
+          expect(serializedHapConfig).to.include('newHspMethod');
+        });
+      });
+
+      describe('The existing project now introduces a new HSP dependency that includes consumerFiles', function () {
+        const localHspConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/localHsp/obfuscation-rules.txt']
+            },
+            consumerRules: ['./test/testData/obfuscation/Configs/localHsp/consumer-rules.txt'],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: { libraries: [], hars: [], hsps: [], hspLibraries: [] },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output/3',
+          exportRulePath: './test/testData/output/3/localHsp_obfuscation.txt'
+        };
+
+        const hapConfig = {
+          selfConfig: {
+            ruleOptions: {
+              enable: true,
+              rules: ['./test/testData/obfuscation/Configs/Hap/obfuscation-rules.txt']
+            },
+            consumerRules: [],
+            libDir: "",
+            consumerFiles: ""
+          },
+          dependencies: {
+            libraries: [],
+            hars: [],
+            hsps: [],
+            hspLibraries: [] as Obfuscation[]
+          },
+          sdkApis: [],
+          obfuscationCacheDir: './test/testData/output',
+          exportRulePath: ''
+        };
+        it('should contain all local and remote HAR and HSP consumer rules in final HAP config', function () {
+          const hapResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalHapConfig = hapResolver.resolveObfuscationConfigs();
+
+          hapConfig.dependencies.hspLibraries.push(localHspConfig.selfConfig);
+
+          const hapNewResolver = new ObConfigResolver({ obfuscationOptions: hapConfig, compileHar: false, compileShared: false }, console);
+          const finalHapNewConfig = hapNewResolver.resolveObfuscationConfigs();
+
+          const serializedHapConfig = finalHapNewConfig.serializeMergedConfig();
+          expect(serializedHapConfig).to.include('-keep-global-name');
+          expect(serializedHapConfig).to.include('LocalHspClass');
+          expect(serializedHapConfig).to.include('localHspMethod');
+        });
       });
     });
 
@@ -704,72 +1950,151 @@ describe('test for ConfigResolve', function() {
 
     describe('1: test Api getSystemApiCache', function() {
       it('1-1: test getSystemApiCache: -enable-property-obfuscation', function () {
-        let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'property');
-        let obfuscationOptions = {
-          'selfConfig': {
-            'ruleOptions': {
-              'enable': true,
-              'rules': [ 
-                path.join(OBFUSCATE_TESTDATA_DIR, 'property/property.txt')
-              ]
-            },
-            'consumerRules': [],
-          },
-          'dependencies': {
-            'libraries': [],
-            'hars': []
-          },
-          'obfuscationCacheDir': obfuscationCacheDir,
-          'sdkApis': [
-            path.join(OBFUSCATE_TESTDATA_DIR, 'system_api.d.ts')
-          ]
-        };
-        let projectConfig = {
-          obfuscationOptions,
-          compileHar: false
-        };
-        const obConfig: ObConfigResolver =  new ObConfigResolver(projectConfig, undefined);
-        obConfig.resolveObfuscationConfigs();
-        const reservedSdkApiForProp = UnobfuscationCollections.reservedSdkApiForProp;
-        const reservedSdkApiForGlobal = UnobfuscationCollections.reservedSdkApiForGlobal;
-    
-        expect(reservedSdkApiForProp.size == 12).to.be.true;
-        expect(reservedSdkApiForProp.has('TestClass')).to.be.true;
-        expect(reservedSdkApiForProp.has('para1')).to.be.true;
-        expect(reservedSdkApiForProp.has('para2')).to.be.true;
-        expect(reservedSdkApiForProp.has('foo')).to.be.true;
-        expect(reservedSdkApiForProp.has('TestFunction')).to.be.true;
-        expect(reservedSdkApiForProp.has('funcPara1')).to.be.true;
-        expect(reservedSdkApiForProp.has('funcPara2')).to.be.true;
-        expect(reservedSdkApiForProp.has('ns')).to.be.true;
-        expect(reservedSdkApiForProp.has('NavigationBuilderRegister')).to.be.true;
-        expect(reservedSdkApiForProp.has('ViewV2')).to.be.true;
-        expect(reservedSdkApiForProp.has('initParam')).to.be.true;
-        expect(reservedSdkApiForProp.has('updateParam')).to.be.true;
-        expect(reservedSdkApiForGlobal.size == 0).to.be.true;
-        UnobfuscationCollections.clear();
-    
-        let systemApiPath = obfuscationCacheDir + '/systemApiCache.json';
-        const data = fs.readFileSync(systemApiPath, 'utf8');
-        const systemApiContent = JSON.parse(data);
-    
-        expect(systemApiContent.ReservedPropertyNames.length == 12).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('TestClass')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('para1')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('para2')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('foo')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('TestFunction')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('funcPara1')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('funcPara2')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('ns')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('NavigationBuilderRegister')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('ViewV2')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('initParam')).to.be.true;
-        expect(systemApiContent.ReservedPropertyNames.includes('updateParam')).to.be.true;
-        expect(systemApiContent.ReservedGlobalNames == undefined).to.be.true;
-    
-        fs.unlinkSync(systemApiPath);
-      });
+         let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'property');
+         let obfuscationOptions = {
+           'selfConfig': {
+             'ruleOptions': {
+               'enable': true,
+               'rules': [ 
+                 path.join(OBFUSCATE_TESTDATA_DIR, 'property/property.txt')
+               ]
+             },
+             'consumerRules': [],
+           },
+           'dependencies': {
+             'libraries': [],
+             'hars': [],
+             'hsps': [],
+             'hspLibraries': []
+           },
+           'obfuscationCacheDir': obfuscationCacheDir,
+           'sdkApis': [
+             path.join(OBFUSCATE_TESTDATA_DIR, 'system_api.d.ts')
+           ]
+         };
+         let projectConfig = {
+           obfuscationOptions,
+           compileHar: false
+         };
+         const obConfig: ObConfigResolver =  new ObConfigResolver(projectConfig, undefined);
+         obConfig.resolveObfuscationConfigs();
+         const reservedSdkApiForProp = UnobfuscationCollections.reservedSdkApiForProp;
+         const reservedSdkApiForGlobal = UnobfuscationCollections.reservedSdkApiForGlobal;
+     
+         expect(reservedSdkApiForProp.size == 8).to.be.true;
+         expect(reservedSdkApiForProp.has('TestClass')).to.be.true;
+         expect(reservedSdkApiForProp.has('para1')).to.be.true;
+         expect(reservedSdkApiForProp.has('para2')).to.be.true;
+         expect(reservedSdkApiForProp.has('foo')).to.be.true;
+         expect(reservedSdkApiForProp.has('TestFunction')).to.be.true;
+         expect(reservedSdkApiForProp.has('funcPara1')).to.be.true;
+         expect(reservedSdkApiForProp.has('funcPara2')).to.be.true;
+         expect(reservedSdkApiForProp.has('ns')).to.be.true;
+         expect(reservedSdkApiForGlobal.size == 0).to.be.true;
+         UnobfuscationCollections.clear();
+     
+         let systemApiPath = obfuscationCacheDir + '/systemApiCache.json';
+         const data = fs.readFileSync(systemApiPath, 'utf8');
+         const systemApiContent = JSON.parse(data);
+     
+         expect(systemApiContent.ReservedPropertyNames.length == 8).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('TestClass')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('para1')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('para2')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('foo')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('TestFunction')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('funcPara1')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('funcPara2')).to.be.true;
+         expect(systemApiContent.ReservedPropertyNames.includes('ns')).to.be.true;
+         expect(systemApiContent.ReservedGlobalNames == undefined).to.be.true;
+     
+         fs.unlinkSync(systemApiPath);
+       });
+     
+       it('1-2: test getSystemApiCache: -enable-export-obfuscation', function () {
+         let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'export');
+         let obfuscationOptions = {
+           'selfConfig': {
+             'ruleOptions': {
+               'enable': true,
+               'rules': [ 
+                 path.join(OBFUSCATE_TESTDATA_DIR, 'export/export.txt')
+               ]
+             },
+             'consumerRules': [],
+           },
+           'dependencies': {
+             'libraries': [],
+             'hars': [],
+             'hsps': [],
+             'hspLibraries': []
+           },
+           'obfuscationCacheDir': obfuscationCacheDir,
+           'sdkApis': [
+             path.join(OBFUSCATE_TESTDATA_DIR, 'system_api.d.ts')
+           ]
+         };
+         let projectConfig = {
+           obfuscationOptions,
+           compileHar: false
+         };
+         const obConfig: ObConfigResolver =  new ObConfigResolver(projectConfig, undefined);
+         obConfig.resolveObfuscationConfigs();
+         const reservedSdkApiForProp = UnobfuscationCollections.reservedSdkApiForProp;
+         const reservedSdkApiForGlobal = UnobfuscationCollections.reservedSdkApiForGlobal;
+     
+         expect(reservedSdkApiForProp.size == 0).to.be.true;
+         expect(reservedSdkApiForGlobal.size == 0).to.be.true;
+         UnobfuscationCollections.clear();
+     
+         let systemApiPath = obfuscationCacheDir + '/systemApiCache.json';
+         const noSystemApi = fs.existsSync(systemApiPath);
+     
+         expect(noSystemApi).to.be.false;
+       });
+     
+       it('1-3: test getSystemApiCache: -enable-export-obfuscation -enable-toplevel-obfuscation', function () {
+         let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'export_toplevel');
+         let obfuscationOptions = {
+           'selfConfig': {
+             'ruleOptions': {
+               'enable': true,
+               'rules': [ 
+                 path.join(OBFUSCATE_TESTDATA_DIR, 'export_toplevel/export_toplevel.txt')
+               ]
+             },
+             'consumerRules': [],
+           },
+           'dependencies': {
+             'libraries': [],
+             'hars': [],
+             'hsps': [],
+             'hspLibraries': []
+           },
+           'obfuscationCacheDir': obfuscationCacheDir,
+           'sdkApis': [
+             path.join(OBFUSCATE_TESTDATA_DIR, 'system_api.d.ts')
+           ]
+         };
+         let projectConfig = {
+           obfuscationOptions,
+           compileHar: false
+         };
+         const obConfig: ObConfigResolver =  new ObConfigResolver(projectConfig, undefined);
+         obConfig.resolveObfuscationConfigs();
+         const reservedSdkApiForProp = UnobfuscationCollections.reservedSdkApiForProp;
+         const reservedSdkApiForGlobal = UnobfuscationCollections.reservedSdkApiForGlobal;
+     
+         expect(reservedSdkApiForProp.size == 0).to.be.true;
+         expect(reservedSdkApiForGlobal.size == 3).to.be.true;
+         expect(reservedSdkApiForGlobal.has('TestClass')).to.be.true;
+         expect(reservedSdkApiForGlobal.has('TestFunction')).to.be.true;
+         expect(reservedSdkApiForGlobal.has('ns')).to.be.true;
+         UnobfuscationCollections.clear();
+     
+         let systemApiPath = obfuscationCacheDir + '/systemApiCache.json';
+         const data = fs.readFileSync(systemApiPath, 'utf8');
+         const systemApiContent = JSON.parse(data);
      
       it('1-2: test getSystemApiCache: -enable-export-obfuscation', function () {
         let obfuscationCacheDir = path.join(OBFUSCATE_TESTDATA_DIR, 'export');
