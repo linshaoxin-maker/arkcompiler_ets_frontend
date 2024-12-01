@@ -1673,7 +1673,6 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker
 {
     ETSChecker *checker = GetETSChecker();
     checker::ETSObjectType *objType = expr->PreferredType()->AsETSObjectType();
-
     for (ir::Expression *propExpr : expr->Properties()) {
         if (!propExpr->IsProperty()) {
             checker->LogTypeError({"The object literal properties must be key-value pairs"}, expr->Start());
@@ -1682,6 +1681,13 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker
         ir::Property *prop = propExpr->AsProperty();
         ir::Expression *key = prop->Key();
         ir::Expression *value = prop->Value();
+
+        if (value->IsFunctionExpression()) {
+            ASSERT(objType->GetDeclNode()->IsTSInterfaceDeclaration());
+            auto interfaceName = objType->GetDeclNode()->AsTSInterfaceDeclaration()->Id()->Name();
+            checker->LogTypeError({"The interface type ", interfaceName, " must contain fields only"}, value->Start());
+            return;
+        }
 
         util::StringView pname;
         if (key->IsStringLiteral()) {
