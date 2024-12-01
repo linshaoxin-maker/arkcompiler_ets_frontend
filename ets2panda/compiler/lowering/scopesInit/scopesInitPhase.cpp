@@ -1036,7 +1036,7 @@ void InitScopesPhaseETS::VisitETSNewClassInstanceExpression(ir::ETSNewClassInsta
         auto classCtx = LexicalScopeCreateOrEnter<varbinder::ClassScope>(VarBinder(), newClassExpr->ClassDefinition());
         util::UString anonymousName(util::StringView("#"), Allocator());
         anonymousName.Append(std::to_string(parentClassScope->AsClassScope()->GetAndIncrementAnonymousClassIdx()));
-        classDef->SetInternalName(anonymousName.View());
+        classDef->SetInternalName(anonymousName);
         classDef->Ident()->SetName(anonymousName.View());
         AddOrGetDecl<varbinder::ClassDecl>(VarBinder(), anonymousName.View(), classDef, classDef->Start(),
                                            anonymousName.View(), classDef);

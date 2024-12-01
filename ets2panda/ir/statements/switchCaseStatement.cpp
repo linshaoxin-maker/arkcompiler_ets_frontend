@@ -32,7 +32,7 @@ void SwitchCaseStatement::TransformChildren(const NodeTransformer &cb, std::stri
         }
     }
 
-    for (auto *&it : consequent_) {
+    for (auto *&it : SafeIter(consequent_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsStatement();

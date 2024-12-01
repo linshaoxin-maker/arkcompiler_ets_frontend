@@ -24,7 +24,7 @@
 namespace ark::es2panda::ir {
 void ClassDeclaration::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : decorators_) {
+    for (auto *&it : SafeIter(decorators_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsDecorator();

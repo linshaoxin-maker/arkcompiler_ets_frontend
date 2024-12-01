@@ -52,14 +52,14 @@ TemplateLiteral *TemplateLiteral::Clone(ArenaAllocator *const allocator, AstNode
 
 void TemplateLiteral::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : expressions_) {
+    for (auto *&it : SafeIter(expressions_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsExpression();
         }
     }
 
-    for (auto *&it : quasis_) {
+    for (auto *&it : SafeIter(quasis_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsTemplateElement();

@@ -593,9 +593,9 @@ public:
         name_ = name;
     }
 
-    void BindInternalName(util::StringView internalName)
+    void BindInternalName(util::UString internalName)
     {
-        internalName_ = internalName;
+        internalName_ = std::move(internalName);
     }
 
     const util::StringView &Name() const
@@ -603,9 +603,9 @@ public:
         return name_;
     }
 
-    const util::StringView &InternalName() const
+    util::StringView InternalName() const
     {
-        return internalName_;
+        return internalName_.View();
     }
 
     const LocalScope *TypeAliasScope() const
@@ -620,7 +620,7 @@ public:
 
 private:
     util::StringView name_ {};
-    util::StringView internalName_ {};
+    util::UString internalName_ {};
     LocalScope *typeAliasScope_;
 };
 

@@ -561,7 +561,7 @@ void AddOverloadFlag(ArenaAllocator *allocator, bool isStdLib, varbinder::Variab
         currentNode->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
         currentNode->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
         util::UString newInternalName(currentNode->Function()->Scope()->Name(), allocator);
-        currentNode->Function()->Scope()->BindInternalName(newInternalName.View());
+        currentNode->Function()->Scope()->BindInternalName(std::move(newInternalName));
         return;
     }
 
@@ -571,7 +571,7 @@ void AddOverloadFlag(ArenaAllocator *allocator, bool isStdLib, varbinder::Variab
         method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
         method->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
         util::UString newInternalName(method->Function()->Scope()->Name(), allocator);
-        method->Function()->Scope()->BindInternalName(newInternalName.View());
+        method->Function()->Scope()->BindInternalName(std::move(newInternalName));
     }
 }
 
@@ -1065,7 +1065,7 @@ void ETSBinder::BuildFunctionName(const ir::ScriptFunction *func) const
     signature->ToAssemblerType(ss);
 
     util::UString internalName(ss.str(), Allocator());
-    funcScope->BindInternalName(internalName.View());
+    funcScope->BindInternalName(std::move(internalName));
 }
 
 void ETSBinder::InitImplicitThisParam()

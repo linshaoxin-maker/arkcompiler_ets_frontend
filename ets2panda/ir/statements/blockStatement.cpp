@@ -26,10 +26,10 @@
 namespace ark::es2panda::ir {
 void BlockStatement::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : statements_) {
-        if (auto *transformedNode = cb(it); it != transformedNode) {
-            it->SetTransformedNode(transformationName, transformedNode);
-            it = transformedNode->AsStatement();
+    for (size_t ix = 0; ix < statements_.size(); ix++) {
+        if (auto *transformedNode = cb(statements_[ix]); statements_[ix] != transformedNode) {
+            statements_[ix]->SetTransformedNode(transformationName, transformedNode);
+            statements_[ix] = transformedNode->AsStatement();
         }
     }
 }

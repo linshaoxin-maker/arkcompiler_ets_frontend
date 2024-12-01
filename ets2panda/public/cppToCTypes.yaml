@@ -2717,16 +2717,17 @@ change_types:
             // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
             switch  (|arg_name|.index) {
               case 0:
-                |arg_name|E2p = std::variant<double, util::StringView, bool>(|arg_name|.variant.d);
+                |arg_name|E2p = std::variant<double, util::UString, bool>(|arg_name|.variant.d);
                 break;
               case 1:
                 {
-                  util::StringView |arg_name|E2pStringView {|arg_name|.variant.c};
-                  |arg_name|E2p = std::variant<double, util::StringView, bool>(|arg_name|E2pStringView);
+                  util::UString |arg_name|E2pStringView {util::StringView(|arg_name|.variant.c),
+                    reinterpret_cast<Context *>(context)->allocator};
+                  |arg_name|E2p = std::variant<double, util::UString, bool>(|arg_name|E2pStringView);
                   break;
                 }
               case 2:
-                |arg_name|E2p = std::variant<double, util::StringView, bool>(|arg_name|.variant.b);
+                |arg_name|E2p = std::variant<double, util::UString, bool>(|arg_name|.variant.b);
                 break;
               default:
                 break;

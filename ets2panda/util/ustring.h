@@ -339,6 +339,11 @@ public:
         return *this;
     }
 
+    bool operator<(const UString &rhs) const noexcept
+    {
+        return View() < rhs.View();
+    }
+
 private:
     void Alloc()
     {

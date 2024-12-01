@@ -85,14 +85,14 @@ void ClassDefinition::TransformChildren(const NodeTransformer &cb, std::string_v
         }
     }
 
-    for (auto *&it : implements_) {
+    for (auto *&it : SafeIter(implements_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsTSClassImplements();
         }
     }
 
-    for (auto *&it : annotations_) {
+    for (auto *&it : SafeIter(annotations_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsAnnotationUsage();
@@ -106,10 +106,10 @@ void ClassDefinition::TransformChildren(const NodeTransformer &cb, std::string_v
         }
     }
 
-    for (auto *&it : body_) {
-        if (auto *transformedNode = cb(it); it != transformedNode) {
-            it->SetTransformedNode(transformationName, transformedNode);
-            it = transformedNode;
+    for (size_t ix = 0; ix < body_.size(); ix++) {
+        if (auto *transformedNode = cb(body_[ix]); body_[ix] != transformedNode) {
+            body_[ix]->SetTransformedNode(transformationName, transformedNode);
+            body_[ix] = transformedNode;
         }
     }
 }

@@ -1638,13 +1638,11 @@ varbinder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChec
         GetOperationResulForDouble(expr->AsBinaryExpression()->OperatorType(), left, right);
     }
 
-    if (std::holds_alternative<util::StringView>(left) && std::holds_alternative<util::StringView>(right) &&
+    if (std::holds_alternative<util::UString>(left) && std::holds_alternative<util::UString>(right) &&
         expr->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS) {
-        std::stringstream ss;
-        ss << std::get<util::StringView>(left) << std::get<util::StringView>(right);
-
-        util::UString res(ss.str(), checker->Allocator());
-        return res.View();
+        auto res = std::get<util::UString>(left);
+        res.Append(std::get<util::UString>(right).View());
+        return res;
     }
 
     return false;
@@ -1692,7 +1690,7 @@ varbinder::EnumMemberResult TSAnalyzer::EvaluateEnumMember(checker::TSChecker *c
             return expr->AsNumberLiteral()->Number().GetDouble();
         }
         case ir::AstNodeType::STRING_LITERAL: {
-            return expr->AsStringLiteral()->Str();
+            return util::UString(expr->AsStringLiteral()->Str(), checker->Allocator());
         }
         case ir::AstNodeType::IDENTIFIER: {
             return EvaluateIdentifier(checker, enumVar, expr->AsIdentifier());
@@ -1747,7 +1745,7 @@ static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, 
         enumVar->ResetDecl(decl);
     }
 
-    enumVar->SetValue(variable->Declaration()->Name());
+    enumVar->SetValue(util::UString(variable->Declaration()->Name(), checker->Allocator()));
 }
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
@@ -1783,7 +1781,7 @@ void TSAnalyzer::InferEnumVariableType(varbinder::EnumVariable *variable, double
     }
 
     varbinder::EnumMemberResult res = EvaluateEnumMember(checker, variable, init);
-    if (std::holds_alternative<util::StringView>(res)) {
+    if (std::holds_alternative<util::UString>(res)) {
         *isLiteralEnum = true;
         variable->SetTsType(checker->GlobalStringType());
         *initNext = true;

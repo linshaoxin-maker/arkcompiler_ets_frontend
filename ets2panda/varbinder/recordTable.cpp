@@ -84,11 +84,11 @@ BoundContext::~BoundContext()
     recordTable_->boundCtx_ = prev_;
 }
 
-util::StringView BoundContext::FormRecordName() const
+util::UString BoundContext::FormRecordName() const
 {
     if (prev_ == nullptr) {
         if (recordTable_->program_->OmitModuleName()) {
-            return recordIdent_->Name();
+            return util::UString(recordIdent_->Name(), recordTable_->program_->Allocator());
         }
 
         const auto &moduleName = recordTable_->program_->ModuleName();
@@ -96,12 +96,11 @@ util::StringView BoundContext::FormRecordName() const
         // concatenate the module name with the record ident
         return util::UString(moduleName.Mutf8() + compiler::Signatures::METHOD_SEPARATOR.data() +
                                  recordIdent_->Name().Mutf8(),
-                             recordTable_->program_->Allocator())
-            .View();
+                             recordTable_->program_->Allocator());
     }
 
     util::UString recordName(recordTable_->program_->Allocator());
-    recordName.Append(prev_->FormRecordName());
+    recordName.Append(prev_->FormRecordName().View());
     recordName.Append(compiler::Signatures::METHOD_SEPARATOR);
     if (std::holds_alternative<ir::ClassDefinition *>(currentRecord_)) {
         const auto *classDef = std::get<ir::ClassDefinition *>(currentRecord_);
@@ -111,7 +110,7 @@ util::StringView BoundContext::FormRecordName() const
     }
 
     recordName.Append(recordIdent_->Name());
-    return recordName.View();
+    return recordName;
 }
 
 util::StringView RecordTable::RecordName() const

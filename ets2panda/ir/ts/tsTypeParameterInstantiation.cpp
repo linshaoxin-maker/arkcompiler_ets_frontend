@@ -49,7 +49,7 @@ TSTypeParameterInstantiation *TSTypeParameterInstantiation::Clone(ArenaAllocator
 
 void TSTypeParameterInstantiation::TransformChildren(const NodeTransformer &cb, std::string_view transformationName)
 {
-    for (auto *&it : params_) {
+    for (auto *&it : SafeIter(params_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = static_cast<TypeNode *>(transformedNode);

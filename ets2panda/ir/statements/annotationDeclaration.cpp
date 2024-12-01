@@ -23,7 +23,7 @@
 namespace ark::es2panda::ir {
 void AnnotationDeclaration::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : properties_) {
+    for (auto *&it : SafeIter(properties_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode;

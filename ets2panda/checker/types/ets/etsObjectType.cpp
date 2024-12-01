@@ -338,7 +338,7 @@ void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
     }
 
     if (precise) {
-        ss << assemblerName_;  // NOTE(gogabr): need full qualified name
+        ss << assemblerName_.View();  // NOTE(gogabr): need full qualified name
     } else {
         ss << name_;
     }
@@ -1215,18 +1215,18 @@ const ArenaVector<ETSObjectType *> &ETSObjectType::ReExports() const
 
 void ETSObjectType::ToAssemblerType([[maybe_unused]] std::stringstream &ss) const
 {
-    ss << assemblerName_;
+    ss << assemblerName_.View();
 }
 
 void ETSObjectType::ToDebugInfoType(std::stringstream &ss) const
 {
-    DebugInfoTypeFromName(ss, assemblerName_);
+    DebugInfoTypeFromName(ss, assemblerName_.View());
 }
 
 void ETSObjectType::ToDebugInfoSignatureType(std::stringstream &ss) const
 {
     ss << compiler::Signatures::GENERIC_BEGIN;
-    ss << assemblerName_;
+    ss << assemblerName_.View();
     ss << compiler::Signatures::GENERIC_END;
 }
 

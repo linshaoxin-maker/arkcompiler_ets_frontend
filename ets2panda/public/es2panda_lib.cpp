@@ -143,7 +143,7 @@ __attribute__((unused)) es2panda_variantDoubleCharArrayBool EnumMemberResultToEs
             es2panda_variant.variant.d = std::get<double>(variant);
             break;
         case es2panda_variantIndex::CHAR:
-            es2panda_variant.variant.c = StringViewToCString(allocator, std::get<util::StringView>(variant));
+            es2panda_variant.variant.c = UStringToCString(allocator, std::get<util::UString>(variant));
             break;
         case es2panda_variantIndex::BOOL:
             es2panda_variant.variant.b = std::get<bool>(variant);

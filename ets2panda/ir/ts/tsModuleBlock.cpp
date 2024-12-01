@@ -24,7 +24,7 @@
 namespace ark::es2panda::ir {
 void TSModuleBlock::TransformChildren(const NodeTransformer &cb, std::string_view transformationName)
 {
-    for (auto *&it : statements_) {
+    for (auto *&it : SafeIter(statements_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsStatement();

@@ -418,7 +418,7 @@ void ETSChecker::ClassInitializerFromImport(ir::ETSImportDeclaration *import, Ar
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *moduleClassId = AllocNode<ir::Identifier>(compiler::Signatures::DYNAMIC_MODULE_CLASS, Allocator());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    auto *fieldId = AllocNode<ir::Identifier>(import->AssemblerName(), Allocator());
+    auto *fieldId = AllocNode<ir::Identifier>(import->AssemblerName().View(), Allocator());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *property = AllocNode<ir::MemberExpression>(moduleClassId, fieldId, ir::MemberExpressionKind::PROPERTY_ACCESS,
                                                      false, false);
@@ -579,11 +579,11 @@ void ETSChecker::BuildDynamicImportClass()
                     assemblyName.begin(), assemblyName.end(), [](char c) { return std::isalnum(c) == 0; }, '_');
                 assemblyName.append(std::to_string(fields.size()));
 
-                import->AssemblerName() = util::UString(assemblyName, Allocator()).View();
-                fields.insert(import->AssemblerName());
+                import->AssemblerName() = util::UString(assemblyName, Allocator());
+                fields.insert(import->AssemblerName().View());
                 imports.push_back(import);
 
-                auto *fieldIdent = AllocNode<ir::Identifier>(import->AssemblerName(), Allocator());
+                auto *fieldIdent = AllocNode<ir::Identifier>(import->AssemblerName().View(), Allocator());
                 auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY;
                 auto *field = AllocNode<ir::ClassProperty>(
                     fieldIdent, nullptr, AllocNode<ir::OpaqueTypeNode>(GlobalBuiltinDynamicType(import->Language())),

@@ -785,8 +785,8 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
     }
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
-        util::StringView(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
-        std::move(properties), modifiers, flags, GetContext().GetLanguage());
+        util::UString(""s, Allocator()), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor,
+        superClass, std::move(properties), modifiers, flags, GetContext().GetLanguage());
 
     classDefinition->SetRange(bodyRange);
 

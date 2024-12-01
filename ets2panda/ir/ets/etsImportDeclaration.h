@@ -48,14 +48,14 @@ public:
         return !HasDecl() && Language().IsDynamic();
     }
 
-    util::StringView &AssemblerName()
+    util::UString &AssemblerName()
     {
         return assemblerName_;
     }
 
-    const util::StringView &AssemblerName() const
+    util::StringView AssemblerName() const
     {
-        return assemblerName_;
+        return assemblerName_.View();
     }
 
     StringLiteral *Source() const
@@ -80,7 +80,7 @@ public:
 
 private:
     ImportSource *source_;
-    util::StringView assemblerName_ {};
+    util::UString assemblerName_ {};
 };
 }  // namespace ark::es2panda::ir
 

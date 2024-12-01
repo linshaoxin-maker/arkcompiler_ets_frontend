@@ -586,5 +586,56 @@ private:
     TypeNode *typeAnnotation_ {};
 };
 
+template <typename T>
+class SafeIter {
+public:
+    SafeIter(ArenaVector<T> &vector) : vector_(vector), data_(vector_.data(), vector_.size()) {}
+
+    ~SafeIter()
+    {
+        ASSERT(data_.begin() == vector_.data());
+        ASSERT(data_.size() == vector_.size());
+    }
+
+    class Iterator {
+    public:
+        Iterator(ArenaVector<T> &vec, size_t idx) : vec_(vec), idx_(idx) {}
+
+        T &operator*()
+        {
+            return vec_[idx_];
+        }
+
+        Iterator &operator++()
+        {
+            idx_++;
+            return *this;
+        }
+
+        bool operator!=(const Iterator &other) const
+        {
+            return idx_ != other.idx_;
+        }
+
+    private:
+        ArenaVector<T> &vec_;
+        size_t idx_;
+    };
+
+    Iterator begin()
+    {
+        return {vector_, 0};
+    }
+
+    Iterator end()
+    {
+        return {vector_, vector_.size()};
+    }
+
+private:
+    ArenaVector<T> &vector_;
+    Span<T> data_;
+};
+
 }  // namespace ark::es2panda::ir
 #endif

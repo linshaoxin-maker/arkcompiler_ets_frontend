@@ -43,7 +43,7 @@ void FunctionSignature::TransformChildren(const NodeTransformer &cb, std::string
         }
     }
 
-    for (auto *&it : params_) {
+    for (auto *&it : SafeIter(params_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsExpression();

@@ -51,10 +51,11 @@ ir::ClassDeclaration *ClassBuilder::Build(parser::Program *program) &&
     auto *classId = checker_->AllocNode<ir::Identifier>(className_, allocator);
 
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    auto *classDef = checker_->AllocNode<ir::ClassDefinition>(
-        util::StringView(), classId, nullptr, nullptr, ArenaVector<ir::TSClassImplements *>(allocator->Adapter()),
-        nullptr, superClass_, ArenaVector<ir::AstNode *>(allocator->Adapter()), classModifiers_, modifierFlags_,
-        ToLanguage(program->Extension()));
+    auto *classDef =
+        checker_->AllocNode<ir::ClassDefinition>(util::UString(util::StringView(), allocator), classId, nullptr,
+                                                 nullptr, ArenaVector<ir::TSClassImplements *>(allocator->Adapter()),
+                                                 nullptr, superClass_, ArenaVector<ir::AstNode *>(allocator->Adapter()),
+                                                 classModifiers_, modifierFlags_, ToLanguage(program->Extension()));
 
     // Set parents for all class'es fields and methods.
     classDef->AddProperties(std::move(classBody));

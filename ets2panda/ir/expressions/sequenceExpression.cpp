@@ -45,7 +45,7 @@ SequenceExpression *SequenceExpression::Clone(ArenaAllocator *const allocator, A
 
 void SequenceExpression::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
-    for (auto *&it : sequence_) {
+    for (auto *&it : SafeIter(sequence_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsExpression();

@@ -792,9 +792,9 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(ir::ClassDefinitionModifie
     auto [ctor, properties, bodyRange] = ParseClassBody(modifiers, flags);
 
     ArenaVector<ir::TSClassImplements *> implements(Allocator()->Adapter());
-    auto *classDefinition = AllocNode<ir::ClassDefinition>(
-        privateBinding.View(), identNode, nullptr, superTypeParams, std::move(implements), ctor, superClass,
-        std::move(properties), modifiers, flags, GetContext().GetLanguage());
+    auto *classDefinition =
+        AllocNode<ir::ClassDefinition>(privateBinding, identNode, nullptr, superTypeParams, std::move(implements), ctor,
+                                       superClass, std::move(properties), modifiers, flags, GetContext().GetLanguage());
 
     classDefinition->SetRange(bodyRange);
 

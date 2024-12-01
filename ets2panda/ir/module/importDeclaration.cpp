@@ -30,7 +30,7 @@ void ImportDeclaration::TransformChildren(const NodeTransformer &cb, std::string
         source_ = transformedNode->AsStringLiteral();
     }
 
-    for (auto *&it : specifiers_) {
+    for (auto *&it : SafeIter(specifiers_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode;

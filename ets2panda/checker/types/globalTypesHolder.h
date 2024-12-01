@@ -294,6 +294,7 @@ public:
     Type *GlobalTypeError();
 
     void InitializeBuiltin(util::StringView name, Type *type);
+    void AddMapping(util::StringView name, GlobalTypeId typeId);
 
     using Holder = std::array<Type *, static_cast<size_t>(GlobalTypeId::COUNT)>;
 
@@ -309,7 +310,8 @@ public:
 
 private:
     Holder globalTypes_ {};
-    ArenaMap<util::StringView, GlobalTypeId> builtinNameMappings_;
+    ArenaMap<util::UString, GlobalTypeId> builtinNameMappings_;
+    ArenaAllocator *allocator_;
 };
 }  // namespace ark::es2panda::checker
 

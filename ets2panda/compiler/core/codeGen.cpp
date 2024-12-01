@@ -148,7 +148,7 @@ std::uint32_t CodeGen::InternalParamCount() const noexcept
     return ParamCount() + HIDDEN_PARAMS;
 }
 
-const util::StringView &CodeGen::InternalName() const noexcept
+util::StringView CodeGen::InternalName() const noexcept
 {
     return topScope_->InternalName();
 }

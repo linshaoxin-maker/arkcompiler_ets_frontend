@@ -110,31 +110,30 @@ Type *ETSChecker::CreatePartialTypeClass(ETSObjectType *typeToBePartial, ir::Ast
 {
     auto *declIdent = typeDeclNode->IsClassDefinition() ? typeDeclNode->AsClassDefinition()->Ident()
                                                         : typeDeclNode->AsTSInterfaceDeclaration()->Id();
-    const auto partialClassName = util::UString(declIdent->Name(), Allocator()).Append(PARTIAL_CLASS_SUFFIX).View();
+    const auto partialClassName = util::UString(declIdent->Name(), Allocator()).Append(PARTIAL_CLASS_SUFFIX);
     auto *const classDefProgram = typeDeclNode->GetTopStatement()->AsETSScript()->Program();
     const bool isClassDeclaredInCurrentFile = classDefProgram == VarBinder()->Program();
     auto *const programToUse = isClassDeclaredInCurrentFile ? VarBinder()->Program() : classDefProgram;
-    const auto qualifiedClassName = GetQualifiedClassName(programToUse, partialClassName);
+    const auto qualifiedClassName = GetQualifiedClassName(programToUse, partialClassName.View());
 
     // Check if we've already generated the partial class, then don't do it again
     const auto classNameToFind =
         isClassDeclaredInCurrentFile || VarBinder()->IsGenStdLib() ? partialClassName : qualifiedClassName;
-    if (auto *var =
-            SearchNamesInMultiplePrograms({programToUse, VarBinder()->Program()}, {classNameToFind, partialClassName});
+    if (auto *var = SearchNamesInMultiplePrograms({programToUse, VarBinder()->Program()},
+                                                  {classNameToFind.View(), partialClassName.View()});
         var != nullptr) {
         return var->TsType();
     }
 
     if (typeDeclNode->IsTSInterfaceDeclaration()) {
         return HandlePartialInterface(typeDeclNode->AsTSInterfaceDeclaration(), isClassDeclaredInCurrentFile,
-                                      partialClassName, programToUse, typeToBePartial);
+                                      partialClassName.View(), programToUse, typeToBePartial);
     }
 
-    ir::ClassDefinition *partialClassDef = CreateClassPrototype(partialClassName, programToUse);
+    ir::ClassDefinition *partialClassDef = CreateClassPrototype(partialClassName.View(), programToUse);
 
     partialClassDef->SetInternalName(
-        util::UString(typeDeclNode->AsClassDefinition()->InternalName().Mutf8() + PARTIAL_CLASS_SUFFIX, Allocator())
-            .View());
+        util::UString(typeDeclNode->AsClassDefinition()->InternalName().Mutf8() + PARTIAL_CLASS_SUFFIX, Allocator()));
 
     // If class prototype was created before, then we cached it's type. In that case return it.
     // This handles cases where a Partial<T> presents in class T, because during generating T$partial we'd need the
@@ -753,15 +752,15 @@ varbinder::Variable *ETSChecker::SearchNamesInMultiplePrograms(const std::set<co
     return nullptr;
 }
 
-util::StringView ETSChecker::GetQualifiedClassName(const parser::Program *const classDefProgram,
-                                                   const util::StringView className)
+util::UString ETSChecker::GetQualifiedClassName(const parser::Program *const classDefProgram,
+                                                const util::StringView className)
 {
     auto packageName = classDefProgram->ModuleName().Mutf8();
     if (!packageName.empty()) {
         packageName.append(".");
     }
 
-    return util::UString(packageName + className.Mutf8(), Allocator()).View();
+    return util::UString(packageName + className.Mutf8(), Allocator());
 }
 
 Type *ETSChecker::HandleUnionForPartialType(ETSUnionType *const typeToBePartial)

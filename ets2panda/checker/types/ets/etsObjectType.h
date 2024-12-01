@@ -251,9 +251,9 @@ public:
         return name_;
     }
 
-    const util::StringView &AssemblerName() const
+    util::StringView AssemblerName() const
     {
-        return assemblerName_;
+        return assemblerName_.View();
     }
 
     void SetName(const util::StringView &newName)
@@ -261,9 +261,14 @@ public:
         name_ = newName;
     }
 
-    void SetAssemblerName(const util::StringView &newName)
+    void SetAssemblerName(util::UString newName)
     {
-        assemblerName_ = newName;
+        assemblerName_ = std::move(newName);
+    }
+
+    void SetAssemblerName(util::StringView newName)
+    {
+        assemblerName_ = util::UString(newName, allocator_);
     }
 
     ETSObjectFlags ObjectFlags() const
@@ -451,7 +456,7 @@ private:
         : Type(TypeFlag::ETS_OBJECT),
           allocator_(allocator),
           name_(name),
-          assemblerName_(assemblerName),
+          assemblerName_(assemblerName, allocator),
           declNode_(std::get<ir::AstNode *>(info)),
           interfaces_(allocator->Adapter()),
           reExports_(allocator->Adapter()),
@@ -498,7 +503,7 @@ private:
 
     ArenaAllocator *allocator_;
     util::StringView name_;
-    util::StringView assemblerName_;
+    util::UString assemblerName_;
     ir::AstNode *declNode_;
     ArenaVector<ETSObjectType *> interfaces_;
     ArenaVector<ETSObjectType *> reExports_;

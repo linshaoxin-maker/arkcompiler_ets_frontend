@@ -44,7 +44,7 @@ void ClassProperty::TransformChildren(const NodeTransformer &cb, std::string_vie
         }
     }
 
-    for (auto *&it : decorators_) {
+    for (auto *&it : SafeIter(decorators_)) {
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsDecorator();
