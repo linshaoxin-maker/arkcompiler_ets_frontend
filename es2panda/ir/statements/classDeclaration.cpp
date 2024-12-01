@@ -57,7 +57,7 @@ void ClassDeclaration::Compile(compiler::PandaGen *pg) const
             std::string prefix = std::string(pg->Context()->RecordName()) + ".";
             annoName.insert(0, prefix);
         }
-        pg->Context()->GetEmitter()->AddAnnotationRecord(annoName, this);
+        pg->Context()->GetEmitter()->AddAnnotationRecord(annoName, this, pg->SourceLang());
         return;
     }
     const auto *node = def_->Ident() ? def_->Ident() : this->Parent();

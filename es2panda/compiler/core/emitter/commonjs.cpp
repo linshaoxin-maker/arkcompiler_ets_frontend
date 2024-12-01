@@ -16,13 +16,14 @@
 #include "emitter.h"
 
 #include <assembly-program.h>
+#include <compiler/core/compilerContext.h>
 
 namespace panda::es2panda::compiler {
-constexpr const auto LANG_EXT = panda::pandasm::extensions::Language::ECMASCRIPT;
 
-void Emitter::SetCommonjsField(bool isCommonjs)
+void Emitter::SetCommonjsField(CompilerContext *context)
 {
-    auto isCommonJsField = panda::pandasm::Field(LANG_EXT);
+    bool isCommonjs = context->Binder()->Program()->Kind() == parser::ScriptKind::COMMONJS;
+    auto isCommonJsField = panda::pandasm::Field(context->SourceLang());
     isCommonJsField.name = "isCommonjs";
     isCommonJsField.type = panda::pandasm::Type("u8", 0);
     isCommonJsField.metadata->SetValue(
@@ -30,11 +31,11 @@ void Emitter::SetCommonjsField(bool isCommonjs)
     rec_->field_list.emplace_back(std::move(isCommonJsField));
 }
 
-void Emitter::GenCommonjsRecord() const
+void Emitter::GenCommonjsRecord(const CompilerContext *context) const
 {
-    auto commonjsRecord = panda::pandasm::Record("_CommonJsRecord", LANG_EXT);
+    auto commonjsRecord = panda::pandasm::Record("_CommonJsRecord", context->SourceLang());
     commonjsRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
-    auto isCommonJsField = panda::pandasm::Field(LANG_EXT);
+    auto isCommonJsField = panda::pandasm::Field(context->SourceLang());
     isCommonJsField.name = "isCommonJs";
     isCommonJsField.type = panda::pandasm::Type("u8", 0);
     isCommonJsField.metadata->SetValue(

@@ -181,6 +181,11 @@ binder::Binder *PandaGen::Binder() const
     return context_->Binder();
 }
 
+pandasm::extensions::Language PandaGen::SourceLang() const
+{
+    return context_->SourceLang();
+}
+
 void PandaGen::FunctionInit(CatchTable *catchTable)
 {
     if (rootNode_->IsProgram()) {

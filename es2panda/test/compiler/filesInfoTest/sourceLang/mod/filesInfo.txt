@@ -1,0 +1,4 @@
+test/compiler/filesInfoTest/sourceLang/mod/ts.ts;ts;esm;mod/ts.ts;ts;false;ts
+test/compiler/filesInfoTest/sourceLang/mod/ets.ts;ets;esm;mod/ets.ts;ets;false;ets
+test/compiler/filesInfoTest/sourceLang/mod/js.js;js;esm;mod/js.js;js;false;js
+test/compiler/filesInfoTest/sourceLang/mod/default.ts;default;esm;mod/default.ts;default;false;
