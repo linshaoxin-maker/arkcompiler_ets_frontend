@@ -122,7 +122,12 @@ async (x = await 7) => expression;
 /* @@? 62:33 Error SyntaxError: Unexpected ArrowParameter element */
 /* @@? 63:20 Error SyntaxError: Invalid destructuring assignment target */
 /* @@? 63:20 Error SyntaxError: Unexpected ArrowParameter element */
-/* @@? 64:16 Error SyntaxError: Unexpected token, expected ',' or ']' */
+/* @@? 64:16 Error SyntaxError: Unexpected token, expected ',' or ']'.  */
+/* @@? 64:16 Error SyntaxError: Unexpected token, expected: ')'.  */
+/* @@? 64:17 Error SyntaxError: Unexpected token ']'.  */
+/* @@? 64:17 Error SyntaxError: Unexpected token: ']'.  */
+/* @@? 64:18 Error SyntaxError: Unexpected token: ')'.  */
+/* @@? 64:20 Error SyntaxError: Unexpected token: '=>'.  */
 /* @@? 65:13 Error SyntaxError: Invalid destructuring assignment target */
 /* @@? 65:13 Error SyntaxError: Unexpected ArrowParameter element */
 /* @@? 66:7 Error SyntaxError: Unexpected token, expected: ')'. */
@@ -139,4 +144,4 @@ async (x = await 7) => expression;
 /* @@? 69:21 Error SyntaxError: Unexpected ArrowParameter element */
 /* @@? 70:15 Error SyntaxError: Unexpected token ']'. */
 /* @@? 70:15 Error SyntaxError: Unexpected token: ']'. */
-/* @@? 143:1 Error SyntaxError: Unexpected token, expected: '}'. */
+/* @@? 148:1 Error SyntaxError: Unexpected token, expected: '}'. */
