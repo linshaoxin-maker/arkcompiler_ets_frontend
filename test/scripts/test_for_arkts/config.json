@@ -1,0 +1,14 @@
+{
+  "ohos_sdk": "/mnt/d/Huawei/DevEco Studio/sdk/HarmonyOS-NEXT-DB3/openharmony",
+  "cookbook_path": "/mnt/d/Dev/workspace/issues_cookbook_tests_dev",
+  "send_email": false,
+  "email": {
+    "sender": "",
+    "receivers": [],
+    "cc_receivers": [],
+    "username": "",
+    "password": "",
+    "smtp_server": "",
+    "smtp_port": 465
+  }
+}

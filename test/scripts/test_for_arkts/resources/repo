@@ -1,0 +1,3 @@
+third_party_typescript,https://gitee.com/openharmony/third_party_typescript.git,branch,master,no_patches,no_submodules
+arkcompiler_ets_frontend,https://gitee.com/openharmony/arkcompiler_ets_frontend.git,branch,master,no_patches,no_submodules
+interface_sdk-js,https://gitee.com/openharmony/interface_sdk-js.git,branch,master,no_patches,no_submodules

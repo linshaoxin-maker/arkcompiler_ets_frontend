@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ArkTS Test Results</title>
+  <style>
+    .passed {
+      color: #28a745;
+    }
+    .failed {
+      color: #dc3545;
+    }
+    blockquote {
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #f9f9f9;
+      border-left: 5px solid #ccc;
+      font-style: italic;
+    }
+    blockquote > p {
+      margin: 0;
+      padding: 5px 0;
+      color: #666;
+      line-height: 1.0;
+    }
+  </style>
+</head>
+<body>
+<h2>ArkTS Test Report</h2>
+{{ manifest }}
+{{ sdk_completion_time }}
+<hr>
+{{ rt_test_results }}
+{{ tsc_test_results }}
+{{ arktstest_test_results }}
+{{ issue_cookbook }}
+{{ verify_3rd_libs }}
+</body>
+</html>
