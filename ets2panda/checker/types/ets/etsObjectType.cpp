@@ -477,6 +477,12 @@ void ETSObjectType::AssignmentTarget(TypeRelation *const relation, Type *source)
         relation->Result(false);
         return;
     }
+    if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL) && source->IsETSObjectType() &&
+        source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        relation->IsAssignableTo(source->AsETSObjectType()->GetFunctionalInterfaceInvokeType(),
+                                 GetFunctionalInterfaceInvokeType());
+        return;
+    }
 
     if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL) && source->IsETSFunctionType()) {
         EnsurePropertiesInstantiated();
@@ -626,6 +632,10 @@ bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const 
 
 void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
 {
+    if (target->IsETSFunctionType() && target->AsETSFunctionType()->IsFunctional()) {
+        Cast(relation, target->AsETSFunctionType()->FunctionalInterface());
+        return;
+    }
     conversion::Identity(relation, this, target);
     if (relation->IsTrue()) {
         return;
@@ -673,6 +683,11 @@ bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, 
     auto const *const base = GetConstOriginalBaseType();
     if (base == etsChecker->GlobalETSObjectType() && source->IsETSArrayType()) {
         relation->Result(true);
+        return true;
+    }
+
+    if (source->IsETSFunctionType() && source->AsETSFunctionType()->IsFunctional()) {
+        IsSupertypeOf(relation, source->AsETSFunctionType()->FunctionalInterface());
         return true;
     }
 

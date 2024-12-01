@@ -218,7 +218,8 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident)
     auto *smartType = Context().GetSmartCast(resolved);
     auto *const resolvedType = GetApparentType(smartType != nullptr ? smartType : GetTypeOfVariable(resolved));
 
-    if (resolvedType->IsETSFunctionType() && !resolvedType->IsETSArrowType()) {
+    if (resolvedType->IsETSFunctionType() && !resolvedType->IsETSArrowType() &&
+        !resolvedType->AsETSFunctionType()->IsFunctional()) {
         ValidateOverloadedFunctionIdentifier(this, ident);
         return;
     }
@@ -252,10 +253,14 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident)
         case ir::AstNodeType::ASSIGNMENT_EXPRESSION:
             ValidateAssignmentIdentifier(ident, resolvedType);
             break;
-        default:
-            if (resolved != nullptr && !resolved->Declaration()->PossibleTDZ() && !resolvedType->IsETSFunctionType()) {
-                WrongContextErrorClassifyByType(ident);
+        default: {
+            if (resolved != nullptr && !resolved->Declaration()->PossibleTDZ()) {
+                if (!resolvedType->IsETSFunctionType() ||
+                    (resolvedType->IsETSFunctionType() && resolvedType->AsETSFunctionType()->IsFunctional())) {
+                    WrongContextErrorClassifyByType(ident);
+                }
             }
+        }
     }
 }
 

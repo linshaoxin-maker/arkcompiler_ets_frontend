@@ -69,6 +69,10 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
     auto *constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
     bool retVal = false;
     // NOTE(vpukhov): #19701 void refactoring
+    if (typeArgument->IsETSFunctionType() && typeArgument->AsETSFunctionType()->IsFunctional()) {
+        typeArgument = typeArgument->AsETSFunctionType()->FunctionalInterface();
+    }
+
     if (typeArgument->IsETSVoidType()) {
         retVal = Relation()->IsSupertypeOf(constraint, GlobalETSUndefinedType());
     } else if (typeArgument->IsETSFunctionType()) {
@@ -191,7 +195,10 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
     if (paramType->IsETSArrayType()) {
         return EnhanceSubstitutionForArray(typeParams, paramType->AsETSArrayType(), argumentType, substitution);
     }
-
+    auto [newParamType, newArgType] = RelationConvertFunctional(paramType, argumentType);
+    if (paramType != newParamType || argumentType != newArgType) {
+        return EnhanceSubstitutionForType(typeParams, newParamType, newArgType, substitution);
+    }
     return true;
 }
 

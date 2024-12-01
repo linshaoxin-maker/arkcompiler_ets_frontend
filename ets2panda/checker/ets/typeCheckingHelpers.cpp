@@ -583,7 +583,8 @@ void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifie
     const auto *const targetType = GetTypeOfVariable(id->Variable());
     ASSERT(targetType != nullptr);
 
-    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType()) {
+    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType() &&
+        !(targetType->IsETSFunctionType() && targetType->AsETSFunctionType()->IsFunctional())) {
         LogTypeError("Initializers type is not assignable to the target type", ident->Start());
     }
 }
@@ -971,10 +972,14 @@ Type *ETSChecker::MaybeUnboxInRelation(Type *type)
     return converter.Result();
 }
 
-Type *ETSChecker::MaybeUnboxConditionalInRelation(Type *const objectType)
+Type *ETSChecker::MaybeUnboxConditionalInRelation(Type *objectType)
 {
     if (objectType->IsTypeError()) {
         return objectType;
+    }
+
+    if (objectType->IsETSFunctionType() && objectType->AsETSFunctionType()->IsFunctional()) {
+        objectType = objectType->AsETSFunctionType()->FunctionalInterface();
     }
 
     if ((objectType == nullptr) || !objectType->IsConditionalExprType()) {
@@ -1232,8 +1237,7 @@ bool ETSChecker::CheckLambdaInfer(ir::AstNode *typeAnnotation, ir::ArrowFunction
     ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
     auto calleeType = typeAnnotation->AsETSFunctionType();
     // Lambda function will only have exactly one signature.
-    auto functionSignature =
-        TryGettingFunctionTypeFromInvokeFunction(subParameterType)->AsETSFunctionType()->CallSignatures()[0];
+    auto functionSignature = subParameterType->AsETSFunctionType()->GetFunctionnalInvokeType()->CallSignatures()[0];
     InferTypesForLambda(lambda, calleeType, functionSignature);
 
     return true;

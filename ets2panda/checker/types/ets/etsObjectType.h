@@ -148,6 +148,11 @@ public:
         return properties_[static_cast<size_t>(PropertyType::STATIC_DECL)];
     }
 
+    ArenaVector<Type *> &TypeArguments()
+    {
+        return typeArguments_;
+    }
+
     const ArenaVector<Type *> &TypeArguments() const
     {
         return typeArguments_;
@@ -440,6 +445,16 @@ public:
         return propertiesInstantiated_;
     }
 
+    const Substitution *ForceGetEffectiveSubstitution() const
+    {
+        return effectiveSubstitution_;
+    }
+
+    void ForceSetEffectiveSubstitution(const Substitution *effectiveSubstitution)
+    {
+        effectiveSubstitution_ = effectiveSubstitution;
+    }
+
 protected:
     virtual ETSFunctionType *CreateETSFunctionType(const util::StringView &name) const;
 
@@ -516,7 +531,9 @@ private:
     mutable bool propertiesInstantiated_ = false;
     mutable ArenaVector<Signature *> constructSignatures_;
     mutable PropertyHolder properties_;
+
 };
 }  // namespace ark::es2panda::checker
+
 
 #endif /* TYPESCRIPT_TYPES_FUNCTION_TYPE_H */

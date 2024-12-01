@@ -134,6 +134,17 @@ static constexpr std::string_view BUILTINS_TO_INIT[] = {
     compiler::Signatures::BUILTIN_RETHROWING_FUNCTIONN_CLASS,
 };
 
+bool ETSChecker::IsFunctional(Type const *type) const
+{
+    if (type->IsETSFunctionType()) {
+        return type->AsETSFunctionType()->IsFunctional();
+    }
+    if (type->IsETSUnionType()) {
+        return type->AsETSUnionType()->IsFunctional();
+    }
+    return false;
+}
+
 void ETSChecker::InitializeBuiltins(varbinder::ETSBinder *varbinder)
 {
     if (HasStatus(CheckerStatus::BUILTINS_INITIALIZED)) {
@@ -210,6 +221,19 @@ void ETSChecker::InitializeBuiltin(varbinder::Variable *var, const util::StringV
         type = BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
     }
     GetGlobalTypesHolder()->InitializeBuiltin(name, type);
+}
+
+std::pair<Type *, Type *> ETSChecker::RelationConvertFunctional(Type *source, Type *target)
+{
+    Type *newSource = source;
+    Type *newTarget = target;
+    if (source->IsETSFunctionType() && source->AsETSFunctionType()->IsFunctional()) {
+        newSource = source->AsETSFunctionType()->FunctionalInterface();
+    }
+    if (target->IsETSFunctionType() && target->AsETSFunctionType()->IsFunctional()) {
+        newTarget = target->AsETSFunctionType()->FunctionalInterface();
+    }
+    return {newSource, newTarget};
 }
 
 bool ETSChecker::StartChecker(varbinder::VarBinder *varbinder, const CompilerOptions &options)

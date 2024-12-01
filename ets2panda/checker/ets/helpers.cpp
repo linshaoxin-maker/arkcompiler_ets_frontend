@@ -716,10 +716,22 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (typeAnnotation == nullptr && initType->IsETSFunctionType()) {
-        annotationType =
+        bool errorStatus = initType->AsETSFunctionType()->IsFunctional()
+                               // union type if multi
+                               ? !initType->AsETSFunctionType()->FunctionalInterface()->IsETSObjectType()
+                               : initType->AsETSFunctionType()->CallSignatures().size() != 1;
+        if (!init->IsArrowFunctionExpression() && errorStatus) {
+            LogTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+            bindingVar->SetTsType(GlobalTypeError());
+            return bindingVar->TsType();
+        }
+
+        auto funcInterfaceType =
             initType->AsETSFunctionType()->FunctionalInterface() == nullptr
                 ? FunctionTypeToFunctionalInterfaceType(initType->AsETSFunctionType()->CallSignatures().front())
                 : initType->AsETSFunctionType()->FunctionalInterface();
+        annotationType = initType->AsETSFunctionType();
+        annotationType->AsETSFunctionType()->SetFunctionalInterface(funcInterfaceType);
         bindingVar->SetTsType(annotationType);
     }
 
@@ -1148,6 +1160,9 @@ static void CollectAliasParametersForBoxing(Type *expandedAliasType, std::set<Ty
         for (auto type : unionType->ConstituentTypes()) {
             CollectAliasParametersForBoxing(type, parametersNeedToBeBoxed, needToBeBoxed);
         }
+    } else if (expandedAliasType->IsETSFunctionType() && expandedAliasType->AsETSFunctionType()->IsFunctional()) {
+        auto functionalType = expandedAliasType->AsETSFunctionType();
+        CollectAliasParametersForBoxing(functionalType->FunctionalInterface(), parametersNeedToBeBoxed, false);
     }
 }
 
@@ -1180,7 +1195,12 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     }
 
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    Type *const aliasType = GetReferencedTypeBase(name);
+    Type *oriAliasType = GetReferencedTypeBase(name);
+    Type *aliasType = oriAliasType;
+    // when we process ETSFunctionType(functional) return ETSFunctionType(functional) in the end
+    if (aliasType->IsETSFunctionType() && aliasType->AsETSFunctionType()->IsFunctional()) {
+        aliasType = aliasType->AsETSFunctionType()->FunctionalInterface();
+    }
     auto *aliasSub = NewSubstitution();
     if (typeAliasNode->TypeParams()->Params().size() != typeParams->Params().size()) {
         LogTypeError("Wrong number of type parameters for generic type alias", typeParams->Start());
@@ -1210,7 +1230,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ValidateGenericTypeAliasForClonedNode(typeAliasNode->AsTSTypeAliasDeclaration(), typeParams);
 
-    return aliasType->Substitute(Relation(), aliasSub);
+    return oriAliasType->Substitute(Relation(), aliasSub);
 }
 
 std::vector<util::StringView> ETSChecker::GetNameForSynteticObjectType(const util::StringView &source)
@@ -2507,16 +2527,31 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
     }
 }
 
+// this function is only used when we log error, so we return the most specific infomation
 Type *ETSChecker::TryGettingFunctionTypeFromInvokeFunction(Type *type)
 {
-    if (type->IsETSObjectType() && type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-        auto const propInvoke = type->AsETSObjectType()->GetProperty(FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME,
-                                                                     PropertySearchFlags::SEARCH_INSTANCE_METHOD);
-        ASSERT(propInvoke != nullptr);
-
-        return propInvoke->TsType();
+    if (type->IsETSFunctionType() && !type->AsETSFunctionType()->CallSignatures().empty()) {
+        return type;
     }
-
+    if (type->IsETSFunctionType() && type->AsETSFunctionType()->IsFunctional()) {
+        auto *functionalInterface = type->AsETSFunctionType()->FunctionalInterface();
+        if (functionalInterface->IsETSObjectType()) {
+            auto const propInvoke = type->AsETSFunctionType()->FunctionalInterface()->AsETSObjectType()->GetProperty(
+                FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME, PropertySearchFlags::SEARCH_INSTANCE_METHOD);
+            ASSERT(propInvoke != nullptr);
+            return propInvoke->TsType();
+        }
+        if (functionalInterface->IsETSUnionType()) {
+            ArenaVector<Signature *> sigs(Allocator()->Adapter());
+            for (auto *funcType : functionalInterface->AsETSUnionType()->ConstituentTypes()) {
+                sigs.push_back(
+                    TryGettingFunctionTypeFromInvokeFunction(funcType)->AsETSFunctionType()->CallSignatures()[0]->Copy(
+                        Allocator(), Relation(), GetGlobalTypesHolder()));
+            }
+            return CreateETSFunctionType(sigs);
+        }
+        UNREACHABLE();
+    }
     return type;
 }
 

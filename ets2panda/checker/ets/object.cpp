@@ -1664,8 +1664,7 @@ PropertySearchFlags ETSChecker::GetInitialSearchFlags(const ir::MemberExpression
             }
 
             auto const *targetType = assignmentExpr->Left()->TsType();
-            if (targetType->IsETSObjectType() &&
-                targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+            if (IsFunctional(targetType)) {
                 return FUNCTIONAL_FLAGS;
             }
 
@@ -1819,7 +1818,8 @@ void ETSChecker::ValidateVarDeclaratorOrClassProperty(const ir::MemberExpression
 
     GetTypeOfVariable(prop);
 
-    if (prop->TsType()->IsETSFunctionType() && !IsVariableGetterSetter(prop)) {
+    if (prop->TsType()->IsETSFunctionType() && !IsVariableGetterSetter(prop) &&
+        !prop->TsType()->AsETSFunctionType()->IsFunctional()) {
         if (type_annotation == nullptr) {
             LogTypeError({"Cannot infer type for ", target_ident->Name(),
                           " because method reference needs an explicit target type"},
@@ -1830,8 +1830,9 @@ void ETSChecker::ValidateVarDeclaratorOrClassProperty(const ir::MemberExpression
         auto *targetType = GetTypeOfVariable(target_ident->Variable());
         ASSERT(targetType != nullptr);
 
-        if (!targetType->IsETSObjectType() ||
-            !targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        if ((!targetType->IsETSObjectType() ||
+             !targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) &&
+            (!targetType->IsETSFunctionType() || !targetType->AsETSFunctionType()->IsFunctional())) {
             LogTypeError({"Method ", memberExpr->Property()->AsIdentifier()->Name(), " does not exist on this type."},
                          memberExpr->Property()->Start());
         }

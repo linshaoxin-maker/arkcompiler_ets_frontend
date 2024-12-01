@@ -362,7 +362,11 @@ ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, ch
         }
         if (constituentType->IsETSFunctionType()) {
             ArenaVector<checker::Signature *> tmpCallSignatures(checker->Allocator()->Adapter());
-            tmpCallSignatures = constituentType->AsETSFunctionType()->CallSignatures();
+            tmpCallSignatures = constituentType->AsETSFunctionType()
+                                    ->FunctionalInterface()
+                                    ->AsETSObjectType()
+                                    ->GetFunctionalInterfaceInvokeType()
+                                    ->CallSignatures();
             callSignatures.insert(callSignatures.end(), tmpCallSignatures.begin(), tmpCallSignatures.end());
         }
         if (constituentType->IsETSUnionType()) {
@@ -377,7 +381,8 @@ ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, ch
 
 ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker::Type *calleeType,
                                                     bool isConstructorCall, bool isFunctionalInterface,
-                                                    bool isUnionTypeWithFunctionalInterface)
+                                                    bool isUnionTypeWithFunctionalInterface,
+                                                    bool isUserDefinedFunctionalInterface)
 {
     static ArenaVector<checker::Signature *> unionSignatures(checker->Allocator()->Adapter());
     unionSignatures.clear();
@@ -385,15 +390,30 @@ ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker
         return calleeType->AsETSObjectType()->ConstructSignatures();
     }
     if (isFunctionalInterface) {
-        return calleeType->AsETSObjectType()
-            ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME)
-            ->TsType()
-            ->AsETSFunctionType()
-            ->CallSignatures();
+        // GetFunctionalInterfaceSignatures(unionSignatures, calleeType->AsETSFunctionType());
+        auto *functionalInterface = calleeType->AsETSFunctionType();
+        auto *interface = functionalInterface->FunctionalInterface();
+        if (interface->IsETSObjectType()) {
+            return interface->AsETSObjectType()->GetFunctionalInterfaceInvokeType()->CallSignatures();
+        }
+        if (interface->IsETSUnionType()) {
+            for (auto *subFunction : interface->AsETSUnionType()->ConstituentTypes()) {
+                unionSignatures.push_back(subFunction->AsETSFunctionType()
+                                              ->FunctionalInterface()
+                                              ->AsETSObjectType()
+                                              ->GetFunctionalInterfaceInvokeType()
+                                              ->CallSignatures()[0]);
+            }
+            return unionSignatures;
+        }
+        UNREACHABLE();
     }
     if (isUnionTypeWithFunctionalInterface) {
         unionSignatures = GetUnionTypeSignatures(checker, calleeType->AsETSUnionType());
         return unionSignatures;
+    }
+    if (isUserDefinedFunctionalInterface) {
+        return calleeType->AsETSObjectType()->GetFunctionalInterfaceInvokeType()->CallSignatures();
     }
     return calleeType->AsETSFunctionType()->CallSignatures();
 }
@@ -787,4 +807,5 @@ Type *InstantiateBoxedPrimitiveType(ETSChecker *checker, ir::Expression *param, 
 
     return paramType;
 }
+
 }  // namespace ark::es2panda::checker
