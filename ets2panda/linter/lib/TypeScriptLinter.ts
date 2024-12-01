@@ -805,7 +805,55 @@ export class TypeScriptLinter {
     });
     if (!this.tsUtils.isSendableTypeNode(typeNode)) {
       this.incrementCounters(node, FaultID.SendablePropType);
+    } else {
+      this.checkTypeAliasInSendableScope(node);
     }
+  }
+
+  private checkTypeAliasInSendableScope(node: ts.PropertyDeclaration | ts.PropertySignature): void {
+    if (!node.type) {
+      return;
+    }
+
+    const typeNode = TsUtils.unwrapParenthesizedTypeNode(node.type);
+    const needWarning =
+      ts.isUnionTypeNode(typeNode) &&
+        typeNode.types.some((elemType) => {
+          return this.isNoneSendableTypeAlias(elemType);
+        }) ||
+      ts.isTypeReferenceNode(typeNode) && this.isNoneSendableTypeAlias(typeNode);
+
+    if (needWarning) {
+      this.incrementCounters(node.type, FaultID.SendablePropTypeWarning);
+    }
+  }
+
+  private isNoneSendableTypeAlias(typeNode: ts.TypeNode): boolean {
+    if (!ts.isTypeReferenceNode(typeNode)) {
+      return false;
+    }
+
+    const sym = this.tsUtils.trueSymbolAtLocation(typeNode.typeName);
+    if (!sym || !(sym.getFlags() & ts.SymbolFlags.TypeAlias)) {
+      return false;
+    }
+
+    const typeDecl = TsUtils.getDeclaration(sym);
+    if (!typeDecl || !ts.isTypeAliasDeclaration(typeDecl)) {
+      return false;
+    }
+
+    const typeArgs = typeNode.typeArguments;
+
+    if (
+      typeArgs &&
+      !typeArgs.every((typeArg) => {
+        return this.tsUtils.isSendableTypeNode(typeArg);
+      })
+    ) {
+      return true;
+    }
+    return false;
   }
 
   private handlePropertyAssignment(node: ts.PropertyAssignment): void {
@@ -856,6 +904,8 @@ export class TypeScriptLinter {
     }
     if (!this.tsUtils.isSendableTypeNode(typeNode)) {
       this.incrementCounters(node, FaultID.SendablePropType);
+    } else {
+      this.checkTypeAliasInSendableScope(node);
     }
   }
 
@@ -2604,7 +2654,8 @@ export class TypeScriptLinter {
     }
   }
 
-  private processNoCheckEntry(entry: any): void { // CC-OFF(no_explicit_any) std lib
+  private processNoCheckEntry(entry: any): void {
+    // CC-OFF(no_explicit_any) std lib
     if (entry.range?.kind === undefined || entry.range?.pos === undefined || entry.range?.end === undefined) {
       return;
     }
