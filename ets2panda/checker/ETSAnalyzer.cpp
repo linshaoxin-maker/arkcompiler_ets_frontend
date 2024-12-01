@@ -906,6 +906,11 @@ checker::Type *ETSAnalyzer::GetSmartType(ir::AssignmentExpression *expr, checker
         smartType = checker->ResolveSmartType(rightType, leftType);
         auto const *const variable = expr->Target();
 
+        if (variable == nullptr) {
+            smartType = checker->GlobalTypeError();
+            return smartType;
+        }
+
         //  Add/Remove/Modify smart cast for identifier
         //  (excluding the variables defined at top-level scope or captured in lambda-functions!)
         auto const *const variableScope = variable->GetScope();
