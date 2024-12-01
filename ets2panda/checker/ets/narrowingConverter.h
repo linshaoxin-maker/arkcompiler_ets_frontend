@@ -185,9 +185,6 @@ private:
             }
 
             if (Relation()->InCastingContext() || util::Helpers::IsTargetFitInSourceRange<TType, SType>(value)) {
-                auto narrowedValue = CalculateNarrowedValue<TType, SType>(Target(), Source(), value);
-                TargetType *newType = Checker()->Allocator()->New<TargetType>(narrowedValue);
-                Relation()->GetNode()->SetTsType(newType);
                 Relation()->Result(true);
                 return;
             }
