@@ -32,7 +32,7 @@ import type {
  */
 export function getSourceMapGenerator(sourceFile: string): SourceMapGenerator {
   if (!sourceFile) {
-    return undefined;
+    throw new Error("The file path of source code does not exist");
   }
 
   let compilerOptions: CompilerOptions = {};
