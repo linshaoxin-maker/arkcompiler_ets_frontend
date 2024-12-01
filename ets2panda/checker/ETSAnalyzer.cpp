@@ -2753,6 +2753,49 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
     return nullptr;
 }
 
+static bool ValidateTypeCastCompatibility(ETSChecker *checker, ir::TSAsExpression *expr, Type *sourceType,
+                                          Type *targetType)
+{
+    if (sourceType->IsTypeError()) {
+        expr->SetTsType(checker->GlobalTypeError());
+        return false;
+    }
+
+    if (targetType->IsETSPrimitiveType()) {
+        if (sourceType->IsETSTypeParameter() || sourceType->IsETSNonNullishType()) {
+            checker->LogTypeError({"Cannot cast type '", sourceType, "' to primitive type '", targetType, "'."},
+                                  expr->Expr()->Start());
+            expr->SetTsType(targetType);
+            return false;
+        }
+        if (sourceType->IsETSUnionType() &&
+            std::any_of(sourceType->AsETSUnionType()->ConstituentTypes().begin(),
+                        sourceType->AsETSUnionType()->ConstituentTypes().end(),
+                        [](const auto *type) { return type->IsETSTypeParameter() || type->IsETSNonNullishType(); })) {
+            checker->LogTypeError({"Cannot cast type '", sourceType, "' to primitive type '", targetType, "'."},
+                                  expr->Expr()->Start());
+            expr->SetTsType(targetType);
+            return false;
+        }
+    }
+
+    if (sourceType->DefinitelyETSNullish() && !targetType->PossiblyETSNullish()) {
+        checker->LogTypeError("Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Expr()->Start());
+        expr->SetTsType(checker->GlobalTypeError());
+        return expr->TsType();
+    }
+
+    // NOTE(vpukhov): #20510 lowering
+    if (targetType->IsETSPrimitiveType() && sourceType->IsETSReferenceType()) {
+        auto *const boxedTargetType = checker->MaybeBoxInRelation(targetType);
+        if (!checker->Relation()->IsIdenticalTo(sourceType, boxedTargetType)) {
+            expr->Expr()->AddAstNodeFlags(ir::AstNodeFlags::CHECKCAST);
+        }
+    }
+
+    return true;
+}
+
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -2778,17 +2821,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
         return expr->TsType();
     }
 
-    // NOTE(vpukhov): #20510 lowering
-    if (targetType->IsETSPrimitiveType() && sourceType->IsETSReferenceType()) {
-        auto *const boxedTargetType = checker->MaybeBoxInRelation(targetType);
-        if (!checker->Relation()->IsIdenticalTo(sourceType, boxedTargetType)) {
-            expr->Expr()->AddAstNodeFlags(ir::AstNodeFlags::CHECKCAST);
-        }
-    }
-
-    if (sourceType->DefinitelyETSNullish() && !targetType->PossiblyETSNullish()) {
-        checker->LogTypeError("Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Expr()->Start());
-        expr->SetTsType(checker->GlobalTypeError());
+    if (!ValidateTypeCastCompatibility(checker, expr, sourceType, targetType)) {
         return expr->TsType();
     }
 
