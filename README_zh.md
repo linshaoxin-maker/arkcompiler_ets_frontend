@@ -34,7 +34,7 @@ ets_frontend组件是方舟运行时子系统的前端工具，结合ace-ets2bun
     ├── test           # 测试目录
     ├── typescript     # typescript支持
     └── util           # 工具目录
-├── ts2panda
+├── ets2panda
     ├── doc            # 文档
     ├── scripts        # 依赖的脚本
     ├── src            # 源码存放目录

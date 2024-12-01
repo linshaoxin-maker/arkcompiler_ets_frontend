@@ -34,7 +34,7 @@ For more information, see: [ARK Runtime Subsystem](https://gitee.com/openharmony
     ├── test           # test directory
     ├── typescript     # typescript support
     └── util           # tool directory
-├── ts2panda
+├── ets2panda
     ├── scripts        # dependency scripts
     ├── src            # source code directory
     ├── templates      # ruby templates
