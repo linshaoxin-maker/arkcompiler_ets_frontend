@@ -17,6 +17,7 @@
 #define ES2PANDA_UTIL_HELPERS_H
 
 #include <cmath>
+#include <mutex>
 
 #include <mem/arena_allocator.h>
 #include <os/file.h>
@@ -211,6 +212,8 @@ public:
     static const uint8_t SENDABLE_CLASS_MIN_SUPPORTED_API_VERSION = 11;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;
     static const int32_t ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION = 12;
+    static std::mutex BYTECODE_ANALYSIS_RESULTS_MUTEX;
+    static std::mutex BYTECODE_MAPS_MUTEX;
     static constexpr std::array<uint8_t, panda_file::File::VERSION_SIZE>
         ABC_TO_PROGRAM_MIN_SUPPORTED_BYTECODE_VERSION {12, 0, 2, 0};
     static const int32_t SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION = 12;
