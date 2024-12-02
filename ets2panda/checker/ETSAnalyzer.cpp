@@ -1532,6 +1532,11 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     }
 
     if (baseType->IsETSObjectType()) {
+        if (auto *declNode = baseType->AsETSObjectType()->GetDeclNode();
+            declNode != nullptr && declNode->IsClassDefinition() &&
+            !declNode->AsClassDefinition()->IsClassDefinitionChecked()) {
+            checker->CheckClassDefinition(declNode->AsClassDefinition());
+        }
         return expr->SetAndAdjustType(checker, baseType->AsETSObjectType());
     }
 

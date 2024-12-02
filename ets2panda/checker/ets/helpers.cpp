@@ -2279,6 +2279,9 @@ ir::ClassProperty *ETSChecker::ClassPropToImplementationProp(ir::ClassProperty *
     classProp->Key()->AsIdentifier()->SetVariable(fieldVar);
     fieldVar->SetTsType(classProp->TsType());
 
+    auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>::Enter(VarBinder(), scope);
+    compiler::InitScopesPhaseETS::RunExternalNode(classProp->Value(), VarBinder());
+
     return classProp;
 }
 
@@ -2465,6 +2468,9 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
     auto *const scope = Scope()->AsClassScope();
     scope->InstanceFieldScope()->EraseBinding(interfaceProp->Key()->AsIdentifier()->Name());
     interfaceProp->SetRange(originalProp->Range());
+
+    auto classCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(VarBinder(), scope);
+    compiler::InitScopesPhaseETS::RunExternalNode(interfaceProp->Value(), VarBinder());
 
     auto *const classProp = GetImplementationClassProp(this, interfaceProp, originalProp, classType);
 
