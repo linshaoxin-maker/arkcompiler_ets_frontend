@@ -82,4 +82,4 @@ assert(default_23 === 1);
 import default_24 from './export_default_24_expression_05';
 assert(default_24 === 1);
 import default_25 from './export_default_25_object';
-assert(default_25.m === 2);
+assert(default_25.p === 2);
