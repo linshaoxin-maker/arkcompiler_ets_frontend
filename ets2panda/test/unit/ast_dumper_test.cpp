@@ -28,9 +28,9 @@
 #include "es2panda.h"
 #include "util/arktsconfig.h"
 #include "util/generateBin.h"
-#include "util/options.h"
 #include "libpandabase/mem/mem.h"
 #include "test/utils/panda_executable_path_getter.h"
+#include "test/utils/common.h"
 
 namespace {
 
@@ -119,25 +119,6 @@ public:
         ark::mem::MemConfig::Finalize();
     };
 
-    static ark::pandasm::Program *GetProgram(std::string_view src, const char **argsList, int argsCount,
-                                             std::string_view fileName)
-    {
-        auto options = std::make_unique<ark::es2panda::util::Options>();
-        if (!options->Parse(argsCount, argsList)) {
-            std::cerr << options->ErrorMsg() << std::endl;
-            return nullptr;
-        }
-
-        ark::Logger::ComponentMask mask {};
-        mask.set(ark::Logger::Component::ES2PANDA);
-        ark::Logger::InitializeStdLogging(ark::Logger::LevelFromString(options->LogLevel()), mask);
-
-        ark::es2panda::Compiler compiler(options->Extension(), options->ThreadCount());
-        ark::es2panda::SourceFile input(fileName, src, options->ParseModule());
-
-        return compiler.Compile(input, *options);
-    }
-
     NO_COPY_SEMANTIC(ASTDumperTest);
     NO_MOVE_SEMANTIC(ASTDumperTest);
 };
@@ -151,8 +132,8 @@ TEST_P(ASTDumperTest, CheckNoDump)
 
     auto argsListPtr = param.argsList.c_str();
 
-    auto program =
-        std::unique_ptr<ark::pandasm::Program> {GetProgram(param.src, &argsListPtr, param.argsCount, param.fileName)};
+    auto program = std::unique_ptr<ark::pandasm::Program> {
+        test::utils::AsmTest::GetProgram(param.argsCount, &argsListPtr, param.fileName, param.src)};
     ASSERT(program);
 
     auto dumpStr = program->JsonDump();

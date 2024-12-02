@@ -22,6 +22,7 @@
 #include "macros.h"
 #include "parser/ETSparser.h"
 #include "varbinder/ETSBinder.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
@@ -55,9 +56,9 @@ TEST_F(ASTVerifierTest, NullParent)
     StringLiteral emptyNode;
 
     const auto check = "NodeHasParent";
-    auto checks = ark::es2panda::compiler::ast_verifier::InvariantNameSet {};
-    checks.insert(check);
-    const auto &messages = verifier.Verify(&emptyNode, checks);
+
+    const auto &messages = VerifyCheck(verifier, &emptyNode, check);
+
     bool hasParent = messages.empty();
     ASSERT_FALSE(hasParent);
     ASSERT_EQ(messages.size(), 1);
@@ -71,9 +72,8 @@ TEST_F(ASTVerifierTest, NullRange)
     StringLiteral emptyNode;
 
     const auto check = "NodeHasSourceRange";
-    auto checks = ark::es2panda::compiler::ast_verifier::InvariantNameSet {};
-    checks.insert(check);
-    const auto &messages = verifier.Verify(&emptyNode, checks);
+    const auto &messages = VerifyCheck(verifier, &emptyNode, check);
+
     bool hasSourceRange = messages.empty();
     ASSERT_FALSE(hasSourceRange);
     ASSERT_EQ(messages.size(), 1);
@@ -87,9 +87,8 @@ TEST_F(ASTVerifierTest, NullType)
     StringLiteral emptyNode;
 
     auto check = "NodeHasType";
-    auto checks = InvariantNameSet {};
-    checks.insert(check);
-    const auto &messages = verifier.Verify(&emptyNode, checks);
+    const auto &messages = VerifyCheck(verifier, &emptyNode, check);
+
     bool hasType = messages.empty();
     ASSERT_EQ(hasType, false);
     ASSERT_NE(messages.size(), 0);
@@ -102,9 +101,7 @@ TEST_F(ASTVerifierTest, WithoutScope)
     ASTVerifier verifier {Allocator()};
     StringLiteral emptyNode;
 
-    auto checks = InvariantNameSet {};
-    checks.insert("VariableHasScope");
-    const auto &messages = verifier.Verify(&emptyNode, checks);
+    const auto &messages = VerifyCheck(verifier, &emptyNode, "VariableHasScope");
 
     ASSERT_EQ(messages.size(), 0);
 }
@@ -125,9 +122,7 @@ TEST_F(ASTVerifierTest, ScopeTest)
 
     local.SetScope(&scope);
 
-    auto checks = InvariantNameSet {};
-    checks.insert("VariableHasScope");
-    const auto &messages = verifier.Verify(&ident, checks);
+    const auto &messages = VerifyCheck(verifier, &ident, "VariableHasScope");
 
     ASSERT_EQ(messages.size(), 0);
 }
@@ -149,9 +144,7 @@ TEST_F(ASTVerifierTest, ScopeNodeTest)
 
     local.SetScope(&scope);
 
-    auto checks = InvariantNameSet {};
-    checks.insert("VariableHasEnclosingScope");
-    const auto &messages = verifier.Verify(&ident, checks);
+    const auto &messages = VerifyCheck(verifier, &ident, "VariableHasEnclosingScope");
 
     ASSERT_EQ(messages.size(), 0);
 }
@@ -170,9 +163,8 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionCorrect1)
     left.SetTsType(etschecker.GlobalIntType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = InvariantNameSet {};
-    checks.insert("ArithmeticOperationValid");
-    const auto &messages = verifier.Verify(arithmeticExpression.AsBinaryExpression(), checks);
+    const auto &messages = VerifyCheck(verifier, arithmeticExpression.AsBinaryExpression(), "ArithmeticOperationValid");
+
     ASSERT_EQ(messages.size(), 0);
 }
 
@@ -197,9 +189,8 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionCorrect2)
     left2.SetTsType(etschecker.GlobalIntType());
     right2.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = InvariantNameSet {};
-    checks.insert("ArithmeticOperationValid");
-    const auto &messages = verifier.Verify(arithmeticExpression.AsBinaryExpression(), checks);
+    const auto &messages = VerifyCheck(verifier, arithmeticExpression.AsBinaryExpression(), "ArithmeticOperationValid");
+
     ASSERT_EQ(messages.size(), 0);
 }
 
@@ -219,9 +210,7 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionNegative1)
     left.SetTsType(etschecker.GlobalETSStringLiteralType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = InvariantNameSet {};
-    checks.insert("ArithmeticOperationValid");
-    const auto &messages = verifier.Verify(arithmeticExpression.AsBinaryExpression(), checks);
+    const auto &messages = VerifyCheck(verifier, arithmeticExpression.AsBinaryExpression(), "ArithmeticOperationValid");
 
     ASSERT_EQ(messages.size(), 1);
 }
@@ -239,9 +228,7 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionNegative2)
     left.SetTsType(etschecker.GlobalETSStringLiteralType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = InvariantNameSet {};
-    checks.insert("ArithmeticOperationValid");
-    const auto &messages = verifier.Verify(arithmeticExpression.AsBinaryExpression(), checks);
+    const auto &messages = VerifyCheck(verifier, arithmeticExpression.AsBinaryExpression(), "ArithmeticOperationValid");
 
     ASSERT_EQ(messages.size(), 1);
 }
@@ -257,9 +244,7 @@ TEST_F(ASTVerifierTest, SequenceExpressionType)
     last->SetTsType(checker.GlobalIntType());
     sequenceExpression->SetTsType(checker.GlobalIntType());
 
-    auto checks = InvariantNameSet {};
-    checks.insert("SequenceExpressionHasLastType");
-    const auto &messages = verifier.Verify(sequenceExpression, checks);
+    const auto &messages = VerifyCheck(verifier, sequenceExpression, "SequenceExpressionHasLastType");
 
     ASSERT_EQ(messages.size(), 0);
 }
@@ -280,10 +265,9 @@ TEST_F(ASTVerifierTest, VariableNameIdentifierNameSameNegative)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<ark::es2panda::ir::ETSScript *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<ark::es2panda::ir::ETSScript>(impl_, ctx);
 
     // Note(@kirillbychkov): Change Identifier name in variable lambda2
     ast->AsETSScript()
@@ -308,9 +292,9 @@ TEST_F(ASTVerifierTest, VariableNameIdentifierNameSameNegative)
         ->SetName("not_name");
 
     const auto check = "VariableNameIdentifierNameSameForAll";
-    auto checks = ark::es2panda::compiler::ast_verifier::InvariantNameSet {};
-    checks.insert(check);
-    const auto &messages = verifier.Verify(ast, checks);
+
+    const auto &messages = VerifyCheck(verifier, ast, check);
+
     ASSERT_EQ(messages.size(), 1);
 
     ASSERT_EQ(messages[0].Invariant(), check);
@@ -334,14 +318,12 @@ TEST_F(ASTVerifierTest, VariableNameIdentifierNameSame)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<ark::es2panda::ir::ETSScript *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<ark::es2panda::ir::ETSScript>(impl_, ctx);
 
-    auto checks = ark::es2panda::compiler::ast_verifier::InvariantNameSet {};
-    checks.insert("VariableNameIdentifierNameSameForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "VariableNameIdentifierNameSameForAll");
+
     ASSERT_EQ(messages.size(), 0);
     impl_->DestroyContext(ctx);
 }

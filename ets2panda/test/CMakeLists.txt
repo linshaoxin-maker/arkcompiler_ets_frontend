@@ -44,6 +44,7 @@ function(ets2panda_add_gtest TARGET)
     panda_add_gtest(
             NAME ${TARGET}
             SOURCES
+                ${ES2PANDA_ROOT}/test/utils/common.cpp
                 ${ARG_CPP_SOURCES}
             LIBRARIES
                 es2panda-public

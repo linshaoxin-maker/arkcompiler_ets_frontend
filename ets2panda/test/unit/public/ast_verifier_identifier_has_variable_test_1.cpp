@@ -18,6 +18,7 @@
 #include "ir/expressions/identifier.h"
 #include "ir/astNode.h"
 #include "parser/ETSparser.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
@@ -38,15 +39,13 @@ TEST_F(ASTVerifierTest, LabelsHaveReferences)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("IdentifierHasVariableForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "IdentifierHasVariableForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);
@@ -71,15 +70,13 @@ TEST_F(ASTVerifierTest, ExtensionFunction)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("IdentifierHasVariableForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "IdentifierHasVariableForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);
@@ -96,15 +93,13 @@ TEST_F(ASTVerifierTest, Imports)
         import * as Time from "std/time";
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("IdentifierHasVariableForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "IdentifierHasVariableForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);

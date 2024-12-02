@@ -18,6 +18,7 @@
 #include "ir/expressions/identifier.h"
 #include "ir/astNode.h"
 #include "parser/ETSparser.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
@@ -35,15 +36,13 @@ TEST_F(ASTVerifierTest, ReturnTypeInLambda)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("EveryChildHasValidParentForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "EveryChildHasValidParentForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);
@@ -60,15 +59,13 @@ TEST_F(ASTVerifierTest, TSThisType)
         function main () {}
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("EveryChildHasValidParentForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "EveryChildHasValidParentForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);
@@ -83,15 +80,13 @@ TEST_F(ASTVerifierTest, TupleFieldInInterface)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("EveryChildHasValidParentForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "EveryChildHasValidParentForAll");
+
     ASSERT_EQ(messages.size(), 0);
 
     impl_->DestroyContext(ctx);

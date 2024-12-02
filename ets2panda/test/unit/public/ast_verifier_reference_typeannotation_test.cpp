@@ -18,6 +18,7 @@
 #include "ir/expressions/identifier.h"
 #include "parser/ETSparser.h"
 #include "ir/astNode.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
@@ -34,11 +35,10 @@ TEST_F(ASTVerifierTest, RefAnnotationNullNegative)
         let trueRef = refNull;
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
     auto *type = new ark::es2panda::ir::ETSPrimitiveType(ark::es2panda::ir::PrimitiveType::CHAR);
 
@@ -50,12 +50,11 @@ TEST_F(ASTVerifierTest, RefAnnotationNullNegative)
         }
     });
 
-    InvariantNameSet checks;
-    checks.insert("ReferenceTypeAnnotationIsNullForAll");
-
-    const auto &messages = verifier.Verify(ast, checks);
-    ASSERT_EQ(messages.size(), 1);
     const auto check = "ReferenceTypeAnnotationIsNullForAll";
+
+    const auto &messages = VerifyCheck(verifier, ast, check);
+
+    ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0].Invariant(), check);
 
     delete type;
@@ -76,15 +75,12 @@ TEST_F(ASTVerifierTest, RefAnnotationNullDefaultParam)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("ReferenceTypeAnnotationIsNullForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ReferenceTypeAnnotationIsNullForAll");
 
     ASSERT_EQ(messages.size(), 0);
 
@@ -107,15 +103,12 @@ TEST_F(ASTVerifierTest, RefAnnotationNullInterface)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("ReferenceTypeAnnotationIsNullForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ReferenceTypeAnnotationIsNullForAll");
 
     ASSERT_EQ(messages.size(), 0);
 
@@ -131,15 +124,12 @@ TEST_F(ASTVerifierTest, RefAnnotationNull1)
         let trueRef = refNull;
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("ReferenceTypeAnnotationIsNullForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ReferenceTypeAnnotationIsNullForAll");
 
     ASSERT_EQ(messages.size(), 0);
 
@@ -154,15 +144,12 @@ TEST_F(ASTVerifierTest, RefAnnotationNull2)
         let refNull = 10;
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
-    InvariantNameSet checks;
-    checks.insert("ReferenceTypeAnnotationIsNullForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ReferenceTypeAnnotationIsNullForAll");
 
     ASSERT_EQ(messages.size(), 0);
 

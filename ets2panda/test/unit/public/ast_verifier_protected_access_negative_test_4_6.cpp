@@ -15,6 +15,7 @@
 
 #include "ast_verifier_test.h"
 #include "checker/ETSchecker.h"
+#include "test/utils/common.h"
 
 using ark::es2panda::compiler::ast_verifier::ASTVerifier;
 using ark::es2panda::compiler::ast_verifier::InvariantNameSet;
@@ -36,11 +37,10 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative4)
             base.protectedMethod();
         }
     )";
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<ETSScript *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<ETSScript>(impl_, ctx);
 
     ast->AsETSScript()
         ->Statements()[0]
@@ -63,8 +63,8 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative4)
         ->AddSignatureFlag(ark::es2panda::checker::SignatureFlags::PROTECTED);
 
     InvariantNameSet checks;
-    checks.insert("ModifierAccessValidForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ModifierAccessValidForAll", checks);
+
     ASSERT_EQ(messages.size(), 1);
 
     ASSERT_NE(checks.find(messages[0].Invariant()), checks.end());
@@ -89,11 +89,10 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative5)
             derived.protectedMethod();
         }
     )";
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<ETSScript *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<ETSScript>(impl_, ctx);
 
     ast->AsETSScript()
         ->Statements()[0]
@@ -116,8 +115,8 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative5)
         ->AddSignatureFlag(ark::es2panda::checker::SignatureFlags::PROTECTED);
 
     InvariantNameSet checks;
-    checks.insert("ModifierAccessValidForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "ModifierAccessValidForAll", checks);
+
     ASSERT_EQ(messages.size(), 1);
 
     ASSERT_NE(checks.find(messages[0].Invariant()), checks.end());
@@ -142,11 +141,10 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative6)
             derived.protectedMethod();
         }
     )";
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<ETSScript *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<ETSScript>(impl_, ctx);
 
     ast->AsETSScript()
         ->Statements()[0]
@@ -169,9 +167,8 @@ TEST_F(ASTVerifierTest, ProtectedAccessTestNegative6)
         ->AddSignatureFlag(ark::es2panda::checker::SignatureFlags::PROTECTED);
 
     InvariantNameSet checks;
-    checks.insert("ModifierAccessValidForAll");
+    const auto &messages = VerifyCheck(verifier, ast, "ModifierAccessValidForAll", checks);
 
-    const auto &messages = verifier.Verify(ast, checks);
     ASSERT_EQ(messages.size(), 1);
 
     ASSERT_NE(checks.find(messages[0].Invariant()), checks.end());

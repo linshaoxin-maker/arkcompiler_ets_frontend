@@ -16,6 +16,7 @@
 #include "ast_verifier_test.h"
 #include "checker/ETSchecker.h"
 #include "ir/astNode.h"
+#include "test/utils/common.h"
 
 #include <gtest/gtest.h>
 
@@ -45,11 +46,10 @@ TEST_F(ASTVerifierTest, ValidateGetterReturnTypeAnnotation)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
     // Change annotation return type to void
     ast->IterateRecursively([&checker](ark::es2panda::ir::AstNode *child) {
@@ -63,9 +63,7 @@ TEST_F(ASTVerifierTest, ValidateGetterReturnTypeAnnotation)
         }
     });
 
-    InvariantNameSet checks;
-    checks.insert("GetterSetterValidationForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "GetterSetterValidationForAll");
 
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0].Cause(), "GETTER METHOD HAS VOID RETURN TYPE IN RETURN TYPE ANNOTATION");
@@ -92,11 +90,10 @@ TEST_F(ASTVerifierTest, ValidateGetterHasReturnStatement)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
     // Remove return statements from getter
     ast->IterateRecursively([](ark::es2panda::ir::AstNode *child) {
@@ -110,9 +107,7 @@ TEST_F(ASTVerifierTest, ValidateGetterHasReturnStatement)
         }
     });
 
-    InvariantNameSet checks;
-    checks.insert("GetterSetterValidationForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "GetterSetterValidationForAll");
 
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0].Cause(), "MISSING RETURN TYPE ANNOTATION AND RETURN STATEMENT IN GETTER METHOD");
@@ -139,11 +134,10 @@ TEST_F(ASTVerifierTest, ValidateGetterVoidReturnStatement)
         }
     )";
 
-    es2panda_Context *ctx = impl_->CreateContextFromString(cfg_, text, "dummy.sts");
-    impl_->ProceedToState(ctx, ES2PANDA_STATE_CHECKED);
+    es2panda_Context *ctx = CreateContextAndProceedToState(impl_, cfg_, text, "dummy.sts", ES2PANDA_STATE_CHECKED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_CHECKED);
 
-    auto *ast = reinterpret_cast<AstNode *>(impl_->ProgramAst(impl_->ContextProgram(ctx)));
+    auto ast = GetAstFromContext<AstNode>(impl_, ctx);
 
     // Change return statement type to void
     ast->IterateRecursively([&checker](ark::es2panda::ir::AstNode *child) {
@@ -160,9 +154,7 @@ TEST_F(ASTVerifierTest, ValidateGetterVoidReturnStatement)
         }
     });
 
-    InvariantNameSet checks;
-    checks.insert("GetterSetterValidationForAll");
-    const auto &messages = verifier.Verify(ast, checks);
+    const auto &messages = VerifyCheck(verifier, ast, "GetterSetterValidationForAll");
 
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0].Cause(), "GETTER METHOD HAS VOID RETURN TYPE");
