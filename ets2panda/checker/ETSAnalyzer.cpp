@@ -1698,7 +1698,6 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker
             checker->LogTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
             return;
         }
-        checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
 
         if (key->IsIdentifier()) {
             key->AsIdentifier()->SetVariable(lv);
@@ -1706,6 +1705,8 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker
 
         auto *propType = checker->GetTypeOfVariable(lv);
         key->SetTsType(propType);
+
+        checker->ValidateObjectProperty(lv, pname, objType, propExpr->Start());
 
         if (value->IsObjectExpression()) {
             value->AsObjectExpression()->SetPreferredType(propType);
