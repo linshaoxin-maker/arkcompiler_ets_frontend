@@ -70,7 +70,7 @@ import type {
 
 import {NodeUtils} from './NodeUtils';
 import {isParameterPropertyModifier, isViewPUBasedClass} from './OhsUtil';
-import { TypeUtils } from './TypeUtils';
+import {TypeUtils} from './TypeUtils';
 /**
  * kind of a scope
  */
