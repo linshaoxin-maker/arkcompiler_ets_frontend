@@ -448,10 +448,11 @@ ir::AstNode *ETSParser::ParseInnerConstructorDeclaration(ir::ModifierFlags membe
     if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
         ThrowSyntaxError({"Namespaces should not have a constructor"});
     }
-    if ((memberModifiers & (~(ir::ModifierFlags::ACCESS | ir::ModifierFlags::DECLARE))) != 0) {
+    if ((memberModifiers & (~(ir::ModifierFlags::ACCESS | ir::ModifierFlags::DECLARE | ir::ModifierFlags::NATIVE))) !=
+        0) {
         ThrowSyntaxError(
-            {"The modifier for a constructor should be limited to access modifiers(private, internal, protected, "
-             "public)."});
+            {"The modifier for a constructor should be limited to access modifiers (private, internal, protected, "
+             "public), 'declare', and 'native' modifiers."});
     }
     auto *memberName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
     memberModifiers |= ir::ModifierFlags::CONSTRUCTOR;
