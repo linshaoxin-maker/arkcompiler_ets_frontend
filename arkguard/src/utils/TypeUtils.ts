@@ -18,6 +18,7 @@ import {
   createCompilerHost,
   createProgram,
   createSourceFile,
+  SymbolFlags
 } from 'typescript';
 
 import type {
@@ -26,6 +27,7 @@ import type {
   Program,
   SourceFile,
   TypeChecker,
+  Symbol
 } from 'typescript';
 import { Extension, PathAndExtension } from '../common/type';
 import { FileUtils } from './FileUtils';
@@ -100,5 +102,36 @@ export class TypeUtils {
     let typeChecker: TypeChecker = program.getTypeChecker();
     endSingleFileEvent(EventList.GET_CHECKER, performancePrinter.timeSumPrinter);
     return typeChecker;
+  }
+
+  /**
+   * Retrieves the symbol associated with the declaration site of the given symbol.
+   *
+   * This method resolves the symbol to its declaration site to ensure consistency
+   * in obfuscated naming. Obfuscation names are bound to the symbol at the declaration
+   * site. If the symbol at the declaration site differs from the symbol at the usage
+   * site, discrepancies in obfuscated names may occur. By using this method, the
+   * obfuscation name can be consistently retrieved from the declaration site symbol,
+   * ensuring uniformity between the declaration and usage sites.
+   */
+  public static getOriginalSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
+    if (!(symbol.getFlags() & SymbolFlags.Alias)) {
+      return symbol;
+    }
+
+    const isValidOriginalSymbol = (alias: Symbol | undefined): boolean =>
+      alias !== undefined && alias.name === symbol.name;
+
+    const originalSymbol: Symbol | undefined = checker.getAliasedSymbol(symbol);
+    if (isValidOriginalSymbol(originalSymbol) && originalSymbol.name !== 'unknown') {
+      return originalSymbol!;
+    }
+
+    const immediateSymbol: Symbol | undefined = checker.getImmediateAliasedSymbol(symbol);
+    if (isValidOriginalSymbol(immediateSymbol)) {
+      return immediateSymbol!;
+    }
+
+    return symbol;
   }
 }

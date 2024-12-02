@@ -71,6 +71,7 @@ NO_NEED_RUN_WITH_NODE_FILES = [
     "export_struct_transform_class.ts",
     "nosymbolIdentifierTest.ts",
     '02_transformed_struct_01.ts',
+    'namespaceexport1.ts',
     'importFile1.ts',
     'importFile2.ts',
     'importFile3.ts',
@@ -80,7 +81,9 @@ NO_NEED_RUN_WITH_NODE_FILES = [
     'innerTest1.ts',
     'sameNameTest1.ts',
     'sameNameTest2.ts',
-    'sameNameTest3.ts'
+    'sameNameTest3.ts',
+    'innerTest2.ts',
+    'innerTest3.ts'
 ]
 
 

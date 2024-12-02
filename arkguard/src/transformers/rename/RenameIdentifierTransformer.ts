@@ -64,7 +64,8 @@ import {
   isInterfaceScope,
   isObjectLiteralScope,
   exportElementsWithoutSymbol,
-  getNameWithScopeLoc
+  getNameWithScopeLoc,
+  symbolAlias
 } from '../../utils/ScopeAnalyzer';
 
 import type {
@@ -143,6 +144,7 @@ namespace secharmony {
       let fileExportNames: Set<string> = undefined;
       let fileImportNames: Set<string> = undefined;
       exportElementsWithoutSymbol.clear();
+      symbolAlias.clear();
 
       let historyMangledNames: Set<string> = undefined;
       if (historyNameCache && historyNameCache.size > 0) {
@@ -689,6 +691,10 @@ namespace secharmony {
           } else {
             return node;
           }
+        }
+
+        if (symbolAlias.has(sym)) {
+          sym = TypeUtils.getOriginalSymbol(sym, checker);
         }
 
         // Add new names to name cache

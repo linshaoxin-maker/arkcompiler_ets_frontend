@@ -30,7 +30,11 @@ import {
   isGetAccessor,
   isSetAccessor,
   isPropertyDeclaration,
-  getOriginalNode
+  getOriginalNode,
+  isImportSpecifier,
+  isExportSpecifier,
+  isExportDeclaration,
+  isNamedExports
 } from 'typescript';
 
 import type {
@@ -66,6 +70,7 @@ import type {
 
 import {NodeUtils} from './NodeUtils';
 import {isParameterPropertyModifier, isViewPUBasedClass} from './OhsUtil';
+import {TypeUtils} from './TypeUtils';
 /**
  * kind of a scope
  */
@@ -76,6 +81,7 @@ namespace secharmony {
    * A map used to track whether identifiers without symbols are in the top-level scope.
    */
   export const exportElementsWithoutSymbol: Map<Node, boolean> = new Map();
+  export const symbolAlias: Set<Symbol> = new Set();
 
   /**
    * type of scope
@@ -350,7 +356,14 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
-      current.addDefinition(defSymbols);
+
+      if (current.kind !== ScopeKind.GLOBAL) {
+        symbolAlias.add(defSymbols);
+        defSymbols = TypeUtils.getOriginalSymbol(defSymbols, checker);
+        tryAddExportNamesIntoParentScope(defSymbols, current);
+      }
+
+      current.addDefinition(defSymbols, true);
     }
 
     /**
@@ -463,17 +476,13 @@ namespace secharmony {
     function analyzeImportNames(node: ImportSpecifier): void {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
-        if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-          if (!propertySymbol) {
-            exportElementsWithoutSymbol.set(propetyNameNode, current.kind === ScopeKind.GLOBAL);
-          } else {
-            current.addDefinition(propertySymbol);
-          }
-
+        if (exportObfuscation) {
+          tryAddPropertyNameNodeSymbol(propetyNameNode);
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
-            current.addDefinition(nameSymbol);
+            // `import{A as B} from 'file.ts';` // B is not an export element
+            // `import{B} from 'file.ts';` // B is an export element 
+            current.addDefinition(nameSymbol, propetyNameNode === undefined);
           }
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
@@ -485,6 +494,40 @@ namespace secharmony {
         console.error(e);
       }
     }
+
+    function tryAddPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
+      if (!propertyNameNode || !isIdentifier(propertyNameNode)) {
+        return;
+      }
+
+      const propertySymbol: Symbol = checker.getSymbolAtLocation(propertyNameNode);
+
+      if (!propertySymbol) {
+        exportElementsWithoutSymbol.set(propertyNameNode, current.kind === ScopeKind.GLOBAL);
+        return;
+      }
+
+      // Determine if the propertyNameNode represents an exported element:
+      // 1. If it is part of an `import` statement, it always comes from another file:
+      //    Example: import { A as B } from 'module';
+      //    Here, `A` is an exported element from `module`.
+      //
+      // 2. If it is part of an `export` statement with `from`, it comes from another file:
+      //    Example: export { A as B } from 'module';
+      //    Here, `A` is an exported element from `module`.
+      //
+      // 3. If it is part of a bare `export` statement without `from`, it is declared locally:
+      //    Example: export { A as B };
+      //    Here, `A` is not an exported element from another file.
+      const isExportElement: boolean =
+        isImportSpecifier(propertyNameNode.parent) ||
+        (isExportSpecifier(propertyNameNode.parent) &&
+          isNamedExports(propertyNameNode.parent.parent) &&
+          isExportDeclaration(propertyNameNode.parent.parent.parent) &&
+          propertyNameNode.parent.parent.parent.moduleSpecifier !== undefined);
+
+      current.addDefinition(propertySymbol, isExportElement);
+    }    
 
     /** example
      * const { x1, y: customY, z = 0 }: { x: number; y?: number; z?: number } = { x: 1, y: 2 };
@@ -537,11 +580,8 @@ namespace secharmony {
       root.fileExportNames.add(node.name.text);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
-      if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-        let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-        if (!propertySymbol) {
-          exportElementsWithoutSymbol.set(propetyNameNode, current.kind === ScopeKind.GLOBAL);
-        }
+      if (exportObfuscation) {
+        tryAddPropertyNameNodeSymbol(propetyNameNode);
       }
       forEachChild(node, analyzeScope);
     }
@@ -986,6 +1026,32 @@ namespace secharmony {
       const sym: Symbol | undefined = checker.getSymbolAtLocation(node);
       if (!sym) {
         current.mangledNames.add((node as Identifier).text);
+      }
+    }
+
+    function tryAddExportNamesIntoParentScope(sym: Symbol, currentScope: Scope): void {
+      if (currentScope.kind === ScopeKind.GLOBAL) {
+        return;
+      }
+      let parentScope: Scope = currentScope;
+      let originalSymbol: Symbol = TypeUtils.getOriginalSymbol(sym, checker);
+      while (parentScope) {
+        tryAddExportNamesIntoCurrentScope(sym, originalSymbol, parentScope);
+        parentScope = parentScope.parent;
+      }
+    }
+
+    function tryAddExportNamesIntoCurrentScope(sym: Symbol, originalSymbol: Symbol, currentScope: Scope): void {
+      if (currentScope.exportNames.has(sym.name)) {
+        return;
+      }
+      let currentDefs: Set<Symbol> = currentScope.defs;
+      for (const curDef of currentDefs) {
+        let curOriginalSym: Symbol = TypeUtils.getOriginalSymbol(curDef, checker);
+        if (curOriginalSym === originalSymbol) {
+          currentScope.exportNames.add(sym.name);
+          return;
+        }
       }
     }
 
