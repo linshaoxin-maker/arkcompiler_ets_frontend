@@ -67,6 +67,7 @@ import {
 } from './RenameIdentifierTransformer';
 import { UpdateMemberMethodName } from '../../utils/NameCacheUtil';
 import { PropCollections, UnobfuscationCollections } from '../../utils/CommonCollections';
+import { globalGenerator } from './RenameIdentifierTransformer';
 
 namespace secharmony {
   /**
@@ -85,7 +86,7 @@ namespace secharmony {
 
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
       let options: NameGeneratorOptions = {};
-      let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
+      // let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
 
       return renamePropertiesTransformer;
 
@@ -227,7 +228,7 @@ namespace secharmony {
         const historyName: string = PropCollections.historyMangledTable?.get(original);
         let mangledName: string = historyName ? historyName : PropCollections.globalMangledTable.get(original);
         while (!mangledName) {
-          let tmpName = generator.getName();
+          let tmpName = globalGenerator.getName();
           if (isReservedProperty(tmpName) ||
             tmpName === original) {
             continue;

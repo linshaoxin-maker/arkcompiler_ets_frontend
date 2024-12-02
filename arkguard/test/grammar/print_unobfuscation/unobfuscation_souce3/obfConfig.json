@@ -1,0 +1,25 @@
+{
+    "mCompact": false,
+    "mRemoveComments": true,
+    "mOutputDir": "../../../local",
+    "mDisableHilog": false,
+    "mDisableConsole": false,
+    "mSimplify": false,
+    "mNameObfuscation": {
+        "mEnable": true,
+        "mNameGeneratorType": 1,
+        "mDictionaryList": [],
+        "mReservedToplevelNames": [],
+        "mRenameProperties": true,
+        "mReservedProperties": [],
+        "mKeepStringProperty": true,
+        "mTopLevel": false
+    },
+    "mUnobfuscationOption":{
+        "mPrintKeptNames": true,
+        "mPrintPath": "./print_path"
+    },
+    "mEnableSourceMap": false,
+    "mEnableNameCache": false,
+    "mExportObfuscation": true
+}

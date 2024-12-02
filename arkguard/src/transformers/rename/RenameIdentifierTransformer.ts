@@ -128,7 +128,7 @@ namespace secharmony {
     }
 
     let options: NameGeneratorOptions = {};
-    let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
+    globalGenerator = getNameGenerator(profile.mNameGeneratorType, options);
 
     const enableToplevel: boolean = option?.mNameObfuscation?.mTopLevel;
     const exportObfuscation: boolean = option?.mExportObfuscation;
@@ -242,7 +242,7 @@ namespace secharmony {
           });
         }
 
-        renames(scope, scope.defs, generator);
+        renames(scope, scope.defs, globalGenerator);
       }
 
       // process property parameters symbols in class scope
@@ -251,7 +251,7 @@ namespace secharmony {
           return;
         }
 
-        renamePropertyParameters(scope, scope.defs, generator);
+        renamePropertyParameters(scope, scope.defs, globalGenerator);
       }
 
       function renames(scope: Scope, defs: Set<Symbol>, generator: INameGenerator): void {
@@ -354,7 +354,7 @@ namespace secharmony {
         const historyName: string = PropCollections.historyMangledTable?.get(original);
         let mangledName: string = historyName ? historyName : PropCollections.globalMangledTable.get(original);
         while (!mangledName) {
-          let tmpName = generator.getName();
+          let tmpName = globalGenerator.getName();
           if (isReservedTopLevel(tmpName) ||
             tmpName === original) {
             continue;
@@ -488,7 +488,7 @@ namespace secharmony {
       function getMangledLabel(label: Label, mangledLabels: string[]): string {
         let mangledLabel: string = '';
         do {
-          mangledLabel = generator.getName();
+          mangledLabel = globalGenerator.getName();
           if (mangledLabel === label.name) {
             mangledLabel = '';
           }
@@ -832,6 +832,7 @@ namespace secharmony {
   export let classMangledName: Map<Node, string> = new Map();
   // Record the original class name and line number range to distinguish between class names and member method names.
   export let classInfoInMemberMethodCache: Set<string> = new Set();
+  export let globalGenerator: INameGenerator;
 
   export function clearCaches(): void {
     nameCache.clear();
