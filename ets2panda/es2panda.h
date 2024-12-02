@@ -119,6 +119,7 @@ struct CompilerOptions {
     bool verifierAllChecks {};
     bool verifierFullProgram {};
     bool debuggerEvalMode {};
+    bool runAssignAnalyzer {};
     uint64_t debuggerEvalLine {};
     std::string debuggerEvalSource {};
     std::string stdLib {};
