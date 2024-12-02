@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 declare module 'testModule2' {
-    import { c as a } from 'module2';
-    export { a };
+    import { m as k } from 'module2';
+    export { k };
 }

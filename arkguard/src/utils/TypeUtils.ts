@@ -115,14 +115,23 @@ export class TypeUtils {
    * ensuring uniformity between the declaration and usage sites.
    */
   public static getOriginalSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
-    if (symbol.getFlags() & SymbolFlags.Alias) {
-      let originalSymbol: Symbol = checker.getAliasedSymbol(symbol);
-      if (originalSymbol && originalSymbol.name === symbol.name) {
-        // Only replace `symbol` with `originalSymbol` if their associated nodes have the same name.
-        // When the names differ, separate obfuscated names need to be generated for each symbol 
-        symbol = originalSymbol;
-      }
+    if (!(symbol.getFlags() & SymbolFlags.Alias)) {
+      return symbol;
     }
+
+    const isValidOriginalSymbol = (alias: Symbol | undefined): boolean =>
+      alias !== undefined && alias.name === symbol.name;
+
+    const originalSymbol: Symbol | undefined = checker.getAliasedSymbol(symbol);
+    if (isValidOriginalSymbol(originalSymbol) && originalSymbol.name !== 'unknown') {
+      return originalSymbol!;
+    }
+
+    const immediateSymbol: Symbol | undefined = checker.getImmediateAliasedSymbol(symbol);
+    if (isValidOriginalSymbol(immediateSymbol)) {
+      return immediateSymbol!;
+    }
+
     return symbol;
   }
 }

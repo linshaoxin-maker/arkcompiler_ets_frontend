@@ -81,7 +81,9 @@ NO_NEED_RUN_WITH_NODE_FILES = [
     'innerTest1.ts',
     'sameNameTest1.ts',
     'sameNameTest2.ts',
-    'sameNameTest3.ts'
+    'sameNameTest3.ts',
+    'innerTest2.ts',
+    'innerTest3.ts'
 ]
 
 

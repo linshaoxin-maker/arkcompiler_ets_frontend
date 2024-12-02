@@ -30,7 +30,11 @@ import {
   isGetAccessor,
   isSetAccessor,
   isPropertyDeclaration,
-  getOriginalNode
+  getOriginalNode,
+  isImportSpecifier,
+  isExportSpecifier,
+  isExportDeclaration,
+  isNamedExports
 } from 'typescript';
 
 import type {
@@ -476,7 +480,9 @@ namespace secharmony {
           tryAddPropertyNameNodeSymbol(propetyNameNode);
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
-            current.addDefinition(nameSymbol, true);
+            // `import{A as B} from 'file.ts';` // B is not an export element
+            // `import{B} from 'file.ts';` // B is an export element 
+            current.addDefinition(nameSymbol, propetyNameNode === undefined);
           }
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
@@ -490,16 +496,38 @@ namespace secharmony {
     }
 
     function tryAddPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
-      if (propertyNameNode && isIdentifier(propertyNameNode)) {
-        let propertySymbol = checker.getSymbolAtLocation(propertyNameNode);
-        if (!propertySymbol) {
-          exportElementsWithoutSymbol.set(propertyNameNode, current.kind === ScopeKind.GLOBAL);
-        } else {
-          current.addDefinition(propertySymbol, true);
-        }
+      if (!propertyNameNode || !isIdentifier(propertyNameNode)) {
+        return;
       }
-    }
 
+      const propertySymbol: Symbol = checker.getSymbolAtLocation(propertyNameNode);
+
+      if (!propertySymbol) {
+        exportElementsWithoutSymbol.set(propertyNameNode, current.kind === ScopeKind.GLOBAL);
+        return;
+      }
+
+      // Determine if the propertyNameNode represents an exported element:
+      // 1. If it is part of an `import` statement, it always comes from another file:
+      //    Example: import { A as B } from 'module';
+      //    Here, `A` is an exported element from `module`.
+      //
+      // 2. If it is part of an `export` statement with `from`, it comes from another file:
+      //    Example: export { A as B } from 'module';
+      //    Here, `A` is an exported element from `module`.
+      //
+      // 3. If it is part of a bare `export` statement without `from`, it is declared locally:
+      //    Example: export { A as B };
+      //    Here, `A` is not an exported element from another file.
+      const isExportElement: boolean =
+        isImportSpecifier(propertyNameNode.parent) ||
+        (isExportSpecifier(propertyNameNode.parent) &&
+          isNamedExports(propertyNameNode.parent.parent) &&
+          isExportDeclaration(propertyNameNode.parent.parent.parent) &&
+          propertyNameNode.parent.parent.parent.moduleSpecifier !== undefined);
+
+      current.addDefinition(propertySymbol, isExportElement);
+    }    
 
     /** example
      * const { x1, y: customY, z = 0 }: { x: number; y?: number; z?: number } = { x: 1, y: 2 };

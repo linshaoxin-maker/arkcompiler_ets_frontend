@@ -12,7 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 declare module 'testModule2' {
-    import { c as a } from 'module2';
-    export { a };
+  import { noSymbolIdentifier2 as ni2 } from 'module2';
+  export { ni2 };
 }

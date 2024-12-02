@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 declare module 'Module1' {
-    import { e } from 'module1';
+    import { f } from 'module1';
 }
 import { sameNameVar } from './module2';
