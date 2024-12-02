@@ -85,10 +85,10 @@ export { FileUtils } from './utils/FileUtils';
 export { MemoryUtils } from './utils/MemoryUtils';
 import { TypeUtils } from './utils/TypeUtils';
 import { handleReservedConfig } from './utils/TransformUtil';
-import { UnobfuscationCollections } from './utils/CommonCollections';
+import { UnobfuscationCollections, ProjectCollections } from './utils/CommonCollections';
 import { historyAllUnobfuscatedNamesMap } from './initialization/Initializer';
 import { MemoryDottingDefine } from './utils/MemoryDottingDefine';
-export { UnobfuscationCollections } from './utils/CommonCollections';
+export { UnobfuscationCollections, ProjectCollections } from './utils/CommonCollections';
 export { separateUniversalReservedItem, containWildcards, wildcardTransformer } from './utils/TransformUtil';
 export type { ReservedNameInfo } from './utils/TransformUtil';
 export type { ReseverdSetForArkguard } from './common/ApiReader';
@@ -107,6 +107,7 @@ export {
   MergedConfig,
   ObConfigResolver,
   readNameCache,
+  clearNameCache,
   writeObfuscationNameCache,
   writeUnobfuscationContent
 } from './initialization/ConfigResolver';
@@ -171,6 +172,16 @@ export class ArkObfuscator {
 
   // If isKeptCurrentFile is true, both identifier and property obfuscation are skipped.
   static mIsKeptCurrentFile: boolean = false;
+
+  private enableIncrementalCache: boolean = true;
+
+  public isIncremental: boolean = false;
+
+  public shouldReObfuscate: boolean = false;
+
+  public filePathManager?: ProjectCollections.FilePathManager;
+
+  public fileContentManager?: ProjectCollections.FileContentManager;
 
   public constructor() {
     this.mCompilerOptions = {};
@@ -267,7 +278,7 @@ export class ArkObfuscator {
    * init ArkObfuscator according to user config
    * should be called after constructor
    */
-  public init(config: IOptions | undefined): boolean {
+  public init(config: IOptions | undefined, cachePath?: string): boolean {
     if (!config) {
       console.error('obfuscation config file is not found and no given config.');
       return false;
@@ -313,6 +324,10 @@ export class ArkObfuscator {
       UnobfuscationCollections.reservedLangForProperty = languageSet;
     }
 
+    if (cachePath) {
+      this.initIncrementalCache(cachePath);
+    }
+
     return true;
   }
   public static setMemoryDottingCallBack(memoryDottingCallback: (stage: string, parentStage?: string) => void,
@@ -328,6 +343,28 @@ export class ArkObfuscator {
   public static clearMemoryDottingCallBack(): void {
     ArkObfuscator.memoryDottingCallback = undefined;
     ArkObfuscator.memoryDottingStopCallback = undefined;
+  }
+
+  /**
+   * init incremental cache according to cachePath
+   */
+  private initIncrementalCache(cachePath: string): void {
+    if (this.enableIncrementalCache) {
+      // initialize filePathManager
+      const filePathsCache = path.join(cachePath, ProjectCollections.SOURCE_FILE_PATHS);
+      this.filePathManager = new ProjectCollections.FilePathManager(filePathsCache);
+
+      if (this.filePathManager.isIncreMental()) {
+        this.isIncremental = true;
+      }
+
+      // initialize fileContentManager
+      const transformedFilePath = path.join(cachePath, ProjectCollections.TRANSFORMED_PATH);
+      this.fileContentManager = new ProjectCollections.FileContentManager(transformedFilePath, this.isIncremental);
+
+      // initialize fileWhiteListMangager cache
+      ProjectCollections.ProjectWhiteListManager.initCachePath(cachePath, this.isIncremental);
+    }
   }
 
   /**

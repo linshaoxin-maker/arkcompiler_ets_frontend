@@ -70,7 +70,7 @@ import type {
 } from 'typescript';
 
 import { ApiExtractor } from '../common/ApiExtractor';
-import { UnobfuscationCollections } from './CommonCollections';
+import { UnobfuscationCollections, ProjectCollections, addToSet} from './CommonCollections';
 import { NodeUtils } from './NodeUtils';
 
 export const stringPropsSet: Set<string> = new Set();
@@ -136,6 +136,23 @@ export function isViewPUBasedClass(classNode: ClassDeclaration | undefined): boo
   return containViewPU(heritageClause);
 }
 
+export function collectReservedStruct(memberName: PropertyName, reservedStruct: Set<string>): void {
+  if (isIdentifier(memberName)) {
+    reservedStruct.add(memberName.text);
+    ProjectCollections.structPropertiesTemp.add(memberName.text);
+  }
+
+  if (isStringLiteral(memberName)) {
+    reservedStruct.add(memberName.text);
+    ProjectCollections.structPropertiesTemp.add(memberName.text);
+  }
+
+  if (isComputedPropertyName(memberName) && isStringLiteral(memberName.expression)) {
+    reservedStruct.add(memberName.expression.text);
+    ProjectCollections.structPropertiesTemp.add(memberName.expression.text);
+  }
+}
+
 export function collectPropertyNamesAndStrings(memberName: PropertyName, propertySet: Set<string>): void {
   if (isIdentifier(memberName)) {
     propertySet.add(memberName.text);
@@ -144,11 +161,13 @@ export function collectPropertyNamesAndStrings(memberName: PropertyName, propert
   if (isStringLiteral(memberName)) {
     propertySet.add(memberName.text);
     stringPropsSet.add(memberName.text);
+    ProjectCollections.stringPropertiesTemp.add(memberName.text);
   }
 
   if (isComputedPropertyName(memberName) && isStringLiteral(memberName.expression)) {
     propertySet.add(memberName.expression.text);
     stringPropsSet.add(memberName.expression.text);
+    ProjectCollections.stringPropertiesTemp.add(memberName.expression.text);
   }
 }
 
@@ -159,6 +178,7 @@ export function getElementAccessExpressionProperties(elementAccessExpressionNode
 
   if (isStringLiteral(elementAccessExpressionNode.argumentExpression)) {
     stringPropsSet.add(elementAccessExpressionNode.argumentExpression.text);
+    ProjectCollections.stringPropertiesTemp.add(elementAccessExpressionNode.argumentExpression.text);
   }
 }
 
@@ -347,7 +367,8 @@ export function getStructProperties(structNode: StructDeclaration, propertySet: 
     if (!memberName) {
       return;
     }
-    collectPropertyNamesAndStrings(memberName, propertySet);
+    collectPropertyNamesAndStrings(memberName, ProjectCollections.structPropertiesTemp);
+    addToSet(propertySet, ProjectCollections.structPropertiesTemp);
   });
 }
 
@@ -445,6 +466,7 @@ export function visitEnumInitializer(childNode: Node): void {
   }
 
   UnobfuscationCollections.reservedEnum.add(childNode.text);
+  ProjectCollections.enumPropertiesTemp.add(childNode.text);
 }
 
 /**
@@ -460,6 +482,6 @@ export function getViewPUClassProperties(classNode: ClassDeclaration | ClassExpr
     if (!memberName) {
       return;
     }
-    collectPropertyNamesAndStrings(memberName, UnobfuscationCollections.reservedStruct);
+    collectReservedStruct(memberName, UnobfuscationCollections.reservedStruct);
   });
 }

@@ -58,6 +58,7 @@ enum OptionType {
   ENABLE_TOPLEVEL_OBFUSCATION,
   ENABLE_FILENAME_OBFUSCATION,
   ENABLE_EXPORT_OBFUSCATION,
+  ENABLE_ATKEEP,
   COMPACT,
   REMOVE_LOG,
   REMOVE_COMMENTS,
@@ -106,6 +107,7 @@ class ObOptions {
   applyNameCache: string = '';
   stripLanguageDefault: boolean = false;
   stripSystemApiArgs: boolean = false;
+  enableAtKeep: boolean = false;
 
   merge(other: ObOptions): void {
     this.disableObfuscation = this.disableObfuscation || other.disableObfuscation;
@@ -121,6 +123,7 @@ class ObOptions {
     this.stripLanguageDefault = this.stripLanguageDefault || other.stripLanguageDefault;
     this.stripSystemApiArgs = this.stripSystemApiArgs || other.stripSystemApiArgs;
 
+    this.enableAtKeep = this.enableAtKeep || other.enableAtKeep;
     if (other.printNameCache.length > 0) {
       this.printNameCache = other.printNameCache;
     }
@@ -329,6 +332,7 @@ export class ObConfigResolver {
   static readonly ENABLE_TOPLEVEL_OBFUSCATION = '-enable-toplevel-obfuscation';
   static readonly ENABLE_FILENAME_OBFUSCATION = '-enable-filename-obfuscation';
   static readonly ENABLE_EXPORT_OBFUSCATION = '-enable-export-obfuscation';
+  static readonly ENABLE_ATKEEP = '-use-keep-in-source';
   static readonly REMOVE_COMMENTS = '-remove-comments';
   static readonly COMPACT = '-compact';
   static readonly REMOVE_LOG = '-remove-log';
@@ -373,6 +377,8 @@ export class ObConfigResolver {
         return OptionType.ENABLE_FILENAME_OBFUSCATION;
       case ObConfigResolver.ENABLE_EXPORT_OBFUSCATION:
         return OptionType.ENABLE_EXPORT_OBFUSCATION;
+      case ObConfigResolver.ENABLE_ATKEEP:
+        return OptionType.ENABLE_ATKEEP;
       case ObConfigResolver.REMOVE_COMMENTS:
         return OptionType.REMOVE_COMMENTS;
       case ObConfigResolver.COMPACT:
@@ -447,6 +453,11 @@ export class ObConfigResolver {
         }
         case OptionType.ENABLE_EXPORT_OBFUSCATION: {
           configs.options.enableExportObfuscation = true;
+          extraOptionType = OptionType.NONE;
+          continue;
+        }
+        case OptionType.ENABLE_ATKEEP: {
+          configs.options.enableAtKeep = true;
           extraOptionType = OptionType.NONE;
           continue;
         }
@@ -915,6 +926,13 @@ export function readNameCache(nameCachePath: string, logger: any): void {
   } catch (err) {
     logger.error(`Failed to open ${nameCachePath}. Error message: ${err}`);
   }
+}
+
+// clear name caches, used when we need to reobfuscate all files
+export function clearNameCache(): void {
+  PropCollections.historyMangledTable?.clear();
+  renameFileNameModule.historyFileNameMangledTable?.clear();
+  nameCacheMap?.clear();
 }
 
 /**

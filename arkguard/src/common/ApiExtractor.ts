@@ -86,6 +86,7 @@ import { stringPropsSet, enumPropsSet } from '../utils/OhsUtil';
 import type { IOptions } from '../configs/IOptions';
 import { FileUtils } from '../utils/FileUtils';
 import { supportedParsingExtension } from './type';
+import { ProjectCollections, addToSet } from '../utils/CommonCollections'
 
 export namespace ApiExtractor {
   interface KeywordInfo {
@@ -262,6 +263,7 @@ export namespace ApiExtractor {
           return;
         }
         mConstructorPropertySet?.add(param.name.getText());
+        ProjectCollections.reservedInfoTemp.propertyParams.add(param.name.getText());
       };
 
       astNode?.parameters?.forEach((param) => {
@@ -612,6 +614,7 @@ export namespace ApiExtractor {
   function addEnumElement(currentPropsSet: Set<string>): void {
     currentPropsSet.forEach((element: string) => {
       enumPropsSet.add(element);
+      ProjectCollections.enumPropertiesTemp.add(element);
     });
   }
   /**
@@ -661,6 +664,20 @@ export namespace ApiExtractor {
         break;
       default:
         break;
+    }
+
+    // collect origin source file white lists
+    if (apiType === ApiType.PROJECT || apiType === ApiType.CONSTRUCTOR_PROPERTY) {
+      if (scanProjectConfig.isEnabledPropertyObfuscation) {
+        addToSet(ProjectCollections.exportedNamesTemp.propertyNames, mCurrentExportedPropertySet);
+        if(!scanProjectConfig.mKeepStringProperty) {
+          ProjectCollections.stringPropertiesTemp.clear();
+        }
+      }
+      if (scanProjectConfig.mExportObfuscation) {
+        addToSet(ProjectCollections.exportedNamesTemp.globalNames, mCurrentExportNameSet);
+      }
+      ProjectCollections.ProjectWhiteListManager.getProjectWhiteListManager()?.collectOriginFileWhiteLists(fileName);
     }
 
     // collect export names.

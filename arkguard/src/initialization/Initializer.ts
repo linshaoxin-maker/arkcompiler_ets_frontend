@@ -19,6 +19,7 @@ import path from 'path';
 import { ArkObfuscator, blockPrinter, renameIdentifierModule } from '../ArkObfuscator';
 import { collectResevedFileNameInIDEConfig, MergedConfig, ObConfigResolver, readNameCache } from './ConfigResolver';
 import { type IOptions } from '../configs/IOptions';
+import { ProjectCollections } from '../utils/CommonCollections';
 
 // Record all unobfuscated properties and reasons.
 export let historyUnobfuscatedPropMap: Map<string, string[]> | undefined;
@@ -56,6 +57,9 @@ export function initObfuscationConfig(projectConfig: any, arkProjectConfig: any,
     mergedObConfig.reservedFileNames.push(...reservedFileNamesInIDEconfig);
   }
   arkProjectConfig.obfuscationMergedObConfig = mergedObConfig;
+  
+  const shouldEmitConsumer: boolean = projectConfig.compileHar || projectConfig.compileShared;
+  ProjectCollections.ProjectWhiteListManager.initFileWhiteList(mergedObConfig, shouldEmitConsumer);
 
   arkProjectConfig.arkObfuscator = initArkGuardConfig(
     projectConfig.obfuscationOptions?.obfuscationCacheDir,
@@ -86,7 +90,8 @@ function initArkGuardConfig(
       mTopLevel: mergedObConfig.options.enableToplevelObfuscation,
       mReservedToplevelNames: mergedObConfig.reservedGlobalNames,
       mUniversalReservedProperties: mergedObConfig.universalReservedPropertyNames,
-      mUniversalReservedToplevelNames: mergedObConfig.universalReservedGlobalNames
+      mUniversalReservedToplevelNames: mergedObConfig.universalReservedGlobalNames,
+      mEnableAtKeep: mergedObConfig.options.enableAtKeep
     },
     mUnobfuscationOption: {
       mPrintKeptNames: mergedObConfig.options.printKeptNames,
@@ -113,7 +118,7 @@ function initArkGuardConfig(
   };
 
   const arkObfuscator: ArkObfuscator = new ArkObfuscator();
-  arkObfuscator.init(arkguardConfig);
+  arkObfuscator.init(arkguardConfig, obfuscationCacheDir);
   if (mergedObConfig.options.applyNameCache && mergedObConfig.options.applyNameCache.length > 0) {
     readNameCache(mergedObConfig.options.applyNameCache, logger);
   } else {
